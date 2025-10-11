@@ -214,18 +214,7 @@ const sendBtn=document.getElementById('sendBtn')
 const attachBtn=document.getElementById('attachBtn')
 const chatContainer=document.getElementById('chatContainer')
 const closeBtn=document.getElementById('closeBtn')
-function renderUsers(filter=''){
-  usersDiv.innerHTML=''
-  const list=Object.values(onlineUsers).filter(u=>u.uuid!==profile.uuid && (!filter||u.name.toLowerCase().includes(filter.toLowerCase())))
-  list.forEach(u=>{
-    const div=document.createElement('div'); div.className='user-card'
-    div.innerHTML=`<img class="user-thumb" src="${u.avatar}">
-                   <div class="user-meta"><strong>${u.name}</strong><span>Online</span></div>
-                   <div class="online-dot"></div>`
-    div.addEventListener('click',()=>openChat(u,div))
-    usersDiv.appendChild(div)
-  })
-}
+
 searchInput.addEventListener('input',()=>renderUsers(searchInput.value.trim()))
 
 function openChat(user,element){
@@ -425,5 +414,6 @@ document.addEventListener('paste', e => e.preventDefault())
 </script>
 </body>
 </html>
+
 
 
