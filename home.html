@@ -24,7 +24,6 @@
 *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,sans-serif;}
 body{display:flex;flex-direction:column;height:100vh;background:var(--bg);color:var(--text);overflow:hidden;}
 
-/* Top Menu Bar */
 #topMenu{
   height:60px;
   background:var(--menu-bg);
@@ -34,7 +33,10 @@ body{display:flex;flex-direction:column;height:100vh;background:var(--bg);color:
   padding:0 20px;
   border-bottom:1px solid var(--border);
   box-shadow:0 2px 6px var(--shadow);
-  position:relative;
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
   z-index:1000;
 }
 #menuLogo{font-weight:700;font-size:20px;color:var(--accent);}
@@ -43,30 +45,43 @@ body{display:flex;flex-direction:column;height:100vh;background:var(--bg);color:
 #menuActions button{padding:6px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;}
 #menuActions button:hover{background:var(--accent-hover);}
 
-/* Main Container */
-#container{display:flex;flex:1;overflow:hidden;transition:all 0.3s ease;}
+#container{display:flex;flex:1;margin-top:60px;transition:all 0.3s ease;height:calc(100vh - 60px);}
 
-/* Sidebar / User List */
 #userList{
-  width:260px;
+  width:280px;
   background:var(--card);
   display:flex;
   flex-direction:column;
   border-right:1px solid var(--border);
   transition:all 0.3s ease;
+  z-index:1000;
 }
 #userList header{padding:16px;font-weight:600;font-size:18px;border-bottom:1px solid var(--border);}
 #userList input{margin:12px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);outline:none;font-size:14px;}
-.user-card{display:flex;align-items:center;padding:10px 12px;gap:12px;cursor:pointer;border-radius:12px;transition:all 0.2s;position:relative;}
+.user-card{
+  display:flex;
+  align-items:center;
+  padding:10px 12px;
+  gap:12px;
+  cursor:pointer;
+  border-radius:12px;
+  transition:all 0.2s;
+  position:relative;
+  flex-direction:column;
+  align-items:flex-start;
+}
 .user-card:hover{background:var(--input-bg);}
 .user-card.selected{background:var(--accent-hover);color:#fff;}
-.user-thumb{width:40px;height:40px;border-radius:50%;object-fit:cover;}
-.user-meta{flex:1;display:flex;flex-direction:column;}
-.user-meta strong{font-size:14px;}
-.user-meta span{font-size:12px;color:var(--online);}
+.user-thumb{width:50px;height:50px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.user-meta{flex:1;width:100%;display:flex;flex-direction:column;justify-content:center;}
+.user-meta strong{font-size:16px;display:flex;justify-content:space-between;}
+.user-meta span{font-size:13px;color:var(--text-muted);}
+.user-meta .last-message{font-size:14px;color:var(--text-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.user-meta.unread strong{font-weight:700;}
+.user-meta.unread .last-message{font-weight:500;color:#111827;}
+.timestamp{font-size:11px;color:var(--text-muted);}
 .online-dot{width:10px;height:10px;border-radius:50%;background:var(--online);position:absolute;top:15px;right:12px;}
 
-/* Chat Area */
 #chatContainer{
   flex:1;
   display:flex;
@@ -82,6 +97,9 @@ body{display:flex;flex-direction:column;height:100vh;background:var(--bg);color:
   background:var(--card);
   border-bottom:1px solid var(--border);
   box-shadow:0 2px 4px var(--shadow);
+  position:sticky;
+  top:0;
+  z-index:10;
 }
 #chatHeader img{width:40px;height:40px;border-radius:50%;object-fit:cover;display:none;}
 #chatHeader .profile-info{flex:1;display:flex;flex-direction:column;}
@@ -94,7 +112,6 @@ body{display:flex;flex-direction:column;height:100vh;background:var(--bg);color:
 .msg.received{align-self:flex-start;background:var(--card);}
 .msg img{max-width:250px;border-radius:12px;}
 
-/* Chat Controls */
 #chatControls{display:flex;padding:12px;gap:8px;border-top:1px solid var(--border);background:var(--card);}
 #chatInput{flex:1;padding:10px 16px;border-radius:50px;border:1px solid var(--border);background:var(--input-bg);outline:none;font-size:14px;}
 #sendBtn,#attachBtn{width:45px;height:45px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;}
@@ -102,24 +119,31 @@ body{display:flex;flex-direction:column;height:100vh;background:var(--bg);color:
 #attachBtn{background:var(--input-bg);color:var(--text-muted);}
 #closeBtn{display:none;}
 
-/* Mobile Responsive */
-@media(max-width:768px){
-  #menuToggle{display:block;}
-  #userList{position:fixed;top:60px;left:-300px;height:100%;z-index:1000;box-shadow:0 8px 24px var(--shadow);}
-  #userList.active{left:0;}
-  #container{flex-direction:column;}
-  #chatHeader{padding:12px;}
-}
-
 #chatBody::-webkit-scrollbar{width:6px;}
 #chatBody::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.1);border-radius:3px;}
 #users::-webkit-scrollbar{height:6px;}
 #users::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.1);border-radius:3px;}
+
+@media(max-width:768px){
+  #menuToggle{display:block;}
+  #userList{
+    position:fixed;
+    top:60px;
+    left:-280px;
+    height:100%;
+    z-index:1000;
+    box-shadow:0 8px 24px var(--shadow);
+  }
+  #userList.active{left:0;}
+  #container{flex-direction:column;height:100%;}
+  #chatContainer{flex:1;}
+  #chatHeader{padding:12px;}
+  #chatControls{padding:8px;gap:6px;}
+  .msg{max-width:75%;}
+}
 </style>
 </head>
 <body>
-
-<!-- Top Menu -->
 <div id="topMenu">
   <div id="menuLogo">Realtime Chat</div>
   <div id="menuActions">
@@ -129,14 +153,12 @@ body{display:flex;flex-direction:column;height:100vh;background:var(--bg);color:
 </div>
 
 <div id="container">
-  <!-- Sidebar -->
   <div id="userList">
     <header>Online Users</header>
     <input type="text" id="searchInput" placeholder="Search users...">
     <div id="users"></div>
   </div>
 
-  <!-- Chat Area -->
   <div id="chatContainer">
     <div id="chatHeader">
       <img id="chatAvatar" src="">
@@ -155,10 +177,12 @@ body{display:flex;flex-direction:column;height:100vh;background:var(--bg);color:
     </div>
   </div>
 </div>
+
 <script>
 const menuToggle=document.getElementById('menuToggle')
 const userList=document.getElementById('userList')
 const logoutBtn=document.getElementById('logoutBtn')
+
 menuToggle.addEventListener('click',()=>userList.classList.toggle('active'))
 logoutBtn.addEventListener('click',()=>{
   localStorage.removeItem('rc_profile_v2')
@@ -221,6 +245,51 @@ function openChat(user,element){
   chatControls.style.display='flex'
 }
 
+function renderUsers(filter=''){
+  usersDiv.innerHTML=''
+  const list=Object.values(onlineUsers)
+    .filter(u=>u.uuid!==profile.uuid && (!filter||u.name.toLowerCase().includes(filter.toLowerCase())))
+    .sort((a,b)=>{
+      const aTime = chatHistory[a.uuid]?.[chatHistory[a.uuid].length-1]?.ts || 0
+      const bTime = chatHistory[b.uuid]?.[chatHistory[b.uuid].length-1]?.ts || 0
+      return bTime - aTime
+    })
+
+  list.forEach(u=>{
+    const lastMsgObj = chatHistory[u.uuid]?.[chatHistory[u.uuid].length-1]
+    const lastMsg = lastMsgObj ? lastMsgObj.text : 'No messages yet'
+    const isUnread = lastMsgObj?.me===false && !lastMsgObj.read
+
+    const div=document.createElement('div'); 
+    div.className='user-card'
+    div.innerHTML=`
+      <div style="display:flex;align-items:center;width:100%;">
+        <img class="user-thumb" src="${u.avatar}">
+        <div class="user-meta ${isUnread?'unread':''}">
+          <strong>${u.name} <span class="timestamp">${lastMsgObj ? formatTime(lastMsgObj.ts) : ''}</span></strong>
+          <span class="last-message">${lastMsg}</span>
+        </div>
+      </div>
+    `
+
+    div.addEventListener('click',()=>{
+      if(chatHistory[u.uuid]) chatHistory[u.uuid].forEach(m=>m.read=true)
+      openChat(u,div)
+      renderUsers(searchInput.value.trim()) 
+    })
+    usersDiv.appendChild(div)
+  })
+}
+function formatTime(ts){
+  if(!ts) return ''
+  const d=new Date(ts)
+  let hours=d.getHours()
+  const minutes=d.getMinutes().toString().padStart(2,'0')
+  const ampm=hours>=12?'PM':'AM'
+  hours=hours%12||12
+  return `${hours}:${minutes} ${ampm}`
+}
+
 function appendMessage(userUuid,text,me=false,isImage=false,save=true){
   if(chatHistory[userUuid]?.some(m=>m.text===text && m.me===me)) return
   const div=document.createElement('div'); div.className='msg '+(me?'me':'received')
@@ -230,7 +299,8 @@ function appendMessage(userUuid,text,me=false,isImage=false,save=true){
   chatBody.scrollTop=chatBody.scrollHeight
   if(save){
     if(!chatHistory[userUuid]) chatHistory[userUuid]=[]
-    chatHistory[userUuid].push({text,me,isImage})
+    chatHistory[userUuid].push({text,me,isImage,ts:Date.now(),read:me})
+    renderUsers(searchInput.value.trim())
   }
 }
 
@@ -355,4 +425,5 @@ document.addEventListener('paste', e => e.preventDefault())
 </script>
 </body>
 </html>
+
 
