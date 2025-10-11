@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
 :root {
-  --bg:#f9fafb;
+  --bg:#f7f7f8;
   --card:#ffffff;
   --accent:#6366f1;
   --accent-hover:#4f46e5;
@@ -18,21 +18,46 @@
   --shadow:rgba(0,0,0,0.08);
   --border:#e5e7eb;
   --online:#10b981;
-  --chat-bg:#f9fafb;
-  --chat-me:#eef2ff;
-  --chat-other:#ffffff;
-  --chat-border:#e5e7eb;
+  --menu-bg:#fff;
 }
 
 *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,sans-serif;}
-body{display:flex;height:100vh;background:var(--bg);color:var(--text);}
+body{display:flex;flex-direction:column;height:100vh;background:var(--bg);color:var(--text);overflow:hidden;}
 
-#container{display:flex;flex:1;overflow:hidden;border-radius:12px;box-shadow:0 8px 24px var(--shadow);}
+/* Top Menu Bar */
+#topMenu{
+  height:60px;
+  background:var(--menu-bg);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 20px;
+  border-bottom:1px solid var(--border);
+  box-shadow:0 2px 6px var(--shadow);
+  position:relative;
+  z-index:1000;
+}
+#menuLogo{font-weight:700;font-size:20px;color:var(--accent);}
+#menuToggle{font-size:20px;cursor:pointer;display:none;}
+#menuActions{display:flex;gap:12px;align-items:center;}
+#menuActions button{padding:6px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;}
+#menuActions button:hover{background:var(--accent-hover);}
 
-#userList{width:280px;background:var(--card);display:flex;flex-direction:column;border-right:1px solid var(--border);}
+/* Main Container */
+#container{display:flex;flex:1;overflow:hidden;transition:all 0.3s ease;}
+
+/* Sidebar / User List */
+#userList{
+  width:260px;
+  background:var(--card);
+  display:flex;
+  flex-direction:column;
+  border-right:1px solid var(--border);
+  transition:all 0.3s ease;
+}
 #userList header{padding:16px;font-weight:600;font-size:18px;border-bottom:1px solid var(--border);}
 #userList input{margin:12px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);outline:none;font-size:14px;}
-.user-card{display:flex;align-items:center;padding:10px 12px;gap:12px;cursor:pointer;border-radius:8px;transition:all 0.2s;position:relative;}
+.user-card{display:flex;align-items:center;padding:10px 12px;gap:12px;cursor:pointer;border-radius:12px;transition:all 0.2s;position:relative;}
 .user-card:hover{background:var(--input-bg);}
 .user-card.selected{background:var(--accent-hover);color:#fff;}
 .user-thumb{width:40px;height:40px;border-radius:50%;object-fit:cover;}
@@ -41,40 +66,49 @@ body{display:flex;height:100vh;background:var(--bg);color:var(--text);}
 .user-meta span{font-size:12px;color:var(--online);}
 .online-dot{width:10px;height:10px;border-radius:50%;background:var(--online);position:absolute;top:15px;right:12px;}
 
-#chatContainer{flex:1;display:flex;flex-direction:column;background:var(--chat-bg);}
-#chatHeader{padding:16px;display:flex;align-items:center;gap:12px;background:var(--card);border-bottom:1px solid var(--border);}
+/* Chat Area */
+#chatContainer{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  background:var(--bg);
+  position:relative;
+}
+#chatHeader{
+  padding:16px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  background:var(--card);
+  border-bottom:1px solid var(--border);
+  box-shadow:0 2px 4px var(--shadow);
+}
 #chatHeader img{width:40px;height:40px;border-radius:50%;object-fit:cover;display:none;}
 #chatHeader .profile-info{flex:1;display:flex;flex-direction:column;}
 #chatHeader .profile-info strong{font-size:16px;}
 #chatHeader .profile-info span{font-size:12px;color:var(--online);}
-#chatBody{flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;background:var(--chat-bg);}
+#chatBody{flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;background:var(--bg);}
 #chatBody.placeholder{align-items:center;justify-content:center;color:var(--text-muted);font-size:18px;}
-.msg{max-width:70%;padding:10px 14px;border-radius:16px;word-break:break-word;background:var(--chat-other);box-shadow:0 2px 4px var(--shadow);}
-.msg.me{align-self:flex-end;background:var(--chat-me);}
-.msg.received{align-self:flex-start;}
+.msg{max-width:70%;padding:10px 14px;border-radius:16px;word-break:break-word;background:var(--card);box-shadow:0 1px 3px var(--shadow);}
+.msg.me{align-self:flex-end;background:var(--accent-hover);color:#fff;}
+.msg.received{align-self:flex-start;background:var(--card);}
 .msg img{max-width:250px;border-radius:12px;}
+
+/* Chat Controls */
 #chatControls{display:flex;padding:12px;gap:8px;border-top:1px solid var(--border);background:var(--card);}
-#chatInput{flex:1;padding:10px 14px;border-radius:50px;border:1px solid var(--border);background:var(--input-bg);outline:none;font-size:14px;}
+#chatInput{flex:1;padding:10px 16px;border-radius:50px;border:1px solid var(--border);background:var(--input-bg);outline:none;font-size:14px;}
 #sendBtn,#attachBtn{width:45px;height:45px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;}
 #sendBtn{background:var(--accent);color:#fff;}
 #attachBtn{background:var(--input-bg);color:var(--text-muted);}
 #closeBtn{display:none;}
+
+/* Mobile Responsive */
 @media(max-width:768px){
-  body{flex-direction:column;}
-  #userList{width:100%;height:auto;padding:12px;border-right:none;border-bottom:1px solid var(--border);}
-  #userList header{font-size:16px;}
-  .user-card{flex-direction:row;width:100%;padding:10px;margin-bottom:8px;border-radius:12px;}
-  #chatContainer{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--chat-bg);z-index:999;transform:translateX(100%);transition:transform 0.3s ease;}
-  #chatContainer.active{transform:translateX(0);}
-  #chatHeader{background:var(--accent);color:#fff;justify-content:space-between;padding:12px;}
-  #chatHeader .profile-info{color:#fff;}
-  #chatBody{background:#f3f4f6;padding:12px;}
-  #chatControls{background:#fff;padding:8px;gap:6px;}
-  .msg{max-width:75%;border-radius:18px;}
-  .msg.me{background:#dcf8c6;}
-  .msg.received{background:#fff;}
-  #closeBtn{display:block;background:#f87171;color:#fff;border:none;padding:10px 16px;border-radius:50px;font-size:16px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.15);}
-  #closeBtn:hover{background:#fca5a5;transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,0.2);}
+  #menuToggle{display:block;}
+  #userList{position:fixed;top:60px;left:-300px;height:100%;z-index:1000;box-shadow:0 8px 24px var(--shadow);}
+  #userList.active{left:0;}
+  #container{flex-direction:column;}
+  #chatHeader{padding:12px;}
 }
 
 #chatBody::-webkit-scrollbar{width:6px;}
@@ -85,13 +119,24 @@ body{display:flex;height:100vh;background:var(--bg);color:var(--text);}
 </head>
 <body>
 
+<!-- Top Menu -->
+<div id="topMenu">
+  <div id="menuLogo">Realtime Chat</div>
+  <div id="menuActions">
+    <button id="logoutBtn">Logout</button>
+    <i id="menuToggle" class="fas fa-bars"></i>
+  </div>
+</div>
+
 <div id="container">
+  <!-- Sidebar -->
   <div id="userList">
     <header>Online Users</header>
     <input type="text" id="searchInput" placeholder="Search users...">
     <div id="users"></div>
   </div>
 
+  <!-- Chat Area -->
   <div id="chatContainer">
     <div id="chatHeader">
       <img id="chatAvatar" src="">
@@ -110,6 +155,16 @@ body{display:flex;height:100vh;background:var(--bg);color:var(--text);}
     </div>
   </div>
 </div>
+<script>
+const menuToggle=document.getElementById('menuToggle')
+const userList=document.getElementById('userList')
+const logoutBtn=document.getElementById('logoutBtn')
+menuToggle.addEventListener('click',()=>userList.classList.toggle('active'))
+logoutBtn.addEventListener('click',()=>{
+  localStorage.removeItem('rc_profile_v2')
+  location.reload()
+})
+</script>
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
@@ -135,8 +190,6 @@ const sendBtn=document.getElementById('sendBtn')
 const attachBtn=document.getElementById('attachBtn')
 const chatContainer=document.getElementById('chatContainer')
 const closeBtn=document.getElementById('closeBtn')
-
-// Render users
 function renderUsers(filter=''){
   usersDiv.innerHTML=''
   const list=Object.values(onlineUsers).filter(u=>u.uuid!==profile.uuid && (!filter||u.name.toLowerCase().includes(filter.toLowerCase())))
@@ -151,7 +204,6 @@ function renderUsers(filter=''){
 }
 searchInput.addEventListener('input',()=>renderUsers(searchInput.value.trim()))
 
-// Open chat
 function openChat(user,element){
   document.querySelectorAll('.user-card').forEach(e=>e.classList.remove('selected'))
   element.classList.add('selected')
@@ -169,7 +221,6 @@ function openChat(user,element){
   chatControls.style.display='flex'
 }
 
-// Append messages
 function appendMessage(userUuid,text,me=false,isImage=false,save=true){
   if(chatHistory[userUuid]?.some(m=>m.text===text && m.me===me)) return
   const div=document.createElement('div'); div.className='msg '+(me?'me':'received')
@@ -183,7 +234,6 @@ function appendMessage(userUuid,text,me=false,isImage=false,save=true){
   }
 }
 
-// Typing indicator
 chatInput.addEventListener('input',()=>{
   if(!currentPeer) return
   sendSignal(currentPeer,{type:'typing'})
@@ -196,7 +246,6 @@ function showTyping(userUuid){
   typingTimeout=setTimeout(()=>{ chatStatus.textContent='Online' },1000)
 }
 
-// Realtime
 async function startRealtime(){
   const presence=supabase.channel('public:presence')
   presence.on('broadcast',{event:'user-presence'},payload=>{
@@ -227,7 +276,6 @@ async function broadcastPresence(action){
   await supabase.channel('public:presence').send({type:'broadcast',event:'user-presence',payload:{...profile,action,ts:Date.now()}})
 }
 
-// Peer Connections
 function createPeerConnection(peer){
   const pc=new RTCPeerConnection()
   const dc=pc.createDataChannel('chat')
@@ -258,7 +306,6 @@ async function handleAnswer(from,sdp){ await pcMap[from]?.setRemoteDescription(n
 async function handleCandidate(from,candidate){ await pcMap[from]?.addIceCandidate(new RTCIceCandidate(candidate)) }
 function sendSignal(to,msg){ supabase.channel('public:signaling').send({type:'broadcast',event:'signal',payload:{...msg,from:profile.uuid,to}}) }
 
-// Send Messages
 function updateSendIcon(){ 
   if(chatInput.value.trim()){ sendBtn.style.display='flex'; attachBtn.style.display='none'; } 
   else{ sendBtn.style.display='none'; attachBtn.style.display='flex'; }
@@ -308,3 +355,4 @@ document.addEventListener('paste', e => e.preventDefault())
 </script>
 </body>
 </html>
+
