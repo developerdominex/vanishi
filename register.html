@@ -6,6 +6,7 @@
 <title>Register — Hybrid Chat</title>
 <link rel="icon" type="image/png" href="hybrid.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
 <style>
 :root {
   --accent:#6366f1;
@@ -16,7 +17,6 @@
   --muted:#6b7280;
   --shadow:rgba(0,0,0,0.08);
 }
-
 *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,sans-serif;}
 body{height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;}
 .reg-card{
@@ -27,99 +27,80 @@ body{height:100vh;background:var(--bg);display:flex;align-items:center;justify-c
   max-width:400px;
   box-shadow:0 8px 24px var(--shadow);
   text-align:center;
+  position:relative;
+  z-index:2;
 }
-.reg-card h2{
-  font-size:24px;
-  font-weight:700;
-  margin-bottom:24px;
-  color:var(--text);
-}
+.reg-card h2{font-size:24px;font-weight:700;margin-bottom:24px;color:var(--text);}
 .input-field{display:flex;flex-direction:column;align-items:flex-start;margin-bottom:20px;text-align:left;}
 .input-field label{font-size:14px;color:var(--muted);margin-bottom:6px;}
 .input-field input[type="text"]{
-  width:100%;
-  padding:12px 16px;
-  font-size:15px;
-  border:1px solid #e5e7eb;
-  border-radius:8px;
-  outline:none;
-  transition:all 0.2s ease;
+  width:100%;padding:12px 16px;font-size:15px;
+  border:1px solid #e5e7eb;border-radius:8px;outline:none;transition:all 0.2s ease;
 }
-.input-field input[type="text"]:focus{
-  border-color:var(--accent);
-  box-shadow:0 4px 12px var(--shadow);
-}
-
+.input-field input[type="text"]:focus{border-color:var(--accent);box-shadow:0 4px 12px var(--shadow);}
 .upload-box{
-  width:100%;
-  padding:20px;
-  border:2px dashed #e5e7eb;
-  border-radius:12px;
-  cursor:pointer;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  transition:all 0.2s ease;
-  background:#f3f4f6;
+  width:100%;padding:20px;border:2px dashed #e5e7eb;border-radius:12px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:all 0.2s ease;background:#f3f4f6;
 }
 .upload-box:hover{border-color:var(--accent);background:#eef2ff;}
 .upload-box img{width:80px;height:80px;border-radius:50%;object-fit:cover;}
-
 .save-btn{
-  width:100%;
-  padding:14px;
-  background:var(--accent);
-  color:#fff;
-  font-size:16px;
-  font-weight:600;
-  border:none;
-  border-radius:12px;
-  cursor:pointer;
-  transition:all 0.2s ease;
+  width:100%;padding:14px;background:var(--accent);color:#fff;font-size:16px;font-weight:600;
+  border:none;border-radius:12px;cursor:pointer;transition:all 0.2s ease;
 }
 .save-btn:hover{background:var(--accent-hover);}
-
-footer{
-  margin-top:20px;
-  font-size:12px;
-  color:var(--muted);
-}
-
+footer{margin-top:20px;font-size:12px;color:var(--muted);}
 .alert-overlay{
-  position:fixed;
-  top:0;left:0;right:0;bottom:0;
-  background:rgba(0,0,0,0.5);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  opacity:0;
-  pointer-events:none;
-  transition:opacity 0.3s ease;
+  position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);
+  display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s ease;
+  z-index:1000;
 }
 .alert-overlay.show{opacity:1;pointer-events:auto;}
-.alert-box{
-  background:var(--card);
-  padding:24px 28px;
-  border-radius:16px;
-  text-align:center;
-  box-shadow:0 8px 24px var(--shadow);
-}
-.alert-box i{
-  font-size:28px;
-  color:#f87171;
-  margin-bottom:12px;
-}
+.alert-box{background:var(--card);padding:24px 28px;border-radius:16px;text-align:center;box-shadow:0 8px 24px var(--shadow);}
+.alert-box i{font-size:28px;color:#f87171;margin-bottom:12px;}
 .alert-box p{margin-bottom:16px;color:var(--text);}
-.alert-btn{
-  padding:10px 20px;
-  background:var(--accent);
-  color:#fff;
-  border:none;
-  border-radius:12px;
-  cursor:pointer;
-}
+.alert-btn{padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:12px;cursor:pointer;}
 .alert-btn:hover{background:var(--accent-hover);}
+
+.loading-overlay {
+  position: fixed;
+  top:0;left:0;right:0;bottom:0;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,0.9);
+  z-index:999;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .3s ease;
+}
+.loading-overlay.show {opacity:1;pointer-events:auto;}
+.loading-animation {
+  display:flex;align-items:center;gap:20px;
+  animation: float 2s ease-in-out infinite;
+}
+@keyframes float {
+  0%,100% { transform:translateY(0);}
+  50% { transform:translateY(-8px);}
+}
+.loading-animation i {
+  font-size:50px;
+  color:var(--accent);
+  transition:all 0.5s ease;
+}
+.loading-dots {
+  display:flex;gap:6px;margin-top:8px;justify-content:center;
+}
+.loading-dots span {
+  width:8px;height:8px;background:var(--accent);
+  border-radius:50%;
+  animation: dots 1.4s infinite ease-in-out;
+}
+.loading-dots span:nth-child(2){animation-delay:0.2s;}
+.loading-dots span:nth-child(3){animation-delay:0.4s;}
+@keyframes dots {
+  0%,80%,100%{transform:scale(0);}
+  40%{transform:scale(1);}
+}
 </style>
 </head>
 <body>
@@ -142,7 +123,7 @@ footer{
   </div>
 
   <button class="save-btn" id="saveProfile">Save & Continue</button>
-  <footer>Realtime Chat © 2025 Dominex Macedon</footer>
+  <footer>Hybrid Chat © 2025 Dominex Macedon</footer>
 </div>
 
 <div class="alert-overlay" id="alertOverlay">
@@ -153,57 +134,105 @@ footer{
   </div>
 </div>
 
-<script>
-const nameInput = document.getElementById('nameInput')
-const uploadBox = document.getElementById('uploadBox')
-const fileInput = document.getElementById('fileInput')
-const alertOverlay = document.getElementById('alertOverlay')
-const alertMsg = document.getElementById('alertMessage')
-const alertClose = document.getElementById('alertClose')
-let avatarData = ''
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-animation">
+    <i class="fas fa-folder"></i>
+    <i class="fas fa-arrow-right" style="color:#6b7280;font-size:28px;"></i>
+    <i class="fab fa-google-drive"></i>
+  </div>
+  <div class="loading-dots">
+    <span></span><span></span><span></span>
+  </div>
+</div>
 
-uploadBox.addEventListener('click', ()=>fileInput.click())
-fileInput.addEventListener('change', e=>{
-  const file = e.target.files[0]
-  if(!file) return
-  const reader = new FileReader()
-  reader.onload = ()=> {
-    avatarData = reader.result
-    uploadBox.innerHTML = `<img src="${avatarData}" alt="avatar">`
+<script>
+const nameInput=document.getElementById('nameInput')
+const uploadBox=document.getElementById('uploadBox')
+const fileInput=document.getElementById('fileInput')
+const alertOverlay=document.getElementById('alertOverlay')
+const alertMsg=document.getElementById('alertMessage')
+const alertClose=document.getElementById('alertClose')
+const loadingOverlay=document.getElementById('loadingOverlay')
+let avatarData=''
+
+uploadBox.addEventListener('click',()=>fileInput.click())
+fileInput.addEventListener('change',e=>{
+  const file=e.target.files[0]
+  if(!file)return
+  const reader=new FileReader()
+  reader.onload=()=>{
+    avatarData=reader.result
+    uploadBox.innerHTML=`<img src="${avatarData}" alt="avatar">`
   }
   reader.readAsDataURL(file)
 })
+function showAlert(msg){alertMsg.textContent=msg;alertOverlay.classList.add('show')}
+alertClose.addEventListener('click',()=>alertOverlay.classList.remove('show'))
+</script>
 
-function showAlert(message) {
-  alertMsg.textContent = message
-  alertOverlay.classList.add('show')
+<script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+<script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+
+<script>
+const CLIENT_ID='549003131640-oh0ha69d15npfv610pntk8auj2b6ugq5.apps.googleusercontent.com'
+const SCOPES='https://www.googleapis.com/auth/drive.file'
+let tokenClient,gapiInited=false
+
+function gapiLoaded(){gapi.load('client',initGapiClient)}
+async function initGapiClient(){
+  await gapi.client.init({discoveryDocs:["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"]})
+  gapiInited=true
 }
-alertClose.addEventListener('click', ()=> {
-  alertOverlay.classList.remove('show')
+function gisLoaded(){
+  tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:CLIENT_ID,scope:SCOPES,callback:''
+  })
+}
+
+document.getElementById('saveProfile').addEventListener('click',()=>{
+  const name=nameInput.value.trim()
+  if(!name||!avatarData){showAlert("Please enter your name and upload a profile image.");return}
+  const profile={uuid:crypto.randomUUID(),name,avatar:avatarData}
+  localStorage.setItem('rc_profile_v2',JSON.stringify(profile))
+
+  loadingOverlay.classList.add('show')
+
+  tokenClient.callback=async(resp)=>{
+    if(resp.error){console.error(resp);loadingOverlay.classList.remove('show');return}
+    await uploadToDrive(profile)
+    setTimeout(()=>{loadingOverlay.classList.remove('show');window.location.href='index.html'},1200)
+  }
+  if(!gapi.client.getToken()) tokenClient.requestAccessToken({prompt:'consent'})
+  else uploadToDrive(profile)
 })
 
-document.getElementById('saveProfile').addEventListener('click', ()=>{
-  const name = nameInput.value.trim()
-  if(!name || !avatarData) { 
-    showAlert("Please enter your name and upload a profile image."); 
-    return; 
-  }
-  const profile = {uuid:crypto.randomUUID(), name, avatar:avatarData}
-  localStorage.setItem('rc_profile_v2', JSON.stringify(profile))
-  window.location.href = 'index.html'
-})
+async function uploadToDrive(profile){
+  const metadata={name:'account.json',mimeType:'application/json'}
+  const fileContent=JSON.stringify(profile,null,2)
+  const form=new FormData()
+  form.append('metadata',new Blob([JSON.stringify(metadata)],{type:'application/json'}))
+  form.append('file',new Blob([fileContent],{type:'application/json'}))
+  const accessToken=gapi.client.getToken().access_token
+  const res=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
+    method:'POST',
+    headers:new Headers({'Authorization':'Bearer '+accessToken}),
+    body:form
+  })
+  const result=await res.json()
+  console.log('Uploaded account.json to Drive:',result)
+}
+</script>
 
-document.addEventListener('contextmenu', e => e.preventDefault())
-document.addEventListener('keydown', e => {
-  if (
-    e.key === 'F12' ||
-    (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) ||
-    (e.ctrlKey && ['U','S','P'].includes(e.key.toUpperCase()))
-  ) {
-    e.preventDefault()
-    e.stopPropagation()
-  }
+<script>
+document.addEventListener('contextmenu',e=>e.preventDefault())
+document.addEventListener('keydown',e=>{
+  if(
+    e.key==='F12'||
+    (e.ctrlKey&&e.shiftKey&&['I','J','C'].includes(e.key.toUpperCase()))||
+    (e.ctrlKey&&['U','S','P'].includes(e.key.toUpperCase()))
+  ){e.preventDefault();e.stopPropagation()}
 })
 </script>
+
 </body>
 </html>
