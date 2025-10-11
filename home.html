@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Realtime Chat</title>
+<link rel="icon" type="image/png" href="hybrid.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#f9fafb;
+  --card:#ffffff;
+  --accent:#6366f1;
+  --accent-hover:#4f46e5;
+  --text:#111827;
+  --text-muted:#6b7280;
+  --input-bg:#f3f4f6;
+  --shadow:rgba(0,0,0,0.08);
+  --border:#e5e7eb;
+  --online:#10b981;
+  --chat-bg:#f9fafb;
+  --chat-me:#eef2ff;
+  --chat-other:#ffffff;
+  --chat-border:#e5e7eb;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;font-family:Inter,sans-serif;}
+body{display:flex;height:100vh;background:var(--bg);color:var(--text);}
+
+#container{display:flex;flex:1;overflow:hidden;border-radius:12px;box-shadow:0 8px 24px var(--shadow);}
+
+#userList{width:280px;background:var(--card);display:flex;flex-direction:column;border-right:1px solid var(--border);}
+#userList header{padding:16px;font-weight:600;font-size:18px;border-bottom:1px solid var(--border);}
+#userList input{margin:12px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);outline:none;font-size:14px;}
+.user-card{display:flex;align-items:center;padding:10px 12px;gap:12px;cursor:pointer;border-radius:8px;transition:all 0.2s;position:relative;}
+.user-card:hover{background:var(--input-bg);}
+.user-card.selected{background:var(--accent-hover);color:#fff;}
+.user-thumb{width:40px;height:40px;border-radius:50%;object-fit:cover;}
+.user-meta{flex:1;display:flex;flex-direction:column;}
+.user-meta strong{font-size:14px;}
+.user-meta span{font-size:12px;color:var(--online);}
+.online-dot{width:10px;height:10px;border-radius:50%;background:var(--online);position:absolute;top:15px;right:12px;}
+
+#chatContainer{flex:1;display:flex;flex-direction:column;background:var(--chat-bg);}
+#chatHeader{padding:16px;display:flex;align-items:center;gap:12px;background:var(--card);border-bottom:1px solid var(--border);}
+#chatHeader img{width:40px;height:40px;border-radius:50%;object-fit:cover;display:none;}
+#chatHeader .profile-info{flex:1;display:flex;flex-direction:column;}
+#chatHeader .profile-info strong{font-size:16px;}
+#chatHeader .profile-info span{font-size:12px;color:var(--online);}
+#chatBody{flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;background:var(--chat-bg);}
+#chatBody.placeholder{align-items:center;justify-content:center;color:var(--text-muted);font-size:18px;}
+.msg{max-width:70%;padding:10px 14px;border-radius:16px;word-break:break-word;background:var(--chat-other);box-shadow:0 2px 4px var(--shadow);}
+.msg.me{align-self:flex-end;background:var(--chat-me);}
+.msg.received{align-self:flex-start;}
+.msg img{max-width:250px;border-radius:12px;}
+#chatControls{display:flex;padding:12px;gap:8px;border-top:1px solid var(--border);background:var(--card);}
+#chatInput{flex:1;padding:10px 14px;border-radius:50px;border:1px solid var(--border);background:var(--input-bg);outline:none;font-size:14px;}
+#sendBtn,#attachBtn{width:45px;height:45px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;}
+#sendBtn{background:var(--accent);color:#fff;}
+#attachBtn{background:var(--input-bg);color:var(--text-muted);}
+#closeBtn{display:none;}
+@media(max-width:768px){
+  body{flex-direction:column;}
+  #userList{width:100%;height:auto;padding:12px;border-right:none;border-bottom:1px solid var(--border);}
+  #userList header{font-size:16px;}
+  .user-card{flex-direction:row;width:100%;padding:10px;margin-bottom:8px;border-radius:12px;}
+  #chatContainer{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--chat-bg);z-index:999;transform:translateX(100%);transition:transform 0.3s ease;}
+  #chatContainer.active{transform:translateX(0);}
+  #chatHeader{background:var(--accent);color:#fff;justify-content:space-between;padding:12px;}
+  #chatHeader .profile-info{color:#fff;}
+  #chatBody{background:#f3f4f6;padding:12px;}
+  #chatControls{background:#fff;padding:8px;gap:6px;}
+  .msg{max-width:75%;border-radius:18px;}
+  .msg.me{background:#dcf8c6;}
+  .msg.received{background:#fff;}
+  #closeBtn{display:block;background:#f87171;color:#fff;border:none;padding:10px 16px;border-radius:50px;font-size:16px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.15);}
+  #closeBtn:hover{background:#fca5a5;transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,0.2);}
+}
+
+#chatBody::-webkit-scrollbar{width:6px;}
+#chatBody::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.1);border-radius:3px;}
+#users::-webkit-scrollbar{height:6px;}
+#users::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.1);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<div id="container">
+  <div id="userList">
+    <header>Online Users</header>
+    <input type="text" id="searchInput" placeholder="Search users...">
+    <div id="users"></div>
+  </div>
+
+  <div id="chatContainer">
+    <div id="chatHeader">
+      <img id="chatAvatar" src="">
+      <div class="profile-info">
+        <strong id="chatWith">Select user first</strong>
+        <span id="chatStatus"></span>
+      </div>
+      <button id="closeBtn"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="chatBody" class="placeholder">Select user first to chat</div>
+    <div id="chatControls">
+      <input type="text" id="chatInput" placeholder="Type a message...">
+      <button id="attachBtn"><i class="fas fa-paperclip"></i></button>
+      <input type="file" id="chatFile" accept="image/*" style="display:none">
+      <button id="sendBtn"><i class="fas fa-paper-plane"></i></button>
+    </div>
+  </div>
+</div>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+const supabaseUrl='https://dfzshvldanqfvfivjrqi.supabase.co'
+const supabaseKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmenNodmxkYW5xZnZmaXZqcnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4MDIxNTEsImV4cCI6MjA3MDM3ODE1MX0.wdms-6G9eDzRuk1YiCpdyvVS-5CRKCsrq9WWWIFl9HA'
+const supabase=createClient(supabaseUrl,supabaseKey)
+
+let profile=JSON.parse(localStorage.getItem('rc_profile_v2')||'null')
+if(!profile){ alert('Please register first.'); throw new Error('No profile'); }
+
+let onlineUsers={}, pcMap={}, dataChannelMap={}, chatHistory={}, currentPeer=null
+let typingTimeout
+
+const usersDiv=document.getElementById('users')
+const searchInput=document.getElementById('searchInput')
+const chatWith=document.getElementById('chatWith')
+const chatStatus=document.getElementById('chatStatus')
+const chatAvatar=document.getElementById('chatAvatar')
+const chatBody=document.getElementById('chatBody')
+const chatInput=document.getElementById('chatInput')
+const chatFile=document.getElementById('chatFile')
+const sendBtn=document.getElementById('sendBtn')
+const attachBtn=document.getElementById('attachBtn')
+const chatContainer=document.getElementById('chatContainer')
+const closeBtn=document.getElementById('closeBtn')
+
+// Render users
+function renderUsers(filter=''){
+  usersDiv.innerHTML=''
+  const list=Object.values(onlineUsers).filter(u=>u.uuid!==profile.uuid && (!filter||u.name.toLowerCase().includes(filter.toLowerCase())))
+  list.forEach(u=>{
+    const div=document.createElement('div'); div.className='user-card'
+    div.innerHTML=`<img class="user-thumb" src="${u.avatar}">
+                   <div class="user-meta"><strong>${u.name}</strong><span>Online</span></div>
+                   <div class="online-dot"></div>`
+    div.addEventListener('click',()=>openChat(u,div))
+    usersDiv.appendChild(div)
+  })
+}
+searchInput.addEventListener('input',()=>renderUsers(searchInput.value.trim()))
+
+// Open chat
+function openChat(user,element){
+  document.querySelectorAll('.user-card').forEach(e=>e.classList.remove('selected'))
+  element.classList.add('selected')
+  currentPeer=user.uuid
+  chatWith.textContent=user.name
+  chatStatus.textContent='Online'
+  chatAvatar.src=user.avatar
+  chatAvatar.style.display='block'
+  chatBody.classList.remove('placeholder')
+  chatBody.innerHTML=''
+  if(!chatHistory[currentPeer]) chatHistory[currentPeer]=[]
+  chatHistory[currentPeer].forEach(msg=>appendMessage(currentPeer,msg.text,msg.me,msg.isImage,false))
+  if(!pcMap[user.uuid]) createPeerConnection(user.uuid)
+  chatContainer.classList.add('active')
+  chatControls.style.display='flex'
+}
+
+// Append messages
+function appendMessage(userUuid,text,me=false,isImage=false,save=true){
+  if(chatHistory[userUuid]?.some(m=>m.text===text && m.me===me)) return
+  const div=document.createElement('div'); div.className='msg '+(me?'me':'received')
+  if(isImage){ const img=document.createElement('img'); img.src=text; div.appendChild(img) }
+  else div.textContent=text
+  chatBody.appendChild(div)
+  chatBody.scrollTop=chatBody.scrollHeight
+  if(save){
+    if(!chatHistory[userUuid]) chatHistory[userUuid]=[]
+    chatHistory[userUuid].push({text,me,isImage})
+  }
+}
+
+// Typing indicator
+chatInput.addEventListener('input',()=>{
+  if(!currentPeer) return
+  sendSignal(currentPeer,{type:'typing'})
+})
+
+function showTyping(userUuid){
+  if(currentPeer !== userUuid) return
+  chatStatus.textContent='Typing...'
+  clearTimeout(typingTimeout)
+  typingTimeout=setTimeout(()=>{ chatStatus.textContent='Online' },1000)
+}
+
+// Realtime
+async function startRealtime(){
+  const presence=supabase.channel('public:presence')
+  presence.on('broadcast',{event:'user-presence'},payload=>{
+    const u=payload.payload
+    if(!u?.uuid) return
+    if(u.action==='join'||u.action==='update'){ onlineUsers[u.uuid]={...u}; renderUsers(searchInput.value.trim()) }
+    else if(u.action==='leave'){ delete onlineUsers[u.uuid]; renderUsers(searchInput.value.trim()) }
+  })
+
+  const signaling=supabase.channel('public:signaling')
+  signaling.on('broadcast',{event:'signal'},async payload=>{
+    const msg=payload.payload
+    if(!msg||msg.to!==profile.uuid) return
+    if(msg.type==='offer') await handleOffer(msg.from,msg.sdp)
+    else if(msg.type==='answer') await handleAnswer(msg.from,msg.sdp)
+    else if(msg.type==='candidate') await handleCandidate(msg.from,msg.candidate)
+    else if(msg.type==='message') appendMessage(msg.from,msg.data,false,msg.isImage)
+    else if(msg.type==='typing') showTyping(msg.from)
+  })
+
+  await presence.subscribe(); await signaling.subscribe()
+  broadcastPresence('join')
+  setInterval(()=>broadcastPresence('update'),25000)
+  window.addEventListener('beforeunload',()=>broadcastPresence('leave'))
+}
+
+async function broadcastPresence(action){
+  await supabase.channel('public:presence').send({type:'broadcast',event:'user-presence',payload:{...profile,action,ts:Date.now()}})
+}
+
+// Peer Connections
+function createPeerConnection(peer){
+  const pc=new RTCPeerConnection()
+  const dc=pc.createDataChannel('chat')
+  dc.onmessage=e=>appendMessage(peer,e.data,false)
+  dataChannelMap[peer]=dc
+  pc.onicecandidate=e=>{ if(e.candidate) sendSignal(peer,{type:'candidate',candidate:e.candidate}) }
+  pc.ondatachannel=e=>{ e.channel.onmessage=e=>appendMessage(peer,e.data,false) }
+  pcMap[peer]=pc
+  makeOffer(peer)
+}
+async function makeOffer(peer){
+  const pc=pcMap[peer]
+  const offer=await pc.createOffer(); await pc.setLocalDescription(offer)
+  sendSignal(peer,{type:'offer',sdp:offer})
+}
+async function handleOffer(from,sdp){ 
+  if(!pcMap[from]){
+    const pc=new RTCPeerConnection()
+    pc.ondatachannel=e=>{ e.channel.onmessage=e=>appendMessage(from,e.data,false) }
+    pc.onicecandidate=e=>{ if(e.candidate) sendSignal(from,{type:'candidate',candidate:e.candidate}) }
+    pcMap[from]=pc
+  }
+  const pc=pcMap[from]; await pc.setRemoteDescription(new RTCSessionDescription(sdp))
+  const answer=await pc.createAnswer(); await pc.setLocalDescription(answer)
+  sendSignal(from,{type:'answer',sdp:answer})
+}
+async function handleAnswer(from,sdp){ await pcMap[from]?.setRemoteDescription(new RTCSessionDescription(sdp)) }
+async function handleCandidate(from,candidate){ await pcMap[from]?.addIceCandidate(new RTCIceCandidate(candidate)) }
+function sendSignal(to,msg){ supabase.channel('public:signaling').send({type:'broadcast',event:'signal',payload:{...msg,from:profile.uuid,to}}) }
+
+// Send Messages
+function updateSendIcon(){ 
+  if(chatInput.value.trim()){ sendBtn.style.display='flex'; attachBtn.style.display='none'; } 
+  else{ sendBtn.style.display='none'; attachBtn.style.display='flex'; }
+}
+sendBtn.addEventListener('click',sendMessage)
+chatInput.addEventListener('input',updateSendIcon)
+chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ sendMessage() } })
+updateSendIcon()
+attachBtn.addEventListener('click',()=>chatFile.click())
+chatFile.addEventListener('change',e=>{
+  const file=e.target.files[0]; if(!file) return
+  const reader=new FileReader(); reader.onload=()=>{ sendImage(reader.result) }
+  reader.readAsDataURL(file); chatFile.value=''
+})
+function sendMessage(){
+  if(!currentPeer) return
+  const val=chatInput.value.trim(); if(!val) return
+  appendMessage(currentPeer,val,true)
+  dataChannelMap[currentPeer]?.send(val)
+  sendSignal(currentPeer,{type:'message',data:val,isImage:false})
+  chatInput.value=''; updateSendIcon()
+}
+function sendImage(data){
+  if(!currentPeer) return
+  appendMessage(currentPeer,data,true,true)
+  sendSignal(currentPeer,{type:'message',data:data,isImage:true})
+}
+
+closeBtn.addEventListener('click',()=>chatContainer.classList.remove('active'))
+
+startRealtime()
+document.addEventListener('contextmenu', e => e.preventDefault())
+document.addEventListener('keydown', e => {
+  if (
+    e.key === 'F12' ||
+    (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) ||
+    (e.ctrlKey && ['U','S','P'].includes(e.key.toUpperCase()))
+  ) {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+})
+document.addEventListener('dragstart', e => e.preventDefault())
+document.addEventListener('copy', e => e.preventDefault())
+document.addEventListener('cut', e => e.preventDefault())
+document.addEventListener('paste', e => e.preventDefault())
+</script>
+</body>
+</html>
