@@ -18,7 +18,7 @@
   --shadow:rgba(0,0,0,0.08);
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,sans-serif;}
-body{height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;}
+body{height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;overflow:hidden;}
 .reg-card{
   background:var(--card);
   padding:32px 28px;
@@ -29,6 +29,7 @@ body{height:100vh;background:var(--bg);display:flex;align-items:center;justify-c
   text-align:center;
   position:relative;
   z-index:2;
+  transition:all .4s ease;
 }
 .reg-card h2{font-size:24px;font-weight:700;margin-bottom:24px;color:var(--text);}
 .input-field{display:flex;flex-direction:column;align-items:flex-start;margin-bottom:20px;text-align:left;}
@@ -63,29 +64,63 @@ footer{margin-top:20px;font-size:12px;color:var(--muted);}
 .alert-btn{padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:12px;cursor:pointer;}
 .alert-btn:hover{background:var(--accent-hover);}
 
+/* Loading overlay */
 .loading-overlay {
   position: fixed;
   top:0;left:0;right:0;bottom:0;
-  display:flex;align-items:center;justify-content:center;
-  background:rgba(255,255,255,0.9);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:rgba(255,255,255,0.95);
   z-index:999;
   opacity:0;
   pointer-events:none;
   transition:opacity .3s ease;
 }
 .loading-overlay.show {opacity:1;pointer-events:auto;}
-.loading-animation {
-  display:flex;align-items:center;gap:20px;
+.folder-list {
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  margin-bottom:20px;
+  width:240px;
+  animation: fadeIn 0.6s ease forwards;
+}
+.folder-item {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:#eef2ff;
+  padding:10px 14px;
+  border-radius:10px;
+  box-shadow:0 2px 6px var(--shadow);
+  opacity:0;
+  transform:translateX(-20px);
+  animation: slideIn 0.6s forwards;
+}
+.folder-item i {
+  color:var(--accent);
+  font-size:20px;
+}
+@keyframes slideIn {
+  to {opacity:1;transform:translateX(0);}
+}
+@keyframes fadeIn {
+  from {opacity:0;} to {opacity:1;}
+}
+.drive-animation {
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
   animation: float 2s ease-in-out infinite;
 }
 @keyframes float {
   0%,100% { transform:translateY(0);}
   50% { transform:translateY(-8px);}
 }
-.loading-animation i {
-  font-size:50px;
+.drive-animation i {
+  font-size:54px;
   color:var(--accent);
-  transition:all 0.5s ease;
 }
 .loading-dots {
   display:flex;gap:6px;margin-top:8px;justify-content:center;
@@ -126,6 +161,7 @@ footer{margin-top:20px;font-size:12px;color:var(--muted);}
   <footer>Hybrid Chat © 2025 Dominex Macedon</footer>
 </div>
 
+<!-- Custom alert -->
 <div class="alert-overlay" id="alertOverlay">
   <div class="alert-box">
     <i class="fas fa-exclamation-triangle"></i>
@@ -134,14 +170,18 @@ footer{margin-top:20px;font-size:12px;color:var(--muted);}
   </div>
 </div>
 
+<!-- Loading Overlay with Dynamic Folder Animation -->
 <div class="loading-overlay" id="loadingOverlay">
-  <div class="loading-animation">
-    <i class="fas fa-folder"></i>
-    <i class="fas fa-arrow-right" style="color:#6b7280;font-size:28px;"></i>
-    <i class="fab fa-google-drive"></i>
+  <div class="folder-list" id="folderList">
+    <!-- Folder items will appear here dynamically -->
   </div>
-  <div class="loading-dots">
-    <span></span><span></span><span></span>
+  <div class="drive-animation" id="driveAnimation">
+    <div style="display:flex;align-items:center;gap:20px;">
+      <i class="fas fa-folder"></i>
+      <i class="fas fa-arrow-right" style="color:#6b7280;font-size:28px;"></i>
+      <i class="fab fa-google-drive"></i>
+    </div>
+    <div class="loading-dots"><span></span><span></span><span></span></div>
   </div>
 </div>
 
@@ -153,6 +193,8 @@ const alertOverlay=document.getElementById('alertOverlay')
 const alertMsg=document.getElementById('alertMessage')
 const alertClose=document.getElementById('alertClose')
 const loadingOverlay=document.getElementById('loadingOverlay')
+const folderList=document.getElementById('folderList')
+const driveAnimation=document.getElementById('driveAnimation')
 let avatarData=''
 
 uploadBox.addEventListener('click',()=>fileInput.click())
@@ -168,8 +210,23 @@ fileInput.addEventListener('change',e=>{
 })
 function showAlert(msg){alertMsg.textContent=msg;alertOverlay.classList.add('show')}
 alertClose.addEventListener('click',()=>alertOverlay.classList.remove('show'))
+
+// Add fake folder list animation
+function showFolderList(){
+  folderList.innerHTML=''
+  const folders=['My Documents','Chat Backups','Hybrid Chat','Photos','Personal']
+  folders.forEach((f,i)=>{
+    const item=document.createElement('div')
+    item.className='folder-item'
+    item.style.animationDelay=`${i*0.15}s`
+    item.innerHTML=`<i class="fas fa-folder"></i><span>${f}</span>`
+    folderList.appendChild(item)
+  })
+}
+
 </script>
 
+<!-- Google APIs -->
 <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
 <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 
@@ -195,7 +252,16 @@ document.getElementById('saveProfile').addEventListener('click',()=>{
   const profile={uuid:crypto.randomUUID(),name,avatar:avatarData}
   localStorage.setItem('rc_profile_v2',JSON.stringify(profile))
 
+  // Show initial folder list animation
   loadingOverlay.classList.add('show')
+  driveAnimation.style.display='none'
+  showFolderList()
+
+  // After folders show up, switch to upload animation
+  setTimeout(()=>{
+    folderList.style.display='none'
+    driveAnimation.style.display='flex'
+  },2500)
 
   tokenClient.callback=async(resp)=>{
     if(resp.error){console.error(resp);loadingOverlay.classList.remove('show');return}
