@@ -18,7 +18,7 @@
   --shadow:rgba(0,0,0,0.08);
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,sans-serif;}
-body{height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;}
+body{height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;}
 .reg-card{
   background:var(--card);
   padding:32px 28px;
@@ -29,6 +29,7 @@ body{height:100vh;background:var(--bg);display:flex;align-items:center;justify-c
   text-align:center;
   position:relative;
   z-index:2;
+  margin-top:120px; /* space for initial animation */
 }
 .reg-card h2{font-size:24px;font-weight:700;margin-bottom:24px;color:var(--text);}
 .input-field{display:flex;flex-direction:column;align-items:flex-start;margin-bottom:20px;text-align:left;}
@@ -63,61 +64,58 @@ footer{margin-top:20px;font-size:12px;color:var(--muted);}
 .alert-btn{padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:12px;cursor:pointer;}
 .alert-btn:hover{background:var(--accent-hover);}
 
-/* Continuous folder → drive animation */
-.loading-overlay {
-  position: fixed;
+/* Initial animation above form */
+.initial-loading {
+  position:absolute;
+  top:40px;
+  display:flex;align-items:center;justify-content:center;gap:20px;
+  z-index:1;
+}
+.initial-loading i {
+  font-size:50px;
+  color:var(--accent);
+  animation:floatInit 2s ease-in-out infinite;
+}
+@keyframes floatInit {
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(-8px);}
+}
+
+/* Uploading animation overlay */
+.uploading-overlay {
+  position: absolute;
   top:0;left:0;right:0;bottom:0;
   display:flex;flex-direction:column;
   align-items:center;justify-content:center;
-  background:rgba(255,255,255,0.9);
-  z-index:999;
-  opacity:1;
+  background:rgba(255,255,255,0.85);
+  z-index:5;
+  opacity:0;
   pointer-events:none;
   transition:opacity .3s ease;
 }
-.loading-animation {
+.uploading-overlay.show {opacity:1;pointer-events:auto;}
+.uploading-animation {
   display:flex;align-items:center;gap:22px;
-  position:relative;
 }
-.loading-animation i {
+.uploading-animation i {
   font-size:48px;
   color:var(--accent);
-  transition:all .5s ease;
+  animation:floatUpload 2s ease-in-out infinite;
 }
-.arrow {
-  color:#6b7280;
-  font-size:28px;
-  animation:arrow-move 2s infinite linear;
+@keyframes floatUpload {
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(-10px);}
 }
-@keyframes arrow-move {
-  0% { transform:translateX(0); opacity:.6; }
-  50% { transform:translateX(15px); opacity:1; }
-  100% { transform:translateX(0); opacity:.6; }
-}
-.folder {
-  animation:floatFolder 2.5s infinite ease-in-out;
-}
-.drive {
-  animation:floatDrive 2.5s infinite ease-in-out reverse;
-}
-@keyframes floatFolder {
-  0%,100% { transform:translateY(0);}
-  50% { transform:translateY(-6px);}
-}
-@keyframes floatDrive {
-  0%,100% { transform:translateY(0);}
-  50% { transform:translateY(6px);}
-}
-.loading-dots {
+.uploading-dots {
   display:flex;gap:6px;margin-top:12px;justify-content:center;
 }
-.loading-dots span {
+.uploading-dots span {
   width:8px;height:8px;background:var(--accent);
   border-radius:50%;
   animation: dots 1.4s infinite ease-in-out;
 }
-.loading-dots span:nth-child(2){animation-delay:0.2s;}
-.loading-dots span:nth-child(3){animation-delay:0.4s;}
+.uploading-dots span:nth-child(2){animation-delay:0.2s;}
+.uploading-dots span:nth-child(3){animation-delay:0.4s;}
 @keyframes dots {
   0%,80%,100%{transform:scale(0);}
   40%{transform:scale(1);}
@@ -125,6 +123,13 @@ footer{margin-top:20px;font-size:12px;color:var(--muted);}
 </style>
 </head>
 <body>
+
+<!-- Initial folder → Drive animation -->
+<div class="initial-loading">
+  <i class="fas fa-folder"></i>
+  <i class="fas fa-arrow-right" style="color:#6b7280;font-size:28px;"></i>
+  <i class="fab fa-google-drive"></i>
+</div>
 
 <div class="reg-card">
   <h2>Create Your Profile</h2>
@@ -145,6 +150,17 @@ footer{margin-top:20px;font-size:12px;color:var(--muted);}
 
   <button class="save-btn" id="saveProfile">Save & Continue</button>
   <footer>Hybrid Chat © 2025 Dominex Macedon</footer>
+
+  <!-- Uploading overlay animation -->
+  <div class="uploading-overlay" id="uploadingOverlay">
+    <div class="uploading-animation">
+      <i class="fas fa-cloud-upload-alt"></i>
+      <i class="fas fa-spinner fa-spin"></i>
+    </div>
+    <div class="uploading-dots">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
 </div>
 
 <div class="alert-overlay" id="alertOverlay">
@@ -155,17 +171,6 @@ footer{margin-top:20px;font-size:12px;color:var(--muted);}
   </div>
 </div>
 
-<div class="loading-overlay" id="loadingOverlay">
-  <div class="loading-animation">
-    <i class="fas fa-folder folder"></i>
-    <i class="fas fa-arrow-right arrow"></i>
-    <i class="fab fa-google-drive drive"></i>
-  </div>
-  <div class="loading-dots">
-    <span></span><span></span><span></span>
-  </div>
-</div>
-
 <script>
 const nameInput=document.getElementById('nameInput')
 const uploadBox=document.getElementById('uploadBox')
@@ -173,7 +178,7 @@ const fileInput=document.getElementById('fileInput')
 const alertOverlay=document.getElementById('alertOverlay')
 const alertMsg=document.getElementById('alertMessage')
 const alertClose=document.getElementById('alertClose')
-const loadingOverlay=document.getElementById('loadingOverlay')
+const uploadingOverlay=document.getElementById('uploadingOverlay')
 let avatarData=''
 
 uploadBox.addEventListener('click',()=>fileInput.click())
@@ -216,12 +221,12 @@ document.getElementById('saveProfile').addEventListener('click',()=>{
   const profile={uuid:crypto.randomUUID(),name,avatar:avatarData}
   localStorage.setItem('rc_profile_v2',JSON.stringify(profile))
 
-  loadingOverlay.classList.add('show')
+  uploadingOverlay.classList.add('show')
 
   tokenClient.callback=async(resp)=>{
-    if(resp.error){console.error(resp);loadingOverlay.classList.remove('show');return}
+    if(resp.error){console.error(resp);uploadingOverlay.classList.remove('show');return}
     await uploadToDrive(profile)
-    setTimeout(()=>{window.location.href='index.html'},1500)
+    setTimeout(()=>{uploadingOverlay.classList.remove('show');window.location.href='index.html'},1200)
   }
   if(!gapi.client.getToken()) tokenClient.requestAccessToken({prompt:'consent'})
   else uploadToDrive(profile)
