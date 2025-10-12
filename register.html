@@ -2,194 +2,314 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Register — Hybrid Chat</title>
 <link rel="icon" type="image/png" href="hybrid.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
 <style>
 :root {
   --accent:#6366f1;
   --accent-hover:#4f46e5;
-  --bg:#f9fafb;
+  --bg:#f3f4f6;
   --card:#ffffff;
   --text:#111827;
   --muted:#6b7280;
-  --shadow:rgba(0,0,0,0.08);
+  --shadow:rgba(0,0,0,0.1);
 }
-*{box-sizing:border-box;margin:0;padding:0;font-family:Inter,sans-serif;}
-body{
-  height:100vh;background:var(--bg);
-  display:flex;align-items:center;justify-content:center;
-  overflow:hidden;
-}
-.reg-card{
-  background:var(--card);
-  padding:40px 32px;
-  border-radius:20px;
-  width:100%;
-  max-width:400px;
-  box-shadow:0 8px 24px var(--shadow);
-  text-align:center;
-  position:relative;
-}
-h2{font-size:24px;font-weight:700;margin-bottom:20px;color:var(--text);}
-p{color:var(--muted);margin-bottom:24px;font-size:15px;}
-button.google-btn{
-  background:#fff;
-  border:1px solid #e5e7eb;
-  border-radius:12px;
-  padding:12px 16px;
-  font-size:15px;
-  font-weight:500;
-  color:var(--text);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
-  width:100%;
-  cursor:pointer;
-  transition:all 0.2s ease;
-}
-button.google-btn:hover{background:#f3f4f6;}
-.google-btn img{width:22px;height:22px;}
-footer{margin-top:24px;font-size:12px;color:var(--muted);}
 
-/* Profile display */
-.profile{
-  display:none;
-  flex-direction:column;
-  align-items:center;
-  animation:fadeIn 0.6s ease forwards;
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: "Inter", sans-serif;
 }
-.profile img{
-  width:90px;height:90px;border-radius:50%;
-  margin-bottom:12px;
-  box-shadow:0 4px 10px var(--shadow);
-}
-.profile h3{font-size:20px;font-weight:600;margin-bottom:4px;}
-.profile span{font-size:14px;color:var(--muted);}
-@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 
-/* Loading animation */
-.loading-overlay{
-  position:fixed;top:0;left:0;right:0;bottom:0;
-  display:none;flex-direction:column;align-items:center;justify-content:center;
-  background:rgba(255,255,255,0.95);z-index:999;
+body {
+  height: 100vh;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
-.loading-animation{
-  display:flex;align-items:center;gap:20px;
-  animation: float 2s ease-in-out infinite;
+
+/* Main Card */
+.reg-card {
+  background: var(--card);
+  padding: 32px 28px;
+  border-radius: 18px;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 12px 36px var(--shadow);
+  position: relative;
+  z-index: 2;
 }
-@keyframes float{
-  0%,100%{transform:translateY(0);}
-  50%{transform:translateY(-8px);}
+
+.reg-card h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 18px;
 }
-.loading-animation i{font-size:48px;color:var(--accent);}
-.loading-dots{display:flex;gap:6px;margin-top:12px;}
-.loading-dots span{
-  width:8px;height:8px;background:var(--accent);
-  border-radius:50%;
-  animation:dots 1.4s infinite ease-in-out;
+
+p.sub {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 24px;
 }
-.loading-dots span:nth-child(2){animation-delay:0.2s;}
-.loading-dots span:nth-child(3){animation-delay:0.4s;}
-@keyframes dots{0%,80%,100%{transform:scale(0);}40%{transform:scale(1);}}
+
+footer {
+  margin-top: 24px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Mini File Explorer Animation */
+#miniExplorer {
+  position: absolute;
+  top: -160px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+  background: var(--card);
+  border-radius: 14px;
+  box-shadow: 0 8px 25px var(--shadow);
+  overflow: hidden;
+  opacity: 0;
+  animation: explorerDrop 1.2s ease forwards;
+}
+
+@keyframes explorerDrop {
+  from {opacity: 0; transform: translate(-50%, -40px);}
+  to {opacity: 1; transform: translate(-50%, 0);}
+}
+
+#miniExplorer .header {
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+#miniExplorer .content {
+  background: #f9fafb;
+  padding: 10px;
+  height: 110px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 6px;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: slideUp 0.4s forwards;
+}
+
+.file-row i {
+  color: var(--accent);
+}
+
+@keyframes slideUp {
+  to {opacity: 1; transform: translateY(0);}
+}
+
+/* User Info */
+#userInfo {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+#userInfo img {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+#userInfo h3 {
+  font-size: 18px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Floating Bubbles */
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.15;
+  animation: float 6s ease-in-out infinite;
+}
+
+.bubble:nth-child(1) {
+  width: 80px; height: 80px;
+  top: 15%; left: 10%;
+  animation-delay: 0s;
+}
+.bubble:nth-child(2) {
+  width: 120px; height: 120px;
+  bottom: 10%; right: 15%;
+  animation-delay: 2s;
+}
+.bubble:nth-child(3) {
+  width: 60px; height: 60px;
+  bottom: 20%; left: 25%;
+  animation-delay: 1s;
+}
+
+@keyframes float {
+  0%, 100% {transform: translateY(0);}
+  50% {transform: translateY(-20px);}
+}
+
+/* Drive Loading Overlay */
+#loadingOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.9);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  z-index: 100;
+}
+
+#loadingOverlay i {
+  font-size: 48px;
+  color: var(--accent);
+  animation: float 2s infinite;
+}
+
+#loadingOverlay p {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--muted);
+}
 </style>
 </head>
 <body>
 
-<div class="reg-card">
+<!-- Floating Background -->
+<div class="bubble"></div>
+<div class="bubble"></div>
+<div class="bubble"></div>
+
+<!-- Mini File Explorer -->
+<div id="miniExplorer">
+  <div class="header"><i class="fas fa-folder-open"></i> My Drive</div>
+  <div class="content" id="explorerContent"></div>
+</div>
+
+<!-- Main Card -->
+<div class="reg-card" id="card">
   <h2>Welcome to Hybrid Chat</h2>
-  <p>Sign in securely with Google to continue.</p>
+  <p class="sub">Sign in with Google to continue</p>
 
-  <button class="google-btn" id="googleSignIn">
-    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-    Sign in with Google
-  </button>
+  <div id="buttonDiv"></div>
 
-  <div class="profile" id="profile">
-    <img id="profilePic" alt="Profile Picture">
-    <h3 id="profileName"></h3>
-    <span id="profileEmail"></span>
+  <div id="userInfo">
+    <img id="userPic" alt="Profile">
+    <h3 id="userName"></h3>
   </div>
 
   <footer>Hybrid Chat © 2025 Dominex Macedon</footer>
 </div>
 
-<div class="loading-overlay" id="loadingOverlay">
-  <div class="loading-animation">
-    <i class="fab fa-google"></i>
-    <i class="fas fa-arrow-right" style="font-size:28px;color:#6b7280;"></i>
-    <i class="fab fa-google-drive"></i>
-  </div>
-  <div class="loading-dots"><span></span><span></span><span></span></div>
+<!-- Loading Overlay -->
+<div id="loadingOverlay">
+  <i class="fab fa-google-drive"></i>
+  <p>Preparing your chat space...</p>
 </div>
 
-<!-- Google APIs -->
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="https://apis.google.com/js/api.js"></script>
-
 <script>
-const CLIENT_ID='549003131640-o9umsg7tu0uisopde76mlf3lg5krt5g7.apps.googleusercontent.com';
-const SCOPES='https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
-let tokenClient;
-
-const loadingOverlay=document.getElementById('loadingOverlay');
-const googleBtn=document.getElementById('googleSignIn');
-const profileCard=document.getElementById('profile');
-const profilePic=document.getElementById('profilePic');
-const profileName=document.getElementById('profileName');
-const profileEmail=document.getElementById('profileEmail');
-
-googleBtn.addEventListener('click',async()=>{
-  loadingOverlay.style.display='flex';
-  await gapi.load('client',initGapi);
-});
-
-async function initGapi(){
-  await gapi.client.init({
-    discoveryDocs:["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"]
-  });
-  tokenClient=google.accounts.oauth2.initTokenClient({
-    client_id:CLIENT_ID,
-    scope:SCOPES,
-    callback:handleToken
-  });
-  tokenClient.requestAccessToken({prompt:'consent'});
+// Mini explorer animation
+const explorerContent=document.getElementById('explorerContent');
+const exampleFiles=[
+  {icon:"fa-folder",name:"Projects"},
+  {icon:"fa-folder",name:"Hybrid Chat"},
+  {icon:"fa-file-code",name:"main.js"},
+  {icon:"fa-file-image",name:"avatar.png"},
+  {icon:"fa-file-lines",name:"readme.txt"}
+];
+let i=0;
+function addNextFile(){
+  if(i>=exampleFiles.length)return;
+  const f=exampleFiles[i];
+  const el=document.createElement('div');
+  el.className='file-row';
+  el.style.animationDelay=`${i*0.3}s`;
+  el.innerHTML=`<i class="fas ${f.icon}"></i><span>${f.name}</span>`;
+  explorerContent.appendChild(el);
+  i++;
+  setTimeout(addNextFile,350);
 }
+addNextFile();
 
-async function handleToken(tokenResponse){
-  if(tokenResponse.error){console.error(tokenResponse);return;}
-  const accessToken=gapi.client.getToken().access_token;
-  const userInfo=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{
-    headers:{'Authorization':'Bearer '+accessToken}
-  }).then(r=>r.json());
-  displayUser(userInfo);
-}
+// Google Sign-In setup
+window.onload = function() {
+  google.accounts.id.initialize({
+    client_id: "549003131640-o9umsg7tu0uisopde76mlf3lg5krt5g7.apps.googleusercontent.com",
+    callback: handleCredentialResponse
+  });
+  google.accounts.id.renderButton(
+    document.getElementById("buttonDiv"),
+    { theme: "filled_blue", size: "large", text: "signin_with", shape: "rectangular" }
+  );
+};
 
-function displayUser(user){
-  loadingOverlay.style.display='none';
-  googleBtn.style.display='none';
-  profileCard.style.display='flex';
-  profilePic.src=user.picture;
-  profileName.textContent=user.name;
-  profileEmail.textContent=user.email;
-  const profileData={
-    uuid:crypto.randomUUID(),
-    name:user.name,
-    email:user.email,
-    avatar:user.picture,
-    createdAt:new Date().toISOString()
+// Handle Sign-In Response
+function handleCredentialResponse(response) {
+  const data = JSON.parse(atob(response.credential.split('.')[1]));
+  const userInfo = document.getElementById('userInfo');
+  const pic = document.getElementById('userPic');
+  const name = document.getElementById('userName');
+
+  pic.src = data.picture;
+  name.textContent = data.name;
+  userInfo.style.display = "flex";
+
+  // Save locally
+  const profileData = {
+    uuid: crypto.randomUUID(),
+    name: data.name,
+    email: data.email,
+    avatar: data.picture,
+    createdAt: new Date().toISOString()
   };
-  localStorage.setItem('rc_profile_v2',JSON.stringify(profileData));
-  setTimeout(()=>{window.location.href='index.html'},1500);
+  localStorage.setItem('rc_profile_v2', JSON.stringify(profileData));
+
+  // Show loading overlay
+  const overlay = document.getElementById('loadingOverlay');
+  overlay.style.display = 'flex';
+
+  // Redirect after delay
+  setTimeout(() => {
+    window.location.href = 'index.html';
+  }, 1800);
 }
 
-// Disable right-click/devtools
-document.addEventListener('contextmenu', e=>e.preventDefault());
-document.addEventListener('keydown', e=>{
-  if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','J','C'].includes(e.key.toUpperCase()))||(e.ctrlKey&&['U','S','P'].includes(e.key.toUpperCase()))){
-    e.preventDefault(); e.stopPropagation();
+// Disable right-click and DevTools
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+  if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) || (e.ctrlKey && ['U','S','P'].includes(e.key.toUpperCase()))) {
+    e.preventDefault();
+    e.stopPropagation();
   }
 });
 </script>
