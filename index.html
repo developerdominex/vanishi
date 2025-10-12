@@ -6,129 +6,216 @@
 <title>Realtime Chat — Hybrid</title>
 <link rel="icon" type="image/png" href="hybrid.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
 <style>
 :root {
   --accent: #6366f1;
   --accent-hover: #4f46e5;
-  --bg: #f9fafb;
-  --card: #ffffff;
-  --text: #111827;
+  --bg1: #eef2ff;
+  --bg2: #f8fafc;
+  --white: #ffffff;
+  --shadow: rgba(0,0,0,0.12);
+  --text: #1e293b;
   --muted: #6b7280;
-  --shadow: rgba(0,0,0,0.08);
+  --radius: 20px;
 }
 
-*{box-sizing:border-box;margin:0;padding:0;font-family:Inter,sans-serif;}
-body{height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;}
+/* Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: "Inter", system-ui, sans-serif;
+}
 
-.chat-card{
-  background: var(--card);
-  padding: 36px 32px;
-  border-radius: 16px;
-  width: 100%;
-  max-width: 420px;
-  box-shadow: 0 12px 36px var(--shadow);
-  text-align: center;
+/* Background gradient animation */
+body {
+  height: 100vh;
+  background: linear-gradient(135deg, var(--bg1), var(--bg2));
+  background-size: 300% 300%;
+  animation: gradientShift 8s ease-in-out infinite;
   display: flex;
-  flex-direction: column;
-  gap: 20px;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+@keyframes gradientShift {
+  0%, 100% { background-position: left top; }
+  50% { background-position: right bottom; }
 }
 
-.chat-card h1{
-  font-size: 28px;
+/* Floating icons (background animation) */
+.floating {
+  position: absolute;
+  font-size: 32px;
+  color: var(--accent);
+  opacity: 0.15;
+  animation: floaty 10s ease-in-out infinite;
+}
+.floating:nth-child(1) { top: 15%; left: 10%; animation-delay: 0s; }
+.floating:nth-child(2) { bottom: 20%; right: 15%; animation-delay: 2s; }
+.floating:nth-child(3) { top: 50%; right: 25%; animation-delay: 4s; }
+.floating:nth-child(4) { bottom: 10%; left: 25%; animation-delay: 6s; }
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+/* Card */
+.chat-card {
+  background: var(--white);
+  padding: 40px 36px;
+  border-radius: var(--radius);
+  width: 90%;
+  max-width: 420px;
+  box-shadow: 0 20px 40px var(--shadow);
+  text-align: center;
+  position: relative;
+  z-index: 5;
+  animation: fadeIn 0.9s ease forwards;
+  transform: translateY(30px);
+  opacity: 0;
+}
+@keyframes fadeIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chat-card h1 {
+  font-size: 30px;
   font-weight: 700;
   color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.chat-card h1 i {
+  color: var(--accent);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.15); opacity: 1; }
 }
 
-.chat-card p{
-  font-size: 15px;
+.chat-card p {
   color: var(--muted);
+  font-size: 15px;
+  margin-top: 8px;
+  line-height: 1.6;
 }
 
-.button-group{
+.button-group {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  width: 100%;
+  gap: 14px;
+  margin-top: 24px;
 }
 
-.button-group button{
+.button-group button {
   padding: 14px 20px;
   font-size: 16px;
   font-weight: 600;
   border-radius: 12px;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: 0.3s ease;
+  box-shadow: 0 4px 12px rgba(99,102,241,0.2);
 }
 
-#startBtn{
+#startBtn {
   background: var(--accent);
   color: #fff;
 }
-
-#startBtn:hover{
+#startBtn:hover {
   background: var(--accent-hover);
+  transform: translateY(-2px);
 }
 
-#removeBtn{
+#removeBtn {
   background: #f87171;
   color: #fff;
 }
-
-#removeBtn:hover{
+#removeBtn:hover {
   background: #ef4444;
+  transform: translateY(-2px);
 }
 
-footer{
-  font-size: 12px;
+/* Footer */
+footer {
+  margin-top: 24px;
+  font-size: 13px;
   color: var(--muted);
-  margin-top: 12px;
+  letter-spacing: 0.3px;
+}
+
+/* Animated glow around card */
+.chat-card::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: var(--radius);
+  background: linear-gradient(45deg, var(--accent), #a78bfa, #60a5fa, var(--accent));
+  background-size: 400% 400%;
+  z-index: -1;
+  filter: blur(8px);
+  animation: glow 8s linear infinite;
+  opacity: 0.15;
+}
+@keyframes glow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 </style>
 </head>
 <body>
 
+<!-- Floating icons -->
+<i class="fa-solid fa-bolt floating"></i>
+<i class="fa-solid fa-comments floating"></i>
+<i class="fa-solid fa-cloud floating"></i>
+<i class="fa-solid fa-paper-plane floating"></i>
+
+<!-- Card -->
 <div class="chat-card" id="chatCard">
-  <h1>Realtime Chat</h1>
-  <p id="info">Connect instantly with friends</p>
+  <h1><i class="fas fa-comment-dots"></i> Realtime Chat</h1>
+  <p id="info">Connect instantly with friends, anytime and anywhere.</p>
+
   <div class="button-group">
     <button id="startBtn"><i class="fas fa-paper-plane"></i> Get Started</button>
   </div>
+
   <footer>© 2025 Dominex Macedon</footer>
 </div>
 
 <script>
-const chatCard = document.getElementById('chatCard');
 const info = document.getElementById('info');
-const buttonsDiv = chatCard.querySelector('.button-group');
+const buttonsDiv = document.querySelector('.button-group');
 const startBtn = document.getElementById('startBtn');
-
 const profileData = localStorage.getItem('rc_profile_v2');
 
-if(profileData){
+if (profileData) {
   const profile = JSON.parse(profileData);
-  info.textContent = `Logged in as ${profile.name}`;
+  info.innerHTML = `<i class="fas fa-user-circle"></i> Logged in as <b>${profile.name}</b>`;
 
   const removeBtn = document.createElement('button');
   removeBtn.id = 'removeBtn';
   removeBtn.innerHTML = '<i class="fas fa-trash"></i> Remove Account';
   buttonsDiv.appendChild(removeBtn);
 
-  removeBtn.addEventListener('click', ()=>{
+  removeBtn.addEventListener('click', () => {
     localStorage.removeItem('rc_profile_v2');
     location.reload();
   });
 
-  startBtn.innerHTML = '<i class="fas fa-comment-dots"></i> Continue Chat';
-  startBtn.addEventListener('click', ()=>{
-    window.location.href='home.html';
-  });
+  startBtn.innerHTML = '<i class="fas fa-comments"></i> Continue Chat';
+  startBtn.addEventListener('click', () => window.location.href = 'home.html');
 } else {
-  startBtn.addEventListener('click', ()=>{
-    window.location.href='register.html';
-  });
+  startBtn.addEventListener('click', () => window.location.href = 'register.html');
 }
 
+/* Disable inspect keys */
 document.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('keydown', e => {
   if (
