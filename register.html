@@ -21,6 +21,7 @@
 
 /* Reset */
 * { box-sizing: border-box; margin:0; padding:0; font-family:"Inter", sans-serif; }
+
 body {
   height:100vh;
   width:100vw;
@@ -42,41 +43,14 @@ body {
 .bubble:nth-child(3){width:60px;height:60px;top:40%;left:70%;animation-delay:1s;}
 @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-25px);}}
 
-/* Free-aligned Google Sign-in Button */
-#buttonDiv{
-  position:absolute;
-  top:50px;
-  left:50px;
-}
-
-/* User Info */
-#userInfo{
-  position:absolute;
-  top:50px;
-  left:250px;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding:8px 12px;
-  border-radius:14px;
-  background:#ffffff;
-  box-shadow:0 8px 25px var(--shadow);
-  opacity:0;
-  transform:translateY(-20px);
-  transition:all 0.5s ease;
-}
-#userInfo.show{opacity:1; transform:translateY(0);}
-#userInfo img{width:60px;height:60px;border-radius:50%;box-shadow:0 4px 12px var(--shadow);}
-#userInfo h3{font-size:16px;font-weight:600;color:var(--text);}
-
 /* Mini File Explorer */
 #miniExplorer{
   position:absolute;
-  top:150px;
+  top:50px;
   left:50px;
-  width:280px;
+  width:320px;
   background:#ffffff;
-  border-radius:14px;
+  border-radius:16px;
   box-shadow:0 12px 36px var(--shadow);
   overflow:hidden;
   opacity:0;
@@ -84,40 +58,78 @@ body {
   animation:slideIn 1s forwards;
 }
 @keyframes slideIn{to{opacity:1;transform:translateY(0);}}
+
 #miniExplorer .header{
   background:var(--accent);
   color:#fff;
-  padding:10px 14px;
-  display:flex;
-  align-items:center;
-  gap:6px;
-  font-size:14px;
-}
-#miniExplorer .content{
-  display:flex;
-  flex-direction:column;
-  padding:10px;
-  gap:6px;
-  max-height:200px;
-  overflow:hidden;
-}
-.file-row{
+  padding:12px 16px;
   display:flex;
   align-items:center;
   gap:8px;
-  font-size:13px;
+  font-size:16px;
+  font-weight:600;
+}
+
+#miniExplorer .content{
+  display:flex;
+  flex-direction:column;
+  padding:12px;
+  gap:10px;
+  max-height:250px;
+  overflow:hidden;
+}
+
+.file-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:14px;
+  font-weight:500;
   color:var(--text);
   opacity:0;
   transform:translateX(-20px);
   animation:rowSlide 0.5s forwards;
+  transition: transform 1.5s ease-in-out;
 }
-.file-row i{color:var(--accent);}
+.file-row i{
+  color:var(--accent);
+  font-size:20px;
+  animation:floatIcon 2s ease-in-out infinite alternate;
+}
 @keyframes rowSlide{to{opacity:1; transform:translateX(0);}}
+@keyframes floatIcon{0%{transform:translateY(0);}100%{transform:translateY(-5px);}}
+
+/* Google Sign-In Button next to Explorer */
+#buttonDiv{
+  position:absolute;
+  top:50px;
+  left:400px; /* Right of explorer with some space */
+}
+
+/* User Info */
+#userInfo{
+  position:absolute;
+  top:150px;
+  left:50px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:10px 14px;
+  border-radius:16px;
+  background:#ffffff;
+  box-shadow:0 8px 25px var(--shadow);
+  opacity:0;
+  transform:translateY(-20px);
+  transition:all 0.5s ease;
+}
+#userInfo.show{opacity:1; transform:translateY(0);}
+#userInfo img{width:70px;height:70px;border-radius:50%;box-shadow:0 4px 12px var(--shadow);}
+#userInfo h3{font-size:18px;font-weight:600;color:var(--text);}
 
 /* Loading Overlay */
 #loadingOverlay{
   position:fixed; inset:0;
-  background:rgba(255,255,255,0.9);
+  background:rgba(255,255,255,0.95);
   display:none;
   align-items:center; justify-content:center; flex-direction:column; z-index:100;
 }
@@ -132,6 +144,12 @@ body {
 <div class="bubble"></div>
 <div class="bubble"></div>
 
+<!-- Mini File Explorer -->
+<div id="miniExplorer">
+  <div class="header"><i class="fas fa-folder-open"></i> My Drive</div>
+  <div class="content" id="explorerContent"></div>
+</div>
+
 <!-- Google Sign-In -->
 <div id="buttonDiv"></div>
 
@@ -139,12 +157,6 @@ body {
 <div id="userInfo">
   <img id="userPic" alt="Profile">
   <h3 id="userName"></h3>
-</div>
-
-<!-- Mini File Explorer -->
-<div id="miniExplorer">
-  <div class="header"><i class="fas fa-folder-open"></i> My Drive</div>
-  <div class="content" id="explorerContent"></div>
 </div>
 
 <!-- Loading Overlay -->
@@ -230,7 +242,6 @@ async function handleCredentialResponse(response){
           headers:{'Authorization':'Bearer '+accessToken},
           body:form
         });
-        // Redirect after small delay
         setTimeout(()=>window.location.href='index.html',1200);
       }
     });
