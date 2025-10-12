@@ -21,152 +21,116 @@
 }
 
 /* Reset */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: "Inter", system-ui, sans-serif;
-}
+* { box-sizing: border-box; margin:0; padding:0; font-family:"Inter",system-ui,sans-serif; }
 
 /* Background gradient animation */
 body {
   height: 100vh;
   background: linear-gradient(135deg, var(--bg1), var(--bg2));
   background-size: 300% 300%;
-  animation: gradientShift 8s ease-in-out infinite;
+  animation: gradientShift 10s ease-in-out infinite;
   display: flex;
   justify-content: center;
   align-items: center;
   overflow: hidden;
 }
 @keyframes gradientShift {
-  0%, 100% { background-position: left top; }
+  0%,100% { background-position: left top; }
   50% { background-position: right bottom; }
 }
 
 /* Floating icons (background animation) */
 .floating {
   position: absolute;
-  font-size: 32px;
+  font-size: 36px;
   color: var(--accent);
-  opacity: 0.15;
-  animation: floaty 10s ease-in-out infinite;
+  opacity: 0.1;
+  animation: floaty 12s ease-in-out infinite;
 }
-.floating:nth-child(1) { top: 15%; left: 10%; animation-delay: 0s; }
-.floating:nth-child(2) { bottom: 20%; right: 15%; animation-delay: 2s; }
-.floating:nth-child(3) { top: 50%; right: 25%; animation-delay: 4s; }
-.floating:nth-child(4) { bottom: 10%; left: 25%; animation-delay: 6s; }
-@keyframes floaty {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-20px); }
-}
+.floating:nth-child(1) { top: 10%; left: 15%; animation-delay:0s; }
+.floating:nth-child(2) { bottom: 20%; right: 10%; animation-delay:3s; }
+.floating:nth-child(3) { top: 50%; right: 20%; animation-delay:6s; }
+.floating:nth-child(4) { bottom: 15%; left: 25%; animation-delay:9s; }
+@keyframes floaty { 0%,100%{transform:translateY(0);}50%{transform:translateY(-25px);} }
 
 /* Card */
 .chat-card {
   background: var(--white);
-  padding: 40px 36px;
+  padding: 48px 36px;
   border-radius: var(--radius);
   width: 90%;
-  max-width: 420px;
-  box-shadow: 0 20px 40px var(--shadow);
+  max-width: 440px;
+  box-shadow: 0 25px 50px var(--shadow);
   text-align: center;
   position: relative;
   z-index: 5;
-  animation: fadeIn 0.9s ease forwards;
-  transform: translateY(30px);
-  opacity: 0;
+  transform: translateY(40px);
+  opacity:0;
+  animation: fadeInCard 1s ease forwards;
 }
-@keyframes fadeIn {
-  to { opacity: 1; transform: translateY(0); }
-}
+@keyframes fadeInCard { to { opacity:1; transform:translateY(0);} }
 
 .chat-card h1 {
-  font-size: 30px;
+  font-size: 32px;
   font-weight: 700;
   color: var(--text);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
 }
 .chat-card h1 i {
   color: var(--accent);
   animation: pulse 2s infinite;
 }
-@keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 0.9; }
-  50% { transform: scale(1.15); opacity: 1; }
-}
+@keyframes pulse { 0%,100%{transform:scale(1);opacity:0.9;}50%{transform:scale(1.2);opacity:1;} }
 
 .chat-card p {
   color: var(--muted);
   font-size: 15px;
-  margin-top: 8px;
-  line-height: 1.6;
+  margin-top: 12px;
+  line-height:1.5;
 }
 
+/* Buttons */
 .button-group {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-top: 24px;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  margin-top:28px;
 }
-
 .button-group button {
-  padding: 14px 20px;
-  font-size: 16px;
-  font-weight: 600;
-  border-radius: 12px;
-  border: none;
-  cursor: pointer;
-  transition: 0.3s ease;
-  box-shadow: 0 4px 12px rgba(99,102,241,0.2);
+  padding:16px 22px;
+  font-size:16px;
+  font-weight:600;
+  border-radius:14px;
+  border:none;
+  cursor:pointer;
+  transition:0.3s ease;
+  box-shadow:0 6px 16px rgba(99,102,241,0.2);
 }
-
-#startBtn {
-  background: var(--accent);
-  color: #fff;
-}
-#startBtn:hover {
-  background: var(--accent-hover);
-  transform: translateY(-2px);
-}
-
-#removeBtn {
-  background: #f87171;
-  color: #fff;
-}
-#removeBtn:hover {
-  background: #ef4444;
-  transform: translateY(-2px);
-}
+#startBtn { background: var(--accent); color:#fff; }
+#startBtn:hover { background: var(--accent-hover); transform: translateY(-2px); }
+#removeBtn { background:#f87171; color:#fff; }
+#removeBtn:hover { background:#ef4444; transform: translateY(-2px); }
 
 /* Footer */
-footer {
-  margin-top: 24px;
-  font-size: 13px;
-  color: var(--muted);
-  letter-spacing: 0.3px;
-}
+footer { margin-top:28px; font-size:13px; color: var(--muted); letter-spacing:0.3px; }
 
-/* Animated glow around card */
+/* Card glow */
 .chat-card::before {
-  content: "";
-  position: absolute;
-  inset: -3px;
-  border-radius: var(--radius);
+  content:"";
+  position:absolute;
+  inset:-4px;
+  border-radius:var(--radius);
   background: linear-gradient(45deg, var(--accent), #a78bfa, #60a5fa, var(--accent));
-  background-size: 400% 400%;
-  z-index: -1;
-  filter: blur(8px);
+  background-size:400% 400%;
+  z-index:-1;
+  filter: blur(10px);
   animation: glow 8s linear infinite;
-  opacity: 0.15;
+  opacity:0.12;
 }
-@keyframes glow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
+@keyframes glow { 0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;} }
 </style>
 </head>
 <body>
@@ -193,7 +157,7 @@ footer {
 const info = document.getElementById('info');
 const buttonsDiv = document.querySelector('.button-group');
 const startBtn = document.getElementById('startBtn');
-const profileData = localStorage.getItem('rc_profile_v2');
+const profileData = localStorage.getItem('hc_profile');
 
 if (profileData) {
   const profile = JSON.parse(profileData);
@@ -205,7 +169,8 @@ if (profileData) {
   buttonsDiv.appendChild(removeBtn);
 
   removeBtn.addEventListener('click', () => {
-    localStorage.removeItem('rc_profile_v2');
+    localStorage.removeItem('hc_profile');
+    localStorage.removeItem('hc_chat');
     location.reload();
   });
 
@@ -215,7 +180,7 @@ if (profileData) {
   startBtn.addEventListener('click', () => window.location.href = 'register.html');
 }
 
-/* Disable inspect keys */
+/* Disable inspect */
 document.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('keydown', e => {
   if (
