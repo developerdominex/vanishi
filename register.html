@@ -11,27 +11,25 @@
 
 <style>
 :root {
-  --accent:#6366f1;
-  --accent-hover:#4f46e5;
-  --bg:#e8ebf3;
-  --card:#ffffff;
-  --text:#111827;
-  --muted:#6b7280;
-  --shadow:rgba(0,0,0,0.1);
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --bg: #e8ebf3;
+  --text: #111827;
+  --muted: #6b7280;
+  --shadow: rgba(0,0,0,0.1);
 }
 
 /* Reset */
-* { box-sizing:border-box; margin:0; padding:0; font-family: "Inter", sans-serif; }
-
-/* Body & Background */
+* { box-sizing: border-box; margin:0; padding:0; font-family:"Inter", sans-serif; }
 body {
   height:100vh;
-  background:var(--bg);
+  width:100vw;
+  background: var(--bg);
   overflow:hidden;
-  position:relative;
+  position: relative;
 }
 
-/* Floating bubbles */
+/* Floating Bubbles */
 .bubble {
   position:absolute;
   border-radius:50%;
@@ -42,89 +40,86 @@ body {
 .bubble:nth-child(1){width:120px;height:120px;top:10%;left:5%;animation-delay:0s;}
 .bubble:nth-child(2){width:80px;height:80px;bottom:15%;right:10%;animation-delay:2s;}
 .bubble:nth-child(3){width:60px;height:60px;top:40%;left:70%;animation-delay:1s;}
-@keyframes float {0%,100%{transform:translateY(0);}50%{transform:translateY(-25px);}}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-25px);}}
 
-/* Main Panel */
-.reg-card {
-  background: var(--card);
-  padding: 30px 28px;
-  border-radius: 18px;
-  width: 400px;
-  max-width: 95%;
+/* Free-aligned Google Sign-in Button */
+#buttonDiv{
   position:absolute;
   top:50px;
   left:50px;
-  box-shadow:0 16px 36px var(--shadow);
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-  transform: translateZ(0);
 }
 
-/* Header */
-.reg-card h2{font-size:24px;font-weight:700;color:var(--text);}
-p.sub{font-size:14px;color:var(--muted);margin-bottom:16px;}
-
 /* User Info */
-#userInfo {
+#userInfo{
+  position:absolute;
+  top:50px;
+  left:250px;
   display:flex;
   align-items:center;
   gap:12px;
-  padding:8px;
-  border-radius:12px;
-  background:#f9f9f9;
+  padding:8px 12px;
+  border-radius:14px;
+  background:#ffffff;
+  box-shadow:0 8px 25px var(--shadow);
   opacity:0;
-  transform:translateX(-30px);
-  transition:all 0.6s ease;
+  transform:translateY(-20px);
+  transition:all 0.5s ease;
 }
-#userInfo.show {opacity:1; transform:translateX(0);}
-#userInfo img {width:60px;height:60px;border-radius:50%;box-shadow:0 4px 12px var(--shadow);}
-#userInfo h3{font-size:16px;color:var(--text);font-weight:600;}
+#userInfo.show{opacity:1; transform:translateY(0);}
+#userInfo img{width:60px;height:60px;border-radius:50%;box-shadow:0 4px 12px var(--shadow);}
+#userInfo h3{font-size:16px;font-weight:600;color:var(--text);}
 
 /* Mini File Explorer */
-#miniExplorer {
+#miniExplorer{
   position:absolute;
-  top:220px;
+  top:150px;
   left:50px;
-  width:320px;
-  background:var(--card);
+  width:280px;
+  background:#ffffff;
   border-radius:14px;
   box-shadow:0 12px 36px var(--shadow);
   overflow:hidden;
   opacity:0;
-  animation:slideIn 1s ease forwards;
   transform:translateY(-30px);
+  animation:slideIn 1s forwards;
 }
-@keyframes slideIn {to{opacity:1; transform:translateY(0);}}
-#miniExplorer .header {
+@keyframes slideIn{to{opacity:1;transform:translateY(0);}}
+#miniExplorer .header{
   background:var(--accent);
   color:#fff;
   padding:10px 14px;
-  display:flex;align-items:center;gap:6px;font-size:14px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:14px;
 }
-#miniExplorer .content {
-  padding:10px;
-  max-height:150px;
-  overflow:hidden;
+#miniExplorer .content{
   display:flex;
   flex-direction:column;
+  padding:10px;
   gap:6px;
+  max-height:200px;
+  overflow:hidden;
 }
-.file-row {
-  display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text);
-  opacity:0; transform:translateX(-20px);
+.file-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:13px;
+  color:var(--text);
+  opacity:0;
+  transform:translateX(-20px);
   animation:rowSlide 0.5s forwards;
 }
 .file-row i{color:var(--accent);}
-@keyframes rowSlide {to{opacity:1; transform:translateX(0);}}
-
-/* Google Sign-In Button Wrapper */
-#buttonDiv {margin-top:12px; display:flex; justify-content:flex-start;}
+@keyframes rowSlide{to{opacity:1; transform:translateX(0);}}
 
 /* Loading Overlay */
-#loadingOverlay {
-  position:fixed; inset:0; background:rgba(255,255,255,0.9);
-  display:none; align-items:center; justify-content:center; flex-direction:column; z-index:100;
+#loadingOverlay{
+  position:fixed; inset:0;
+  background:rgba(255,255,255,0.9);
+  display:none;
+  align-items:center; justify-content:center; flex-direction:column; z-index:100;
 }
 #loadingOverlay i{font-size:48px; color:var(--accent); animation:float 2s infinite;}
 #loadingOverlay p{margin-top:12px; font-size:14px; color:var(--muted);}
@@ -137,21 +132,19 @@ p.sub{font-size:14px;color:var(--muted);margin-bottom:16px;}
 <div class="bubble"></div>
 <div class="bubble"></div>
 
+<!-- Google Sign-In -->
+<div id="buttonDiv"></div>
+
+<!-- User Info -->
+<div id="userInfo">
+  <img id="userPic" alt="Profile">
+  <h3 id="userName"></h3>
+</div>
+
 <!-- Mini File Explorer -->
 <div id="miniExplorer">
   <div class="header"><i class="fas fa-folder-open"></i> My Drive</div>
   <div class="content" id="explorerContent"></div>
-</div>
-
-<!-- Main Card -->
-<div class="reg-card">
-  <h2>Hybrid Chat</h2>
-  <p class="sub">Sign in with Google to continue</p>
-  <div id="buttonDiv"></div>
-  <div id="userInfo">
-    <img id="userPic" alt="Profile">
-    <h3 id="userName"></h3>
-  </div>
 </div>
 
 <!-- Loading Overlay -->
@@ -172,15 +165,15 @@ const exampleFiles=[
 ];
 let i=0;
 function addNextFile(){
-  if(i>=exampleFiles.length)return;
+  if(i>=exampleFiles.length) return;
   const f=exampleFiles[i];
   const el=document.createElement('div');
   el.className='file-row';
-  el.style.animationDelay=`${i*0.3}s`;
+  el.style.animationDelay=`${i*0.25}s`;
   el.innerHTML=`<i class="fas ${f.icon}"></i><span>${f.name}</span>`;
   explorerContent.appendChild(el);
   i++;
-  setTimeout(addNextFile,350);
+  setTimeout(addNextFile,300);
 }
 addNextFile();
 
@@ -192,7 +185,7 @@ const SCOPES="https://www.googleapis.com/auth/drive.file";
 window.onload = () => {
   google.accounts.id.initialize({client_id:CLIENT_ID, callback:handleCredentialResponse});
   google.accounts.id.renderButton(document.getElementById("buttonDiv"),
-    { theme: "filled_blue", size: "large", text: "signin_with", shape: "rectangular" });
+    { theme:"filled_blue", size:"large", text:"signin_with", shape:"rectangular" });
 }
 
 // Handle Sign-In
@@ -246,8 +239,8 @@ async function handleCredentialResponse(response){
 }
 
 // Disable right-click & devtools
-document.addEventListener('contextmenu',e=>e.preventDefault());
-document.addEventListener('keydown',e=>{
+document.addEventListener('contextmenu', e=>e.preventDefault());
+document.addEventListener('keydown', e=>{
   if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','J','C'].includes(e.key.toUpperCase()))||(e.ctrlKey&&['U','S','P'].includes(e.key.toUpperCase()))){
     e.preventDefault(); e.stopPropagation();
   }
