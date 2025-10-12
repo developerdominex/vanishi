@@ -212,9 +212,14 @@ body {
   <i class="fab fa-google-drive"></i>
   <p>Syncing to your Google Drive...</p>
 </div>
-
 <script>
 const explorerContent = document.getElementById("explorerContent");
+
+// If profile exists in localStorage, redirect immediately
+const storedProfile = localStorage.getItem("hc_profile");
+if (storedProfile) {
+  window.location.href = "index.html";
+}
 
 const files = [
   { icon: "fa-folder", name: "Projects" },
@@ -261,6 +266,7 @@ function cycleFiles() {
 }
 cycleFiles();
 
+// Google Sign-In
 const CLIENT_ID = "549003131640-o9umsg7tu0uisopde76mlf3lg5krt5g7.apps.googleusercontent.com";
 const SCOPES = "https://www.googleapis.com/auth/drive.file";
 
@@ -302,12 +308,13 @@ async function handleCredentialResponse(response) {
           time: new Date().toISOString()
         };
 
+        // Save profile in localStorage
         localStorage.setItem("hc_profile", JSON.stringify(profile));
 
+        // Upload or update account.json in Drive
         const overlay = document.getElementById("loadingOverlay");
         overlay.style.display = "flex";
 
-        // Check if account.json already exists
         const listResponse = await fetch("https://www.googleapis.com/drive/v3/files?q=name='account.json'", {
           headers: { Authorization: "Bearer " + tokenResponse.access_token }
         });
@@ -338,6 +345,8 @@ async function handleCredentialResponse(response) {
 }
 </script>
 
+
 </body>
 </html>
+
 
