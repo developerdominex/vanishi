@@ -28,7 +28,7 @@
   font-family: "Inter", system-ui, sans-serif;
 }
 
-/* Body background animation */
+/* Background and layout */
 body {
   height: 100vh;
   width: 100vw;
@@ -40,13 +40,13 @@ body {
   align-items: center;
 }
 
-/* Floating bubbles for depth */
+/* Floating bubbles */
 .bubble {
   position: absolute;
   border-radius: 50%;
   background: var(--accent);
   opacity: 0.1;
-  filter: blur(2px);
+  filter: blur(3px);
   animation: float 8s ease-in-out infinite alternate;
 }
 .bubble:nth-child(1) { width: 180px; height: 180px; top: 5%; left: 10%; animation-delay: 0s; }
@@ -54,11 +54,11 @@ body {
 .bubble:nth-child(3) { width: 80px; height: 80px; top: 50%; left: 60%; animation-delay: 2s; }
 @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-25px);} }
 
-/* Explorer container (full-width, centered) */
+/* Explorer container */
 #explorer {
-  width: 80%;
-  max-width: 1000px;
-  height: 400px;
+  width: 85%;
+  max-width: 1100px;
+  height: 420px;
   background: var(--white);
   border-radius: var(--radius);
   box-shadow: 0 12px 36px var(--shadow);
@@ -90,10 +90,10 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 16px;
   padding: 24px;
-  transition: all 0.4s ease;
+  transition: opacity 0.4s ease;
 }
 
-/* File/folder item */
+/* File/folder item animation */
 .item {
   background: #f9fafb;
   border-radius: var(--radius);
@@ -102,35 +102,39 @@ body {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 16px;
+  padding: 18px;
   box-shadow: 0 4px 14px rgba(0,0,0,0.05);
   cursor: pointer;
-  transform: scale(0.95);
   opacity: 0;
-  animation: fadeInItem 0.4s forwards;
+  transform: translateY(20px) scale(0.95);
+  animation: appear 0.4s forwards ease;
 }
-@keyframes fadeInItem {
-  to { opacity: 1; transform: scale(1); }
+@keyframes appear {
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 .item:hover {
   background: #eef2ff;
-  transform: translateY(-3px);
+  transform: translateY(-3px) scale(1.03);
 }
 .item i {
   font-size: 30px;
   color: var(--accent);
+  transition: transform 0.3s ease;
 }
+.item:hover i { transform: rotate(-6deg) scale(1.1); }
 .item span {
   font-weight: 500;
   color: var(--text);
+  text-align: center;
+  font-size: 15px;
 }
 
-/* Sign-in area */
+/* Sign-in button area */
 #buttonDiv {
-  margin-top: 30px;
+  margin-top: 40px;
 }
 
-/* User info card */
+/* User Info Card */
 #userInfo {
   margin-top: 40px;
   background: var(--white);
@@ -211,43 +215,51 @@ body {
 
 <script>
 const explorerContent = document.getElementById("explorerContent");
+
 const files = [
   { icon: "fa-folder", name: "Projects" },
   { icon: "fa-folder", name: "Hybrid Chat" },
   { icon: "fa-file-code", name: "main.js" },
   { icon: "fa-file-image", name: "avatar.png" },
   { icon: "fa-file-lines", name: "account.json" },
+  { icon: "fa-folder", name: "Documents" },
+  { icon: "fa-folder", name: "Downloads" },
+  { icon: "fa-file-video", name: "intro.mp4" },
+  { icon: "fa-file-audio", name: "welcome.mp3" },
   { icon: "fa-folder", name: "Backups" },
-  { icon: "fa-file-zipper", name: "archive.zip" }
+  { icon: "fa-file-zipper", name: "archive.zip" },
+  { icon: "fa-file-word", name: "notes.docx" },
+  { icon: "fa-file-pdf", name: "resume.pdf" },
+  { icon: "fa-file-powerpoint", name: "presentation.pptx" },
+  { icon: "fa-file-excel", name: "report.xlsx" }
 ];
 
-function renderFiles() {
+// Adds items sequentially
+function renderFilesSequentially() {
   explorerContent.innerHTML = "";
+  let delay = 0;
   files.forEach((f, i) => {
-    const el = document.createElement("div");
-    el.className = "item";
-    el.style.animationDelay = `${i * 0.1}s`;
-    el.innerHTML = `<i class="fas ${f.icon}"></i><span>${f.name}</span>`;
-    explorerContent.appendChild(el);
+    setTimeout(() => {
+      const el = document.createElement("div");
+      el.className = "item";
+      el.style.animationDelay = `${i * 0.05}s`;
+      el.innerHTML = `<i class="fas ${f.icon}"></i><span>${f.name}</span>`;
+      explorerContent.appendChild(el);
+    }, delay);
+    delay += 150;
   });
 }
 
+// Cycle folders (re-add animation after interval)
 function cycleFiles() {
-  renderFiles();
-  setTimeout(() => {
-    explorerContent.style.opacity = 0;
-    setTimeout(() => {
-      explorerContent.style.opacity = 1;
-      renderFiles();
-    }, 700);
-  }, 4000);
+  renderFilesSequentially();
   setInterval(() => {
     explorerContent.style.opacity = 0;
     setTimeout(() => {
       explorerContent.style.opacity = 1;
-      renderFiles();
-    }, 700);
-  }, 6000);
+      renderFilesSequentially();
+    }, 600);
+  }, 7000);
 }
 cycleFiles();
 
