@@ -7,205 +7,132 @@
 <link rel="icon" type="image/png" href="hybrid.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js"></script>
 
 <style>
 :root {
   --accent:#6366f1;
   --accent-hover:#4f46e5;
-  --bg:#f3f4f6;
+  --bg:#e8ebf3;
   --card:#ffffff;
   --text:#111827;
   --muted:#6b7280;
   --shadow:rgba(0,0,0,0.1);
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: "Inter", sans-serif;
-}
+/* Reset */
+* { box-sizing:border-box; margin:0; padding:0; font-family: "Inter", sans-serif; }
 
+/* Body & Background */
 body {
-  height: 100vh;
-  background: var(--bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+  height:100vh;
+  background:var(--bg);
+  overflow:hidden;
+  position:relative;
 }
 
-/* Main Card */
+/* Floating bubbles */
+.bubble {
+  position:absolute;
+  border-radius:50%;
+  background:var(--accent);
+  opacity:0.12;
+  animation:float 8s ease-in-out infinite;
+}
+.bubble:nth-child(1){width:120px;height:120px;top:10%;left:5%;animation-delay:0s;}
+.bubble:nth-child(2){width:80px;height:80px;bottom:15%;right:10%;animation-delay:2s;}
+.bubble:nth-child(3){width:60px;height:60px;top:40%;left:70%;animation-delay:1s;}
+@keyframes float {0%,100%{transform:translateY(0);}50%{transform:translateY(-25px);}}
+
+/* Main Panel */
 .reg-card {
   background: var(--card);
-  padding: 32px 28px;
+  padding: 30px 28px;
   border-radius: 18px;
-  width: 100%;
-  max-width: 420px;
-  text-align: center;
-  box-shadow: 0 12px 36px var(--shadow);
-  position: relative;
-  z-index: 2;
+  width: 400px;
+  max-width: 95%;
+  position:absolute;
+  top:50px;
+  left:50px;
+  box-shadow:0 16px 36px var(--shadow);
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  transform: translateZ(0);
 }
 
-.reg-card h2 {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 18px;
-}
-
-p.sub {
-  color: var(--muted);
-  font-size: 14px;
-  margin-bottom: 24px;
-}
-
-footer {
-  margin-top: 24px;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-/* Mini File Explorer Animation */
-#miniExplorer {
-  position: absolute;
-  top: -160px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 320px;
-  background: var(--card);
-  border-radius: 14px;
-  box-shadow: 0 8px 25px var(--shadow);
-  overflow: hidden;
-  opacity: 0;
-  animation: explorerDrop 1.2s ease forwards;
-}
-
-@keyframes explorerDrop {
-  from {opacity: 0; transform: translate(-50%, -40px);}
-  to {opacity: 1; transform: translate(-50%, 0);}
-}
-
-#miniExplorer .header {
-  background: var(--accent);
-  color: #fff;
-  padding: 10px 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-}
-
-#miniExplorer .content {
-  background: #f9fafb;
-  padding: 10px;
-  height: 110px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.file-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--text);
-  margin-bottom: 6px;
-  opacity: 0;
-  transform: translateY(10px);
-  animation: slideUp 0.4s forwards;
-}
-
-.file-row i {
-  color: var(--accent);
-}
-
-@keyframes slideUp {
-  to {opacity: 1; transform: translateY(0);}
-}
+/* Header */
+.reg-card h2{font-size:24px;font-weight:700;color:var(--text);}
+p.sub{font-size:14px;color:var(--muted);margin-bottom:16px;}
 
 /* User Info */
 #userInfo {
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  margin-top: 10px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:8px;
+  border-radius:12px;
+  background:#f9f9f9;
+  opacity:0;
+  transform:translateX(-30px);
+  transition:all 0.6s ease;
 }
+#userInfo.show {opacity:1; transform:translateX(0);}
+#userInfo img {width:60px;height:60px;border-radius:50%;box-shadow:0 4px 12px var(--shadow);}
+#userInfo h3{font-size:16px;color:var(--text);font-weight:600;}
 
-#userInfo img {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  box-shadow: 0 4px 12px var(--shadow);
+/* Mini File Explorer */
+#miniExplorer {
+  position:absolute;
+  top:220px;
+  left:50px;
+  width:320px;
+  background:var(--card);
+  border-radius:14px;
+  box-shadow:0 12px 36px var(--shadow);
+  overflow:hidden;
+  opacity:0;
+  animation:slideIn 1s ease forwards;
+  transform:translateY(-30px);
 }
+@keyframes slideIn {to{opacity:1; transform:translateY(0);}}
+#miniExplorer .header {
+  background:var(--accent);
+  color:#fff;
+  padding:10px 14px;
+  display:flex;align-items:center;gap:6px;font-size:14px;
+}
+#miniExplorer .content {
+  padding:10px;
+  max-height:150px;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.file-row {
+  display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text);
+  opacity:0; transform:translateX(-20px);
+  animation:rowSlide 0.5s forwards;
+}
+.file-row i{color:var(--accent);}
+@keyframes rowSlide {to{opacity:1; transform:translateX(0);}}
 
-#userInfo h3 {
-  font-size: 18px;
-  color: var(--text);
-  font-weight: 600;
-}
+/* Google Sign-In Button Wrapper */
+#buttonDiv {margin-top:12px; display:flex; justify-content:flex-start;}
 
-/* Floating Bubbles */
-.bubble {
-  position: absolute;
-  border-radius: 50%;
-  background: var(--accent);
-  opacity: 0.15;
-  animation: float 6s ease-in-out infinite;
-}
-
-.bubble:nth-child(1) {
-  width: 80px; height: 80px;
-  top: 15%; left: 10%;
-  animation-delay: 0s;
-}
-.bubble:nth-child(2) {
-  width: 120px; height: 120px;
-  bottom: 10%; right: 15%;
-  animation-delay: 2s;
-}
-.bubble:nth-child(3) {
-  width: 60px; height: 60px;
-  bottom: 20%; left: 25%;
-  animation-delay: 1s;
-}
-
-@keyframes float {
-  0%, 100% {transform: translateY(0);}
-  50% {transform: translateY(-20px);}
-}
-
-/* Drive Loading Overlay */
+/* Loading Overlay */
 #loadingOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(255,255,255,0.9);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  z-index: 100;
+  position:fixed; inset:0; background:rgba(255,255,255,0.9);
+  display:none; align-items:center; justify-content:center; flex-direction:column; z-index:100;
 }
-
-#loadingOverlay i {
-  font-size: 48px;
-  color: var(--accent);
-  animation: float 2s infinite;
-}
-
-#loadingOverlay p {
-  margin-top: 12px;
-  font-size: 14px;
-  color: var(--muted);
-}
+#loadingOverlay i{font-size:48px; color:var(--accent); animation:float 2s infinite;}
+#loadingOverlay p{margin-top:12px; font-size:14px; color:var(--muted);}
 </style>
 </head>
 <body>
 
-<!-- Floating Background -->
+<!-- Floating Bubbles -->
 <div class="bubble"></div>
 <div class="bubble"></div>
 <div class="bubble"></div>
@@ -217,35 +144,31 @@ footer {
 </div>
 
 <!-- Main Card -->
-<div class="reg-card" id="card">
-  <h2>Welcome to Hybrid Chat</h2>
+<div class="reg-card">
+  <h2>Hybrid Chat</h2>
   <p class="sub">Sign in with Google to continue</p>
-
   <div id="buttonDiv"></div>
-
   <div id="userInfo">
     <img id="userPic" alt="Profile">
     <h3 id="userName"></h3>
   </div>
-
-  <footer>Hybrid Chat © 2025 Dominex Macedon</footer>
 </div>
 
 <!-- Loading Overlay -->
 <div id="loadingOverlay">
   <i class="fab fa-google-drive"></i>
-  <p>Preparing your chat space...</p>
+  <p>Syncing your Drive account...</p>
 </div>
 
 <script>
-// Mini explorer animation
+// Mini Explorer Animation
 const explorerContent=document.getElementById('explorerContent');
 const exampleFiles=[
   {icon:"fa-folder",name:"Projects"},
   {icon:"fa-folder",name:"Hybrid Chat"},
   {icon:"fa-file-code",name:"main.js"},
   {icon:"fa-file-image",name:"avatar.png"},
-  {icon:"fa-file-lines",name:"readme.txt"}
+  {icon:"fa-file-lines",name:"account.json"}
 ];
 let i=0;
 function addNextFile(){
@@ -261,55 +184,72 @@ function addNextFile(){
 }
 addNextFile();
 
-// Google Sign-In setup
-window.onload = function() {
-  google.accounts.id.initialize({
-    client_id: "549003131640-o9umsg7tu0uisopde76mlf3lg5krt5g7.apps.googleusercontent.com",
-    callback: handleCredentialResponse
-  });
-  google.accounts.id.renderButton(
-    document.getElementById("buttonDiv"),
-    { theme: "filled_blue", size: "large", text: "signin_with", shape: "rectangular" }
-  );
-};
+// Google Sign-In
+let tokenClient;
+const CLIENT_ID="549003131640-o9umsg7tu0uisopde76mlf3lg5krt5g7.apps.googleusercontent.com";
+const SCOPES="https://www.googleapis.com/auth/drive.file";
 
-// Handle Sign-In Response
-function handleCredentialResponse(response) {
-  const data = JSON.parse(atob(response.credential.split('.')[1]));
-  const userInfo = document.getElementById('userInfo');
-  const pic = document.getElementById('userPic');
-  const name = document.getElementById('userName');
+window.onload = () => {
+  google.accounts.id.initialize({client_id:CLIENT_ID, callback:handleCredentialResponse});
+  google.accounts.id.renderButton(document.getElementById("buttonDiv"),
+    { theme: "filled_blue", size: "large", text: "signin_with", shape: "rectangular" });
+}
 
-  pic.src = data.picture;
-  name.textContent = data.name;
-  userInfo.style.display = "flex";
+// Handle Sign-In
+async function handleCredentialResponse(response){
+  const data=JSON.parse(atob(response.credential.split('.')[1]));
+
+  // Display profile
+  const userInfo=document.getElementById('userInfo');
+  document.getElementById('userPic').src=data.picture;
+  document.getElementById('userName').textContent=data.name;
+  userInfo.classList.add('show');
 
   // Save locally
-  const profileData = {
-    uuid: crypto.randomUUID(),
-    name: data.name,
-    email: data.email,
-    avatar: data.picture,
-    createdAt: new Date().toISOString()
+  const profileData={
+    uuid:crypto.randomUUID(),
+    name:data.name,
+    email:data.email,
+    avatar:data.picture,
+    createdAt:new Date().toISOString()
   };
   localStorage.setItem('rc_profile_v2', JSON.stringify(profileData));
 
   // Show loading overlay
-  const overlay = document.getElementById('loadingOverlay');
-  overlay.style.display = 'flex';
+  const overlay=document.getElementById('loadingOverlay');
+  overlay.style.display='flex';
 
-  // Redirect after delay
-  setTimeout(() => {
-    window.location.href = 'index.html';
-  }, 1800);
+  // Upload account.json to Drive
+  gapi.load('client', async () => {
+    await gapi.client.init({discoveryDocs:["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"]});
+    tokenClient=google.accounts.oauth2.initTokenClient({
+      client_id:CLIENT_ID,
+      scope:SCOPES,
+      callback: async (tokenResponse)=>{
+        if(tokenResponse.error){console.error(tokenResponse);return;}
+        const accessToken=tokenResponse.access_token;
+        const metadata={name:"account.json",mimeType:"application/json"};
+        const form=new FormData();
+        form.append('metadata', new Blob([JSON.stringify(metadata)],{type:'application/json'}));
+        form.append('file', new Blob([JSON.stringify(profileData)],{type:'application/json'}));
+        await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
+          method:'POST',
+          headers:{'Authorization':'Bearer '+accessToken},
+          body:form
+        });
+        // Redirect after small delay
+        setTimeout(()=>window.location.href='index.html',1200);
+      }
+    });
+    tokenClient.requestAccessToken({prompt:'consent'});
+  });
 }
 
-// Disable right-click and DevTools
-document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('keydown', e => {
-  if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) || (e.ctrlKey && ['U','S','P'].includes(e.key.toUpperCase()))) {
-    e.preventDefault();
-    e.stopPropagation();
+// Disable right-click & devtools
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('keydown',e=>{
+  if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','J','C'].includes(e.key.toUpperCase()))||(e.ctrlKey&&['U','S','P'].includes(e.key.toUpperCase()))){
+    e.preventDefault(); e.stopPropagation();
   }
 });
 </script>
