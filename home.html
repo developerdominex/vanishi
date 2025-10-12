@@ -2,177 +2,153 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Realtime Chat</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Realtime Chat — Animated</title>
 <link rel="icon" type="image/png" href="hybrid.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
 :root {
-  --bg:#f7f7f8;
+  --bg:#f0f2f5;
   --card:#ffffff;
   --accent:#6366f1;
   --accent-hover:#4f46e5;
   --text:#111827;
   --text-muted:#6b7280;
   --input-bg:#f3f4f6;
-  --shadow:rgba(0,0,0,0.08);
-  --border:#e5e7eb;
+  --shadow:rgba(0,0,0,0.1);
+  --border:#d1d5db;
   --online:#10b981;
-  --menu-bg:#fff;
+  --radius:16px;
 }
 
+/* Reset */
 *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,sans-serif;}
+
+/* Body */
 body{display:flex;flex-direction:column;height:100vh;background:var(--bg);color:var(--text);overflow:hidden;}
 
-#topMenu{
+/* Top bar */
+#topBar{
   height:60px;
-  background:var(--menu-bg);
+  background:var(--card);
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding:0 20px;
-  border-bottom:1px solid var(--border);
+  padding:0 16px;
   box-shadow:0 2px 6px var(--shadow);
   position:fixed;
+  width:100%;
   top:0;
-  left:0;
-  right:0;
   z-index:1000;
+  animation: slideDown 0.6s ease;
 }
-#menuLogo{font-weight:700;font-size:20px;color:var(--accent);}
-#menuToggle{font-size:20px;cursor:pointer;display:none;}
-#menuActions{display:flex;gap:12px;align-items:center;}
-#menuActions button{padding:6px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;}
-#menuActions button:hover{background:var(--accent-hover);}
+#topBar h1{font-size:20px;font-weight:700;color:var(--accent);}
+#topBar button{padding:6px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;transition:0.3s;}
+#topBar button:hover{background:var(--accent-hover);transform:scale(1.05);}
 
-#container{display:flex;flex:1;margin-top:60px;transition:all 0.3s ease;height:calc(100vh - 60px);}
+/* Slide down animation */
+@keyframes slideDown{from{transform:translateY(-100%);}to{transform:translateY(0);}}
 
-#userList{
-  width:280px;
+/* Main container */
+#main{display:flex;flex:1;margin-top:60px;overflow:hidden;height:calc(100vh - 60px);}
+
+/* Users panel */
+#usersPanel{
+  width:300px;
   background:var(--card);
-  display:flex;
-  flex-direction:column;
   border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
   transition:all 0.3s ease;
-  z-index:1000;
+  overflow-y:auto;
 }
-#userList header{padding:16px;font-weight:600;font-size:18px;border-bottom:1px solid var(--border);}
-#userList input{margin:12px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);outline:none;font-size:14px;}
-.user-card{
-  display:flex;
-  align-items:center;
-  padding:10px 12px;
-  gap:12px;
-  cursor:pointer;
-  border-radius:12px;
-  transition:all 0.2s;
-  position:relative;
-  flex-direction:column;
-  align-items:flex-start;
+#usersPanel header{padding:16px;font-weight:600;font-size:18px;border-bottom:1px solid var(--border);}
+#usersPanel input{margin:12px;padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:var(--input-bg);outline:none;font-size:14px;transition:0.3s;}
+.user-item{
+  display:flex;align-items:center;padding:10px 12px;gap:12px;cursor:pointer;border-radius:12px;transition:all 0.2s;
+  animation: fadeIn 0.5s ease forwards; opacity:0; transform:translateX(-20px);
 }
-.user-card:hover{background:var(--input-bg);}
-.user-card.selected{background:var(--accent-hover);color:#fff;}
-.user-thumb{width:50px;height:50px;border-radius:50%;object-fit:cover;flex-shrink:0;}
-.user-meta{flex:1;width:100%;display:flex;flex-direction:column;justify-content:center;}
-.user-meta strong{font-size:16px;display:flex;justify-content:space-between;}
-.user-meta span{font-size:13px;color:var(--text-muted);}
-.user-meta .last-message{font-size:14px;color:var(--text-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.user-meta.unread strong{font-weight:700;}
-.user-meta.unread .last-message{font-weight:500;color:#111827;}
-.timestamp{font-size:11px;color:var(--text-muted);}
-.online-dot{width:10px;height:10px;border-radius:50%;background:var(--online);position:absolute;top:15px;right:12px;}
+.user-item:hover{background:var(--input-bg);}
+.user-item.selected{background:var(--accent-hover);color:#fff;}
+.user-item img{width:50px;height:50px;border-radius:50%;object-fit:cover;}
+.user-meta{display:flex;flex-direction:column;flex:1;overflow:hidden;}
+.user-meta strong{display:flex;justify-content:space-between;font-size:16px;}
+.user-meta span{font-size:13px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
-#chatContainer{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  background:var(--bg);
-  position:relative;
-}
+/* Chat panel */
+#chatPanel{flex:1;display:flex;flex-direction:column;position:relative;transition:all 0.3s ease;background:var(--bg);}
 #chatHeader{
-  padding:16px;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  background:var(--card);
-  border-bottom:1px solid var(--border);
-  box-shadow:0 2px 4px var(--shadow);
-  position:sticky;
-  top:0;
-  z-index:10;
+  display:flex;align-items:center;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);
+  box-shadow:0 1px 3px var(--shadow);position:sticky;top:0;z-index:10;
 }
-#chatHeader img{width:40px;height:40px;border-radius:50%;object-fit:cover;display:none;}
-#chatHeader .profile-info{flex:1;display:flex;flex-direction:column;}
-#chatHeader .profile-info strong{font-size:16px;}
-#chatHeader .profile-info span{font-size:12px;color:var(--online);}
-#chatBody{flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;background:var(--bg);}
-#chatBody.placeholder{align-items:center;justify-content:center;color:var(--text-muted);font-size:18px;}
-.msg{max-width:70%;padding:10px 14px;border-radius:16px;word-break:break-word;background:var(--card);box-shadow:0 1px 3px var(--shadow);}
+#chatHeader img{width:40px;height:40px;border-radius:50%;object-fit:cover;margin-right:12px;transition:0.3s;}
+#chatHeader .info{display:flex;flex-direction:column;}
+#chatHeader .info strong{font-size:16px;}
+#chatHeader .info span{font-size:12px;color:var(--online);}
+
+/* Chat body */
+#chatBody{
+  flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;
+}
+#chatBody.placeholder{justify-content:center;align-items:center;color:var(--text-muted);font-size:18px;}
+
+/* Messages */
+.msg{max-width:70%;padding:10px 14px;border-radius:16px;word-break:break-word;background:var(--card);box-shadow:0 1px 3px var(--shadow);opacity:0;transform:translateY(20px);animation:msgIn 0.4s forwards;}
 .msg.me{align-self:flex-end;background:var(--accent-hover);color:#fff;}
 .msg.received{align-self:flex-start;background:var(--card);}
-.msg img{max-width:250px;border-radius:12px;}
+.msg img{max-width:250px;border-radius:12px;transition:0.3s;}
+@keyframes msgIn{to{opacity:1;transform:translateY(0);}}
 
-#chatControls{display:flex;padding:12px;gap:8px;border-top:1px solid var(--border);background:var(--card);}
-#chatInput{flex:1;padding:10px 16px;border-radius:50px;border:1px solid var(--border);background:var(--input-bg);outline:none;font-size:14px;}
-#sendBtn,#attachBtn{width:45px;height:45px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;}
+/* Chat controls */
+#chatControls{display:flex;gap:8px;padding:12px;background:var(--card);border-top:1px solid var(--border);}
+#chatInput{flex:1;padding:10px 16px;border-radius:50px;border:1px solid var(--border);background:var(--input-bg);outline:none;font-size:14px;transition:0.3s;}
+#sendBtn,#attachBtn{width:45px;height:45px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;transition:0.3s;}
 #sendBtn{background:var(--accent);color:#fff;}
 #attachBtn{background:var(--input-bg);color:var(--text-muted);}
-#closeBtn{display:none;}
+#sendBtn:hover{transform:scale(1.1);}
+#attachBtn:hover{transform:scale(1.1);}
+#chatFile{display:none;}
 
-#chatBody::-webkit-scrollbar{width:6px;}
-#chatBody::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.1);border-radius:3px;}
-#users::-webkit-scrollbar{height:6px;}
-#users::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.1);border-radius:3px;}
+/* Scrollbars */
+#chatBody::-webkit-scrollbar,#usersPanel::-webkit-scrollbar{width:6px;}
+#chatBody::-webkit-scrollbar-thumb,#usersPanel::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.1);border-radius:3px;}
 
+/* Mobile */
 @media(max-width:768px){
-  #menuToggle{display:block;}
-  #userList{
-    position:fixed;
-    top:60px;
-    left:-280px;
-    height:100%;
-    z-index:1000;
-    box-shadow:0 8px 24px var(--shadow);
-  }
-  #userList.active{left:0;}
-  #container{flex-direction:column;height:100%;}
-  #chatContainer{flex:1;}
-  #chatHeader{padding:12px;}
-  #chatControls{padding:8px;gap:6px;}
-  .msg{max-width:75%;}
+  #usersPanel{position:fixed;left:-300px;top:60px;bottom:0;z-index:1000;box-shadow:0 8px 24px var(--shadow);}
+  #usersPanel.active{left:0;}
+  #chatPanel{flex:1;position:relative;}
+  #chatPanel.active{margin-left:0;}
 }
 </style>
 </head>
 <body>
-<div id="topMenu">
-  <div id="menuLogo">Realtime Chat</div>
-  <div id="menuActions">
-    <button id="logoutBtn">Logout</button>
-    <i id="menuToggle" class="fas fa-bars"></i>
-  </div>
+
+<div id="topBar">
+  <h1>Realtime Chat</h1>
+  <button id="logoutBtn">Logout</button>
 </div>
 
-<div id="container">
-  <div id="userList">
+<div id="main">
+  <div id="usersPanel">
     <header>Online Users</header>
-    <input type="text" id="searchInput" placeholder="Search users...">
-    <div id="users"></div>
+    <input type="text" id="searchUser" placeholder="Search users...">
+    <div id="usersList"></div>
   </div>
 
-  <div id="chatContainer">
+  <div id="chatPanel">
     <div id="chatHeader">
-      <img id="chatAvatar" src="">
-      <div class="profile-info">
-        <strong id="chatWith">Select user first</strong>
+      <img id="chatAvatar" src="" alt="avatar">
+      <div class="info">
+        <strong id="chatName">Select a user</strong>
         <span id="chatStatus"></span>
       </div>
-      <button id="closeBtn"><i class="fas fa-times"></i></button>
     </div>
-    <div id="chatBody" class="placeholder">Select user first to chat</div>
+    <div id="chatBody" class="placeholder">Select a user to start chatting</div>
     <div id="chatControls">
       <input type="text" id="chatInput" placeholder="Type a message...">
       <button id="attachBtn"><i class="fas fa-paperclip"></i></button>
-      <input type="file" id="chatFile" accept="image/*" style="display:none">
+      <input type="file" id="chatFile" accept="image/*">
       <button id="sendBtn"><i class="fas fa-paper-plane"></i></button>
     </div>
   </div>
@@ -183,231 +159,131 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const supabaseUrl = 'https://dfzshvldanqfvfivjrqi.supabase.co'
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmenNodmxkYW5xZnZmaXZqcnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4MDIxNTEsImV4cCI6MjA3MDM3ODE1MX0.wdms-6G9eDzRuk1YiCpdyvVS-5CRKCsrq9WWWIFl9HA'
-const supabase = createClient(supabaseUrl, supabaseKey)
+const supabase = createClient(supabaseUrl,supabaseKey)
 
-let profile = JSON.parse(localStorage.getItem('hc_profile') || 'null')
-if (!profile) location.href = 'register.html'
+let profile = JSON.parse(localStorage.getItem('hc_profile')||'null')
+if(!profile) location.href='register.html'
 
-let onlineUsers = {}, pcMap = {}, dataChannelMap = {}, chatHistory = JSON.parse(localStorage.getItem('hc_chat') || '{}'), currentPeer = null, typingTimeout
+let onlineUsers = {}, pcMap={}, dataChannelMap={}, chatHistory=JSON.parse(localStorage.getItem('hc_chat')||'{}'), currentPeer=null, typingTimeout
 
-const usersDiv = document.getElementById('users')
-const searchInput = document.getElementById('searchInput')
-const chatWith = document.getElementById('chatWith')
-const chatStatus = document.getElementById('chatStatus')
-const chatAvatar = document.getElementById('chatAvatar')
-const chatBody = document.getElementById('chatBody')
-const chatInput = document.getElementById('chatInput')
-const chatFile = document.getElementById('chatFile')
-const sendBtn = document.getElementById('sendBtn')
-const attachBtn = document.getElementById('attachBtn')
-const chatContainer = document.getElementById('chatContainer')
-const closeBtn = document.getElementById('closeBtn')
-const chatControls = document.getElementById('chatControls')
+const usersList=document.getElementById('usersList')
+const searchUser=document.getElementById('searchUser')
+const chatName=document.getElementById('chatName')
+const chatStatus=document.getElementById('chatStatus')
+const chatAvatar=document.getElementById('chatAvatar')
+const chatBody=document.getElementById('chatBody')
+const chatInput=document.getElementById('chatInput')
+const sendBtn=document.getElementById('sendBtn')
+const attachBtn=document.getElementById('attachBtn')
+const chatFile=document.getElementById('chatFile')
 
-searchInput.addEventListener('input', () => renderUsers(searchInput.value.trim()))
+// Render users
+searchUser.addEventListener('input',()=>renderUsers(searchUser.value.trim()))
+function renderUsers(filter=''){
+  usersList.innerHTML=''
+  Object.values(onlineUsers)
+    .filter(u=>u.uuid!==profile.uuid && (!filter || u.name.toLowerCase().includes(filter.toLowerCase())))
+    .forEach(u=>{
+      const div=document.createElement('div')
+      div.className='user-item'
+      div.innerHTML=`<img src="${u.avatar}"><div class="user-meta"><strong>${u.name}</strong></div>`
+      div.addEventListener('click',()=>openChat(u,div))
+      usersList.appendChild(div)
+      setTimeout(()=>{div.style.opacity=1; div.style.transform='translateX(0)';},100)
+    })
+}
 
-function openChat(user, element) {
-  document.querySelectorAll('.user-card').forEach(e => e.classList.remove('selected'))
+// Open chat
+function openChat(user,element){
+  document.querySelectorAll('.user-item').forEach(e=>e.classList.remove('selected'))
   element.classList.add('selected')
-  currentPeer = user.uuid
-  chatWith.textContent = user.name
-  chatStatus.textContent = 'Online'
-  chatAvatar.src = user.avatar
-  chatAvatar.style.display = 'block'
+  currentPeer=user.uuid
+  chatName.textContent=user.name
+  chatAvatar.src=user.avatar
+  chatStatus.textContent='Online'
   chatBody.classList.remove('placeholder')
-  chatBody.innerHTML = ''
-  if (!chatHistory[currentPeer]) chatHistory[currentPeer] = []
-  chatHistory[currentPeer].forEach(msg => appendMessage(currentPeer, msg.text, msg.me, msg.isImage, false))
-  if (!pcMap[user.uuid]) createPeerConnection(user.uuid)
-  chatContainer.classList.add('active')
-  chatControls.style.display = 'flex'
+  chatBody.innerHTML=''
+  if(!chatHistory[currentPeer]) chatHistory[currentPeer]=[]
+  chatHistory[currentPeer].forEach(msg=>appendMessage(msg.text,msg.me,msg.isImage,false))
+  if(!pcMap[user.uuid]) createPeerConnection(user.uuid)
 }
 
-function renderUsers(filter = '') {
-  usersDiv.innerHTML = ''
-  const list = Object.values(onlineUsers)
-    .filter(u => u.uuid !== profile.uuid && (!filter || u.name.toLowerCase().includes(filter.toLowerCase())))
-    .sort((a, b) => {
-      const aTime = chatHistory[a.uuid]?.[chatHistory[a.uuid].length - 1]?.ts || 0
-      const bTime = chatHistory[b.uuid]?.[chatHistory[b.uuid].length - 1]?.ts || 0
-      return bTime - aTime
-    })
-
-  list.forEach(u => {
-    const lastMsgObj = chatHistory[u.uuid]?.[chatHistory[u.uuid].length - 1]
-    const lastMsg = lastMsgObj ? lastMsgObj.text : 'No messages yet'
-    const isUnread = lastMsgObj?.me === false && !lastMsgObj.read
-    const div = document.createElement('div')
-    div.className = 'user-card'
-    div.innerHTML = `
-      <div style="display:flex;align-items:center;width:100%;">
-        <img class="user-thumb" src="${u.avatar}">
-        <div class="user-meta ${isUnread ? 'unread' : ''}">
-          <strong>${u.name} <span class="timestamp">${lastMsgObj ? formatTime(lastMsgObj.ts) : ''}</span></strong>
-          <span class="last-message">${lastMsg}</span>
-        </div>
-      </div>
-    `
-    div.addEventListener('click', () => {
-      if (chatHistory[u.uuid]) chatHistory[u.uuid].forEach(m => m.read = true)
-      openChat(u, div)
-      renderUsers(searchInput.value.trim())
-    })
-    usersDiv.appendChild(div)
-  })
-}
-
-function formatTime(ts) {
-  if (!ts) return ''
-  const d = new Date(ts)
-  let hours = d.getHours()
-  const minutes = d.getMinutes().toString().padStart(2, '0')
-  const ampm = hours >= 12 ? 'PM' : 'AM'
-  hours = hours % 12 || 12
-  return `${hours}:${minutes} ${ampm}`
-}
-
-function appendMessage(userUuid, text, me = false, isImage = false, save = true) {
-  const div = document.createElement('div')
-  div.className = 'msg ' + (me ? 'me' : 'received')
-  if (isImage) {
-    const img = document.createElement('img')
-    img.src = text
-    div.appendChild(img)
-  } else div.textContent = text
+// Append message
+function appendMessage(text,me=false,isImage=false,save=true){
+  const div=document.createElement('div')
+  div.className='msg '+(me?'me':'received')
+  if(isImage){const img=document.createElement('img');img.src=text;div.appendChild(img)}
+  else div.textContent=text
   chatBody.appendChild(div)
-  chatBody.scrollTop = chatBody.scrollHeight
-  if (save) {
-    if (!chatHistory[userUuid]) chatHistory[userUuid] = []
-    chatHistory[userUuid].push({ text, me, isImage, ts: Date.now(), read: me })
-    localStorage.setItem('hc_chat', JSON.stringify(chatHistory))
-    renderUsers(searchInput.value.trim())
+  chatBody.scrollTop=chatBody.scrollHeight
+  if(save && currentPeer){
+    chatHistory[currentPeer].push({text,me,isImage,ts:Date.now(),read:me})
+    localStorage.setItem('hc_chat',JSON.stringify(chatHistory))
   }
 }
 
-chatInput.addEventListener('input', () => {
-  if (!currentPeer) return
-  sendSignal(currentPeer, { type: 'typing' })
+// Send message
+sendBtn.addEventListener('click',()=>{if(currentPeer){const val=chatInput.value.trim();if(val){appendMessage(val,true);dataChannelMap[currentPeer]?.send(val);chatInput.value='';}}})
+chatInput.addEventListener('keydown',e=>{if(e.key==='Enter'){sendBtn.click()}})
+
+// Attach image
+attachBtn.addEventListener('click',()=>chatFile.click())
+chatFile.addEventListener('change',e=>{
+  const file=e.target.files[0];if(!file) return
+  const reader=new FileReader()
+  reader.onload=()=>{appendMessage(reader.result,true,true); dataChannelMap[currentPeer]?.send(reader.result)}
+  reader.readAsDataURL(file)
+  chatFile.value=''
 })
 
-function showTyping(userUuid) {
-  if (currentPeer !== userUuid) return
-  chatStatus.textContent = 'Typing...'
-  clearTimeout(typingTimeout)
-  typingTimeout = setTimeout(() => { chatStatus.textContent = 'Online' }, 1000)
-}
-
-async function startRealtime() {
+// Real-time presence & signaling
+async function startRealtime(){
   const presence = supabase.channel('public:presence')
-  presence.on('broadcast', { event: 'user-presence' }, payload => {
-    const u = payload.payload
-    if (!u?.uuid) return
-    if (u.action === 'join' || u.action === 'update') { onlineUsers[u.uuid] = { ...u }; renderUsers(searchInput.value.trim()) }
-    else if (u.action === 'leave') { delete onlineUsers[u.uuid]; renderUsers(searchInput.value.trim()) }
+  presence.on('broadcast',{event:'user-presence'},payload=>{
+    const u=payload.payload
+    if(!u?.uuid) return
+    if(u.action==='join'||u.action==='update'){onlineUsers[u.uuid]={...u}; renderUsers(searchUser.value.trim())}
+    else if(u.action==='leave'){delete onlineUsers[u.uuid]; renderUsers(searchUser.value.trim())}
   })
 
   const signaling = supabase.channel('public:signaling')
-  signaling.on('broadcast', { event: 'signal' }, async payload => {
-    const msg = payload.payload
-    if (!msg || msg.to !== profile.uuid) return
-    if (msg.type === 'offer') await handleOffer(msg.from, msg.sdp)
-    else if (msg.type === 'answer') await handleAnswer(msg.from, msg.sdp)
-    else if (msg.type === 'candidate') await handleCandidate(msg.from, msg.candidate)
-    else if (msg.type === 'message') appendMessage(msg.from, msg.data, false, msg.isImage)
-    else if (msg.type === 'typing') showTyping(msg.from)
+  signaling.on('broadcast',{event:'signal'},payload=>{
+    const msg=payload.payload
+    if(!msg||msg.to!==profile.uuid) return
+    if(msg.type==='offer') handleOffer(msg.from,msg.sdp)
+    else if(msg.type==='answer') handleAnswer(msg.from,msg.sdp)
+    else if(msg.type==='candidate') handleCandidate(msg.from,msg.candidate)
+    else if(msg.type==='message') appendMessage(msg.data,false,msg.isImage)
+    else if(msg.type==='typing') showTyping(msg.from)
   })
 
   await presence.subscribe(); await signaling.subscribe()
   broadcastPresence('join')
-  setInterval(() => broadcastPresence('update'), 25000)
-  window.addEventListener('beforeunload', () => broadcastPresence('leave'))
+  setInterval(()=>broadcastPresence('update'),25000)
+  window.addEventListener('beforeunload',()=>broadcastPresence('leave'))
 }
+async function broadcastPresence(action){await supabase.channel('public:presence').send({type:'broadcast',event:'user-presence',payload:{...profile,action,ts:Date.now()}})}
 
-async function broadcastPresence(action) {
-  await supabase.channel('public:presence').send({ type: 'broadcast', event: 'user-presence', payload: { ...profile, action, ts: Date.now() } })
-}
-
-function createPeerConnection(peer) {
-  const pc = new RTCPeerConnection()
-  const dc = pc.createDataChannel('chat')
-  dc.onmessage = e => appendMessage(peer, e.data, false)
-  dataChannelMap[peer] = dc
-  pc.onicecandidate = e => { if (e.candidate) sendSignal(peer, { type: 'candidate', candidate: e.candidate }) }
-  pc.ondatachannel = e => { e.channel.onmessage = e => appendMessage(peer, e.data, false) }
-  pcMap[peer] = pc
+// WebRTC connections
+function createPeerConnection(peer){
+  const pc=new RTCPeerConnection()
+  const dc=pc.createDataChannel('chat')
+  dc.onmessage=e=>appendMessage(e.data,false)
+  dataChannelMap[peer]=dc
+  pc.onicecandidate=e=>{if(e.candidate) sendSignal(peer,{type:'candidate',candidate:e.candidate})}
+  pc.ondatachannel=e=>{e.channel.onmessage=e=>appendMessage(e.data,false)}
+  pcMap[peer]=pc
   makeOffer(peer)
 }
-
-async function makeOffer(peer) {
-  const pc = pcMap[peer]
-  const offer = await pc.createOffer(); await pc.setLocalDescription(offer)
-  sendSignal(peer, { type: 'offer', sdp: offer })
-}
-
-async function handleOffer(from, sdp) {
-  if (!pcMap[from]) {
-    const pc = new RTCPeerConnection()
-    pc.ondatachannel = e => { e.channel.onmessage = e => appendMessage(from, e.data, false) }
-    pc.onicecandidate = e => { if (e.candidate) sendSignal(from, { type: 'candidate', candidate: e.candidate }) }
-    pcMap[from] = pc
-  }
-  const pc = pcMap[from]; await pc.setRemoteDescription(new RTCSessionDescription(sdp))
-  const answer = await pc.createAnswer(); await pc.setLocalDescription(answer)
-  sendSignal(from, { type: 'answer', sdp: answer })
-}
-
-async function handleAnswer(from, sdp) { await pcMap[from]?.setRemoteDescription(new RTCSessionDescription(sdp)) }
-async function handleCandidate(from, candidate) { await pcMap[from]?.addIceCandidate(new RTCIceCandidate(candidate)) }
-function sendSignal(to, msg) { supabase.channel('public:signaling').send({ type: 'broadcast', event: 'signal', payload: { ...msg, from: profile.uuid, to } }) }
-
-function updateSendIcon() {
-  if (chatInput.value.trim()) { sendBtn.style.display = 'flex'; attachBtn.style.display = 'none'; }
-  else { sendBtn.style.display = 'none'; attachBtn.style.display = 'flex'; }
-}
-
-sendBtn.addEventListener('click', sendMessage)
-chatInput.addEventListener('input', updateSendIcon)
-chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage() })
-updateSendIcon()
-attachBtn.addEventListener('click', () => chatFile.click())
-chatFile.addEventListener('change', e => {
-  const file = e.target.files[0]; if (!file) return
-  const reader = new FileReader(); reader.onload = () => { sendImage(reader.result) }
-  reader.readAsDataURL(file); chatFile.value = ''
-})
-
-function sendMessage() {
-  if (!currentPeer) return
-  const val = chatInput.value.trim(); if (!val) return
-  appendMessage(currentPeer, val, true)
-  dataChannelMap[currentPeer]?.send(val)
-  sendSignal(currentPeer, { type: 'message', data: val, isImage: false })
-  chatInput.value = ''; updateSendIcon()
-}
-
-function sendImage(data) {
-  if (!currentPeer) return
-  appendMessage(currentPeer, data, true, true)
-  sendSignal(currentPeer, { type: 'message', data, isImage: true })
-}
-
-closeBtn.addEventListener('click', () => chatContainer.classList.remove('active'))
+async function makeOffer(peer){const pc=pcMap[peer]; const offer=await pc.createOffer(); await pc.setLocalDescription(offer); sendSignal(peer,{type:'offer',sdp:offer})}
+async function handleOffer(from,sdp){if(!pcMap[from]){const pc=new RTCPeerConnection(); pc.ondatachannel=e=>{e.channel.onmessage=e=>appendMessage(from,false)}; pc.onicecandidate=e=>{if(e.candidate) sendSignal(from,{type:'candidate',candidate:e.candidate})}; pcMap[from]=pc} const pc=pcMap[from]; await pc.setRemoteDescription(new RTCSessionDescription(sdp)); const answer=await pc.createAnswer(); await pc.setLocalDescription(answer); sendSignal(from,{type:'answer',sdp:answer})}
+async function handleAnswer(from,sdp){await pcMap[from]?.setRemoteDescription(new RTCSessionDescription(sdp))}
+async function handleCandidate(from,candidate){await pcMap[from]?.addIceCandidate(new RTCIceCandidate(candidate))}
+function sendSignal(to,msg){supabase.channel('public:signaling').send({type:'broadcast',event:'signal',payload:{...msg,from:profile.uuid,to}})}
+function showTyping(user){if(currentPeer!==user) return; chatStatus.textContent='Typing...'; clearTimeout(typingTimeout); typingTimeout=setTimeout(()=>chatStatus.textContent='Online',1000)}
 
 startRealtime()
-document.addEventListener('contextmenu', e => e.preventDefault())
-document.addEventListener('keydown', e => {
-  if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) || (e.ctrlKey && ['U', 'S', 'P'].includes(e.key.toUpperCase()))) { e.preventDefault(); e.stopPropagation() }
-})
-document.addEventListener('dragstart', e => e.preventDefault())
-document.addEventListener('copy', e => e.preventDefault())
-document.addEventListener('cut', e => e.preventDefault())
-document.addEventListener('paste', e => e.preventDefault())
 </script>
 
 </body>
 </html>
-
-
-
-
-
