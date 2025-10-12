@@ -13,136 +13,184 @@
 :root {
   --accent: #6366f1;
   --accent-hover: #4f46e5;
-  --bg: #e8ebf3;
-  --text: #111827;
-  --muted: #6b7280;
+  --bg: #f3f4f6;
+  --white: #ffffff;
   --shadow: rgba(0,0,0,0.15);
+  --text: #1e293b;
+  --muted: #6b7280;
+  --radius: 18px;
 }
 
 /* Reset */
-* { box-sizing:border-box; margin:0; padding:0; font-family:"Inter",sans-serif; }
+* {
+  margin: 0; padding: 0;
+  box-sizing: border-box;
+  font-family: "Inter", system-ui, sans-serif;
+}
 
+/* Body background animation */
 body {
-  height:100vh; width:100vw;
-  background:var(--bg);
-  overflow:hidden;
-  position:relative;
+  height: 100vh;
+  width: 100vw;
+  background: radial-gradient(circle at top right, #e0e7ff, #f3f4f6);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
-/* Floating Bubbles */
+/* Floating bubbles for depth */
 .bubble {
-  position:absolute;
-  border-radius:50%;
-  background:var(--accent);
-  opacity:0.1;
-  animation:float 8s ease-in-out infinite;
+  position: absolute;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.1;
+  filter: blur(2px);
+  animation: float 8s ease-in-out infinite alternate;
 }
-.bubble:nth-child(1){width:120px;height:120px;top:10%;left:5%;animation-delay:0s;}
-.bubble:nth-child(2){width:80px;height:80px;bottom:15%;right:10%;animation-delay:2s;}
-.bubble:nth-child(3){width:60px;height:60px;top:40%;left:70%;animation-delay:1s;}
-@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-20px);}}
+.bubble:nth-child(1) { width: 180px; height: 180px; top: 5%; left: 10%; animation-delay: 0s; }
+.bubble:nth-child(2) { width: 120px; height: 120px; bottom: 10%; right: 20%; animation-delay: 1s; }
+.bubble:nth-child(3) { width: 80px; height: 80px; top: 50%; left: 60%; animation-delay: 2s; }
+@keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-25px);} }
 
-/* Mini Explorer */
-#miniExplorer{
-  position:absolute;
-  top:50px; left:50px;
-  width:340px;
-  background:#ffffff;
-  border-radius:18px;
-  box-shadow:0 12px 36px var(--shadow);
-  overflow:hidden;
-  opacity:0;
-  transform:translateY(-30px);
-  animation:slideIn 1s forwards;
+/* Explorer container (full-width, centered) */
+#explorer {
+  width: 80%;
+  max-width: 1000px;
+  height: 400px;
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 36px var(--shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.8s ease forwards;
+  opacity: 0;
+  transform: translateY(40px);
 }
-@keyframes slideIn{to{opacity:1; transform:translateY(0);}}
+@keyframes slideIn { to { opacity: 1; transform: translateY(0); } }
 
-#miniExplorer .header{
-  background:var(--accent);
-  color:#fff;
-  padding:14px 18px;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  font-size:16px;
-  font-weight:600;
-}
-#miniExplorer .content{
-  display:flex;
-  flex-direction:column;
-  padding:14px;
-  gap:10px;
-  max-height:280px;
-  overflow:hidden;
+/* Header */
+#explorer .header {
+  background: var(--accent);
+  color: white;
+  padding: 16px 24px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
 }
 
-/* Files & Folders */
-.file-row{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  font-size:15px;
-  font-weight:500;
-  color:var(--text);
-  opacity:0;
-  transform:translateX(-25px);
-  animation:rowSlide 0.5s forwards;
-}
-.file-row i{
-  font-size:22px;
-  color:var(--accent);
-  animation:floatIcon 2s ease-in-out infinite alternate;
-}
-@keyframes rowSlide{to{opacity:1; transform:translateX(0);}}
-@keyframes floatIcon{0%{transform:translateY(0);}100%{transform:translateY(-4px);}}
-
-/* Google Sign-In button to right */
-#buttonDiv{
-  position:absolute;
-  top:50px;
-  left:420px; /* small space to right of explorer */
+/* Content grid */
+#explorer .content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+  padding: 24px;
+  transition: all 0.4s ease;
 }
 
-/* User Info */
-#userInfo{
-  position:absolute;
-  top:360px; left:50px;
-  display:flex;
-  align-items:center;
-  gap:14px;
-  padding:12px 16px;
-  border-radius:18px;
-  background:#ffffff;
-  box-shadow:0 10px 28px var(--shadow);
-  opacity:0;
-  transform:translateY(-20px);
-  transition:all 0.5s ease;
+/* File/folder item */
+.item {
+  background: #f9fafb;
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+  cursor: pointer;
+  transform: scale(0.95);
+  opacity: 0;
+  animation: fadeInItem 0.4s forwards;
 }
-#userInfo.show{opacity:1; transform:translateY(0);}
-#userInfo img{width:70px;height:70px;border-radius:50%;box-shadow:0 5px 14px var(--shadow);}
-#userInfo h3{font-size:18px;font-weight:600;color:var(--text);}
+@keyframes fadeInItem {
+  to { opacity: 1; transform: scale(1); }
+}
+.item:hover {
+  background: #eef2ff;
+  transform: translateY(-3px);
+}
+.item i {
+  font-size: 30px;
+  color: var(--accent);
+}
+.item span {
+  font-weight: 500;
+  color: var(--text);
+}
 
-/* Loading Overlay */
-#loadingOverlay{
-  position:fixed; inset:0;
-  background:rgba(255,255,255,0.95);
-  display:none;
-  align-items:center; justify-content:center; flex-direction:column; z-index:100;
+/* Sign-in area */
+#buttonDiv {
+  margin-top: 30px;
 }
-#loadingOverlay i{font-size:48px; color:var(--accent); animation:float 2s infinite;}
-#loadingOverlay p{margin-top:12px; font-size:14px; color:var(--muted);}
+
+/* User info card */
+#userInfo {
+  margin-top: 40px;
+  background: var(--white);
+  box-shadow: 0 8px 24px var(--shadow);
+  border-radius: var(--radius);
+  padding: 16px 22px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.6s ease;
+}
+#userInfo.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+#userInfo img {
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  box-shadow: 0 5px 14px var(--shadow);
+}
+#userInfo h3 {
+  font-size: 18px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Loading overlay */
+#loadingOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.96);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+#loadingOverlay i {
+  font-size: 50px;
+  color: var(--accent);
+  animation: float 2s infinite;
+}
+#loadingOverlay p {
+  color: var(--muted);
+  margin-top: 10px;
+  font-size: 15px;
+}
 </style>
 </head>
 <body>
 
-<!-- Floating Bubbles -->
 <div class="bubble"></div>
 <div class="bubble"></div>
 <div class="bubble"></div>
 
-<!-- Mini File Explorer -->
-<div id="miniExplorer">
-  <div class="header"><i class="fab fa-google-drive"></i> Google Drive</div>
+<!-- Explorer -->
+<div id="explorer">
+  <div class="header"><i class="fab fa-google-drive"></i> My Drive</div>
   <div class="content" id="explorerContent"></div>
 </div>
 
@@ -151,114 +199,116 @@ body {
 
 <!-- User Info -->
 <div id="userInfo">
-  <img id="userPic" alt="Profile">
+  <img id="userPic" alt="User">
   <h3 id="userName"></h3>
 </div>
 
 <!-- Loading Overlay -->
 <div id="loadingOverlay">
   <i class="fab fa-google-drive"></i>
-  <p>Syncing your Drive account...</p>
+  <p>Syncing to your Google Drive...</p>
 </div>
 
 <script>
-// Continuous Folder/File Addition
-const explorerContent = document.getElementById('explorerContent');
-const exampleFiles = [
-  {icon:"fa-folder", name:"Projects"},
-  {icon:"fa-folder", name:"Hybrid Chat"},
-  {icon:"fa-file-code", name:"main.js"},
-  {icon:"fa-file-image", name:"avatar.png"},
-  {icon:"fa-file-lines", name:"account.json"}
+const explorerContent = document.getElementById("explorerContent");
+const files = [
+  { icon: "fa-folder", name: "Projects" },
+  { icon: "fa-folder", name: "Hybrid Chat" },
+  { icon: "fa-file-code", name: "main.js" },
+  { icon: "fa-file-image", name: "avatar.png" },
+  { icon: "fa-file-lines", name: "account.json" },
+  { icon: "fa-folder", name: "Backups" },
+  { icon: "fa-file-zipper", name: "archive.zip" }
 ];
-let index = 0;
 
-function addFileContinuously() {
-  if(index >= exampleFiles.length) index = 0; // Loop infinitely
-  const f = exampleFiles[index];
-  const el = document.createElement('div');
-  el.className = 'file-row';
-  el.style.animationDelay = `${index*0.25}s`;
-  el.innerHTML = `<i class="fas ${f.icon}"></i><span>${f.name}</span>`;
-  explorerContent.appendChild(el);
-  
-  // Scroll smoothly if overflow
-  if(explorerContent.scrollHeight > explorerContent.clientHeight){
-    explorerContent.scrollTo({top: explorerContent.scrollHeight, behavior:'smooth'});
-  }
-  
-  index++;
-  setTimeout(addFileContinuously, 1000); // Add new file every 1 second
-}
-addFileContinuously();
-
-// Google Sign-In
-let tokenClient;
-const CLIENT_ID="549003131640-o9umsg7tu0uisopde76mlf3lg5krt5g7.apps.googleusercontent.com";
-const SCOPES="https://www.googleapis.com/auth/drive.file";
-
-window.onload = () => {
-  google.accounts.id.initialize({client_id:CLIENT_ID, callback:handleCredentialResponse});
-  google.accounts.id.renderButton(document.getElementById("buttonDiv"),
-    { theme:"filled_blue", size:"large", text:"signin_with", shape:"rectangular" });
-}
-
-// Handle Sign-In
-async function handleCredentialResponse(response){
-  const data = JSON.parse(atob(response.credential.split('.')[1]));
-
-  // Display profile
-  const userInfo = document.getElementById('userInfo');
-  document.getElementById('userPic').src = data.picture;
-  document.getElementById('userName').textContent = data.name;
-  userInfo.classList.add('show');
-
-  // Save locally
-  const profileData = {
-    uuid: crypto.randomUUID(),
-    name: data.name,
-    email: data.email,
-    avatar: data.picture,
-    createdAt: new Date().toISOString()
-  };
-  localStorage.setItem('rc_profile_v2', JSON.stringify(profileData));
-
-  // Show loading overlay
-  const overlay = document.getElementById('loadingOverlay');
-  overlay.style.display='flex';
-
-  // Upload account.json to Drive
-  gapi.load('client', async () => {
-    await gapi.client.init({discoveryDocs:["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"]});
-    tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
-      scope: SCOPES,
-      callback: async (tokenResponse)=>{
-        if(tokenResponse.error){console.error(tokenResponse);return;}
-        const accessToken = tokenResponse.access_token;
-        const metadata = {name:"account.json", mimeType:"application/json"};
-        const form = new FormData();
-        form.append('metadata', new Blob([JSON.stringify(metadata)],{type:'application/json'}));
-        form.append('file', new Blob([JSON.stringify(profileData)],{type:'application/json'}));
-        await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
-          method:'POST',
-          headers:{'Authorization':'Bearer '+accessToken},
-          body:form
-        });
-        setTimeout(()=>window.location.href='index.html',1200);
-      }
-    });
-    tokenClient.requestAccessToken({prompt:'consent'});
+function renderFiles() {
+  explorerContent.innerHTML = "";
+  files.forEach((f, i) => {
+    const el = document.createElement("div");
+    el.className = "item";
+    el.style.animationDelay = `${i * 0.1}s`;
+    el.innerHTML = `<i class="fas ${f.icon}"></i><span>${f.name}</span>`;
+    explorerContent.appendChild(el);
   });
 }
 
-// Disable right-click & devtools
-document.addEventListener('contextmenu', e=>e.preventDefault());
-document.addEventListener('keydown', e=>{
-  if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','J','C'].includes(e.key.toUpperCase()))||(e.ctrlKey&&['U','S','P'].includes(e.key.toUpperCase()))){
-    e.preventDefault(); e.stopPropagation();
-  }
-});
+function cycleFiles() {
+  renderFiles();
+  setTimeout(() => {
+    explorerContent.style.opacity = 0;
+    setTimeout(() => {
+      explorerContent.style.opacity = 1;
+      renderFiles();
+    }, 700);
+  }, 4000);
+  setInterval(() => {
+    explorerContent.style.opacity = 0;
+    setTimeout(() => {
+      explorerContent.style.opacity = 1;
+      renderFiles();
+    }, 700);
+  }, 6000);
+}
+cycleFiles();
+
+// Google Sign-In
+const CLIENT_ID = "549003131640-o9umsg7tu0uisopde76mlf3lg5krt5g7.apps.googleusercontent.com";
+const SCOPES = "https://www.googleapis.com/auth/drive.file";
+
+window.onload = () => {
+  google.accounts.id.initialize({
+    client_id: CLIENT_ID,
+    callback: handleCredentialResponse
+  });
+  google.accounts.id.renderButton(document.getElementById("buttonDiv"), {
+    theme: "outline",
+    size: "large",
+    text: "signin_with",
+    shape: "pill"
+  });
+};
+
+async function handleCredentialResponse(response) {
+  const data = JSON.parse(atob(response.credential.split('.')[1]));
+  const userInfo = document.getElementById("userInfo");
+  document.getElementById("userPic").src = data.picture;
+  document.getElementById("userName").textContent = data.name;
+  userInfo.classList.add("show");
+
+  const profile = {
+    id: crypto.randomUUID(),
+    name: data.name,
+    email: data.email,
+    avatar: data.picture,
+    time: new Date().toISOString()
+  };
+  localStorage.setItem("hc_profile", JSON.stringify(profile));
+
+  const overlay = document.getElementById("loadingOverlay");
+  overlay.style.display = "flex";
+
+  gapi.load("client", async () => {
+    await gapi.client.init({ discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"] });
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: SCOPES,
+      callback: async (tokenResponse) => {
+        if (tokenResponse.error) return;
+        const metadata = { name: "account.json", mimeType: "application/json" };
+        const form = new FormData();
+        form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
+        form.append("file", new Blob([JSON.stringify(profile)], { type: "application/json" }));
+        await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
+          method: "POST",
+          headers: { Authorization: "Bearer " + tokenResponse.access_token },
+          body: form
+        });
+        setTimeout(() => window.location.href = "index.html", 1200);
+      }
+    });
+    tokenClient.requestAccessToken({ prompt: "consent" });
+  });
+}
 </script>
 </body>
 </html>
