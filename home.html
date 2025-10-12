@@ -185,12 +185,11 @@ const supabaseUrl = 'https://dfzshvldanqfvfivjrqi.supabase.co'
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmenNodmxkYW5xZnZmaXZqcnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4MDIxNTEsImV4cCI6MjA3MDM3ODE1MX0.wdms-6G9eDzRuk1YiCpdyvVS-5CRKCsrq9WWWIFl9HA'
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-const CLIENT_ID = '549003131640-o9umsg7tu0uisopde76mlf3lg5krt5g7.apps.googleusercontent.com'
-const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile'
+let profile = JSON.parse(localStorage.getItem('hc_profile') || 'null')
+if (!profile) location.href = 'register.html'
 
-const menuToggle = document.getElementById('menuToggle')
-const userList = document.getElementById('userList')
-const logoutBtn = document.getElementById('logoutBtn')
+let onlineUsers = {}, pcMap = {}, dataChannelMap = {}, chatHistory = JSON.parse(localStorage.getItem('hc_chat') || '{}'), currentPeer = null, typingTimeout
+
 const usersDiv = document.getElementById('users')
 const searchInput = document.getElementById('searchInput')
 const chatWith = document.getElementById('chatWith')
@@ -203,92 +202,7 @@ const sendBtn = document.getElementById('sendBtn')
 const attachBtn = document.getElementById('attachBtn')
 const chatContainer = document.getElementById('chatContainer')
 const closeBtn = document.getElementById('closeBtn')
-
-let profile = JSON.parse(localStorage.getItem('rc_profile_v2') || 'null')
-if (!profile) {
-  alert('Please register first.')
-  throw new Error('No profile')
-}
-let onlineUsers = {}, pcMap = {}, dataChannelMap = {}, chatHistory = {}, currentPeer = null
-let typingTimeout, accessToken = null, chatFileId = null
-
-// === Initialize Google Sign-In ===
-async function initGoogle() {
-  await new Promise(r => {
-    const s = document.createElement('script')
-    s.src = 'https://accounts.google.com/gsi/client'
-    s.onload = r
-    document.body.appendChild(s)
-  })
-
-  await new Promise(r => {
-    const s = document.createElement('script')
-    s.src = 'https://apis.google.com/js/api.js'
-    s.onload = r
-    document.body.appendChild(s)
-  })
-
-  return new Promise(resolve => {
-    gapi.load('client', async () => {
-      await gapi.client.init({ apiKey: '', clientId: CLIENT_ID, scope: SCOPES })
-      const auth = gapi.auth2.getAuthInstance()
-      if (!auth.isSignedIn.get()) {
-        await auth.signIn()
-      }
-      accessToken = auth.currentUser.get().getAuthResponse().access_token
-      await gapi.client.load('drive', 'v3')
-      console.log('Google API loaded')
-      await ensureChatFile()
-      await loadChatHistory()
-      resolve()
-    })
-  })
-}
-
-async function ensureChatFile() {
-  const res = await gapi.client.drive.files.list({
-    q: "name='chat.json' and trashed=false",
-    fields: 'files(id,name)'
-  })
-  if (res.result.files && res.result.files.length > 0) {
-    chatFileId = res.result.files[0].id
-  } else {
-    const fileMetadata = { name: 'chat.json', mimeType: 'application/json' }
-    const fileContent = JSON.stringify({})
-    const blob = new Blob([fileContent], { type: 'application/json' })
-    const form = new FormData()
-    form.append('metadata', new Blob([JSON.stringify(fileMetadata)], { type: 'application/json' }))
-    form.append('file', blob)
-    const uploadRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + accessToken },
-      body: form
-    })
-    const data = await uploadRes.json()
-    chatFileId = data.id
-  }
-}
-
-async function loadChatHistory() {
-  if (!chatFileId) return
-  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${chatFileId}?alt=media`, {
-    headers: { Authorization: 'Bearer ' + accessToken }
-  })
-  if (res.ok) {
-    chatHistory = await res.json()
-    renderUsers(searchInput.value.trim())
-  }
-}
-
-async function saveChatHistory() {
-  if (!chatFileId) return
-  const blob = new Blob([JSON.stringify(chatHistory)], { type: 'application/json' })
-  await fetch(`https://www.googleapis.com/upload/drive/v3/files/${chatFileId}?uploadType=media`, {
-    method: 'PATCH',
-    headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-    body: blob
-  })
-}
+const chatControls = document.getElementById('chatControls')
 
 searchInput.addEventListener('input', () => renderUsers(searchInput.value.trim()))
 
@@ -306,6 +220,7 @@ function openChat(user, element) {
   chatHistory[currentPeer].forEach(msg => appendMessage(currentPeer, msg.text, msg.me, msg.isImage, false))
   if (!pcMap[user.uuid]) createPeerConnection(user.uuid)
   chatContainer.classList.add('active')
+  chatControls.style.display = 'flex'
 }
 
 function renderUsers(filter = '') {
@@ -322,7 +237,6 @@ function renderUsers(filter = '') {
     const lastMsgObj = chatHistory[u.uuid]?.[chatHistory[u.uuid].length - 1]
     const lastMsg = lastMsgObj ? lastMsgObj.text : 'No messages yet'
     const isUnread = lastMsgObj?.me === false && !lastMsgObj.read
-
     const div = document.createElement('div')
     div.className = 'user-card'
     div.innerHTML = `
@@ -354,7 +268,6 @@ function formatTime(ts) {
 }
 
 function appendMessage(userUuid, text, me = false, isImage = false, save = true) {
-  if (chatHistory[userUuid]?.some(m => m.text === text && m.me === me)) return
   const div = document.createElement('div')
   div.className = 'msg ' + (me ? 'me' : 'received')
   if (isImage) {
@@ -367,9 +280,21 @@ function appendMessage(userUuid, text, me = false, isImage = false, save = true)
   if (save) {
     if (!chatHistory[userUuid]) chatHistory[userUuid] = []
     chatHistory[userUuid].push({ text, me, isImage, ts: Date.now(), read: me })
-    saveChatHistory()
+    localStorage.setItem('hc_chat', JSON.stringify(chatHistory))
     renderUsers(searchInput.value.trim())
   }
+}
+
+chatInput.addEventListener('input', () => {
+  if (!currentPeer) return
+  sendSignal(currentPeer, { type: 'typing' })
+})
+
+function showTyping(userUuid) {
+  if (currentPeer !== userUuid) return
+  chatStatus.textContent = 'Typing...'
+  clearTimeout(typingTimeout)
+  typingTimeout = setTimeout(() => { chatStatus.textContent = 'Online' }, 1000)
 }
 
 async function startRealtime() {
@@ -377,13 +302,8 @@ async function startRealtime() {
   presence.on('broadcast', { event: 'user-presence' }, payload => {
     const u = payload.payload
     if (!u?.uuid) return
-    if (u.action === 'join' || u.action === 'update') {
-      onlineUsers[u.uuid] = { ...u }
-      renderUsers(searchInput.value.trim())
-    } else if (u.action === 'leave') {
-      delete onlineUsers[u.uuid]
-      renderUsers(searchInput.value.trim())
-    }
+    if (u.action === 'join' || u.action === 'update') { onlineUsers[u.uuid] = { ...u }; renderUsers(searchInput.value.trim()) }
+    else if (u.action === 'leave') { delete onlineUsers[u.uuid]; renderUsers(searchInput.value.trim()) }
   })
 
   const signaling = supabase.channel('public:signaling')
@@ -397,19 +317,14 @@ async function startRealtime() {
     else if (msg.type === 'typing') showTyping(msg.from)
   })
 
-  await presence.subscribe()
-  await signaling.subscribe()
+  await presence.subscribe(); await signaling.subscribe()
   broadcastPresence('join')
   setInterval(() => broadcastPresence('update'), 25000)
   window.addEventListener('beforeunload', () => broadcastPresence('leave'))
 }
 
 async function broadcastPresence(action) {
-  await supabase.channel('public:presence').send({
-    type: 'broadcast',
-    event: 'user-presence',
-    payload: { ...profile, action, ts: Date.now() }
-  })
+  await supabase.channel('public:presence').send({ type: 'broadcast', event: 'user-presence', payload: { ...profile, action, ts: Date.now() } })
 }
 
 function createPeerConnection(peer) {
@@ -417,101 +332,71 @@ function createPeerConnection(peer) {
   const dc = pc.createDataChannel('chat')
   dc.onmessage = e => appendMessage(peer, e.data, false)
   dataChannelMap[peer] = dc
-  pc.onicecandidate = e => {
-    if (e.candidate) sendSignal(peer, { type: 'candidate', candidate: e.candidate })
-  }
+  pc.onicecandidate = e => { if (e.candidate) sendSignal(peer, { type: 'candidate', candidate: e.candidate }) }
   pc.ondatachannel = e => { e.channel.onmessage = e => appendMessage(peer, e.data, false) }
   pcMap[peer] = pc
   makeOffer(peer)
 }
+
 async function makeOffer(peer) {
   const pc = pcMap[peer]
-  const offer = await pc.createOffer()
-  await pc.setLocalDescription(offer)
+  const offer = await pc.createOffer(); await pc.setLocalDescription(offer)
   sendSignal(peer, { type: 'offer', sdp: offer })
 }
+
 async function handleOffer(from, sdp) {
   if (!pcMap[from]) {
     const pc = new RTCPeerConnection()
     pc.ondatachannel = e => { e.channel.onmessage = e => appendMessage(from, e.data, false) }
-    pc.onicecandidate = e => {
-      if (e.candidate) sendSignal(from, { type: 'candidate', candidate: e.candidate })
-    }
+    pc.onicecandidate = e => { if (e.candidate) sendSignal(from, { type: 'candidate', candidate: e.candidate }) }
     pcMap[from] = pc
   }
-  const pc = pcMap[from]
-  await pc.setRemoteDescription(new RTCSessionDescription(sdp))
-  const answer = await pc.createAnswer()
-  await pc.setLocalDescription(answer)
+  const pc = pcMap[from]; await pc.setRemoteDescription(new RTCSessionDescription(sdp))
+  const answer = await pc.createAnswer(); await pc.setLocalDescription(answer)
   sendSignal(from, { type: 'answer', sdp: answer })
 }
+
 async function handleAnswer(from, sdp) { await pcMap[from]?.setRemoteDescription(new RTCSessionDescription(sdp)) }
 async function handleCandidate(from, candidate) { await pcMap[from]?.addIceCandidate(new RTCIceCandidate(candidate)) }
-function sendSignal(to, msg) {
-  supabase.channel('public:signaling').send({
-    type: 'broadcast',
-    event: 'signal',
-    payload: { ...msg, from: profile.uuid, to }
-  })
-}
+function sendSignal(to, msg) { supabase.channel('public:signaling').send({ type: 'broadcast', event: 'signal', payload: { ...msg, from: profile.uuid, to } }) }
 
 function updateSendIcon() {
-  if (chatInput.value.trim()) {
-    sendBtn.style.display = 'flex'
-    attachBtn.style.display = 'none'
-  } else {
-    sendBtn.style.display = 'none'
-    attachBtn.style.display = 'flex'
-  }
+  if (chatInput.value.trim()) { sendBtn.style.display = 'flex'; attachBtn.style.display = 'none'; }
+  else { sendBtn.style.display = 'none'; attachBtn.style.display = 'flex'; }
 }
+
 sendBtn.addEventListener('click', sendMessage)
 chatInput.addEventListener('input', updateSendIcon)
 chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage() })
 updateSendIcon()
 attachBtn.addEventListener('click', () => chatFile.click())
 chatFile.addEventListener('change', e => {
-  const file = e.target.files[0]
-  if (!file) return
-  const reader = new FileReader()
-  reader.onload = () => { sendImage(reader.result) }
-  reader.readAsDataURL(file)
-  chatFile.value = ''
+  const file = e.target.files[0]; if (!file) return
+  const reader = new FileReader(); reader.onload = () => { sendImage(reader.result) }
+  reader.readAsDataURL(file); chatFile.value = ''
 })
+
 function sendMessage() {
   if (!currentPeer) return
-  const val = chatInput.value.trim()
-  if (!val) return
+  const val = chatInput.value.trim(); if (!val) return
   appendMessage(currentPeer, val, true)
   dataChannelMap[currentPeer]?.send(val)
   sendSignal(currentPeer, { type: 'message', data: val, isImage: false })
-  chatInput.value = ''
-  updateSendIcon()
+  chatInput.value = ''; updateSendIcon()
 }
+
 function sendImage(data) {
   if (!currentPeer) return
   appendMessage(currentPeer, data, true, true)
-  sendSignal(currentPeer, { type: 'message', data: data, isImage: true })
+  sendSignal(currentPeer, { type: 'message', data, isImage: true })
 }
 
 closeBtn.addEventListener('click', () => chatContainer.classList.remove('active'))
-menuToggle.addEventListener('click', () => userList.classList.toggle('active'))
-logoutBtn.addEventListener('click', () => {
-  localStorage.removeItem('rc_profile_v2')
-  location.reload()
-})
 
-await initGoogle()
 startRealtime()
 document.addEventListener('contextmenu', e => e.preventDefault())
 document.addEventListener('keydown', e => {
-  if (
-    e.key === 'F12' ||
-    (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) ||
-    (e.ctrlKey && ['U', 'S', 'P'].includes(e.key.toUpperCase()))
-  ) {
-    e.preventDefault()
-    e.stopPropagation()
-  }
+  if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) || (e.ctrlKey && ['U', 'S', 'P'].includes(e.key.toUpperCase()))) { e.preventDefault(); e.stopPropagation() }
 })
 document.addEventListener('dragstart', e => e.preventDefault())
 document.addEventListener('copy', e => e.preventDefault())
@@ -521,6 +406,7 @@ document.addEventListener('paste', e => e.preventDefault())
 
 </body>
 </html>
+
 
 
 
