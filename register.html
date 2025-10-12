@@ -234,7 +234,6 @@ const files = [
   { icon: "fa-file-excel", name: "report.xlsx" }
 ];
 
-// Adds items sequentially
 function renderFilesSequentially() {
   explorerContent.innerHTML = "";
   let delay = 0;
@@ -250,7 +249,6 @@ function renderFilesSequentially() {
   });
 }
 
-// Cycle folders (re-add animation after interval)
 function cycleFiles() {
   renderFilesSequentially();
   setInterval(() => {
@@ -263,7 +261,6 @@ function cycleFiles() {
 }
 cycleFiles();
 
-// Google Sign-In
 const CLIENT_ID = "549003131640-o9umsg7tu0uisopde76mlf3lg5krt5g7.apps.googleusercontent.com";
 const SCOPES = "https://www.googleapis.com/auth/drive.file";
 
@@ -287,40 +284,60 @@ async function handleCredentialResponse(response) {
   document.getElementById("userName").textContent = data.name;
   userInfo.classList.add("show");
 
-  const profile = {
-    id: crypto.randomUUID(),
-    name: data.name,
-    email: data.email,
-    avatar: data.picture,
-    time: new Date().toISOString()
-  };
-  localStorage.setItem("hc_profile", JSON.stringify(profile));
-
-  const overlay = document.getElementById("loadingOverlay");
-  overlay.style.display = "flex";
-
   gapi.load("client", async () => {
     await gapi.client.init({ discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"] });
+
     const tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
       scope: SCOPES,
       callback: async (tokenResponse) => {
         if (tokenResponse.error) return;
+
+        const profile = {
+          id: crypto.randomUUID(),
+          name: data.name,
+          email: data.email,
+          avatar: data.picture,
+          token: tokenResponse.access_token,
+          time: new Date().toISOString()
+        };
+
+        localStorage.setItem("hc_profile", JSON.stringify(profile));
+
+        const overlay = document.getElementById("loadingOverlay");
+        overlay.style.display = "flex";
+
+        // Check if account.json already exists
+        const listResponse = await fetch("https://www.googleapis.com/drive/v3/files?q=name='account.json'", {
+          headers: { Authorization: "Bearer " + tokenResponse.access_token }
+        });
+        const listData = await listResponse.json();
+        let fileId = listData.files?.[0]?.id || null;
+
         const metadata = { name: "account.json", mimeType: "application/json" };
         const form = new FormData();
         form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
         form.append("file", new Blob([JSON.stringify(profile)], { type: "application/json" }));
-        await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
-          method: "POST",
+
+        const uploadUrl = fileId
+          ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`
+          : "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart";
+
+        await fetch(uploadUrl, {
+          method: fileId ? "PATCH" : "POST",
           headers: { Authorization: "Bearer " + tokenResponse.access_token },
           body: form
         });
+
         setTimeout(() => window.location.href = "index.html", 1200);
       }
     });
+
     tokenClient.requestAccessToken({ prompt: "consent" });
   });
 }
 </script>
+
 </body>
 </html>
+
