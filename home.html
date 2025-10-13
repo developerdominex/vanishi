@@ -359,35 +359,38 @@ attachBtn.onclick = () => {
   input.onchange = async e => {
     const f = e.target.files[0];
     if (!f) return;
-    const dataUrl = await resizeAndCompress(f, 400, 400, 0.5); // smaller and more compressed
+    const dataUrl = await resizeAndCompress(f, 200, 200, 0.3, 25); // target 25KB
     sendImageMessage(dataUrl);
   };
   input.click();
 };
 
-async function resizeAndCompress(file, maxWidth, maxHeight, quality = 0.5) {
+async function resizeAndCompress(file, maxWidth, maxHeight, initialQuality = 0.3, targetKB = 25) {
   return new Promise((resolve) => {
     const img = new Image();
     const reader = new FileReader();
     reader.onload = e => img.src = e.target.result;
     img.onload = () => {
       let { width, height } = img;
-      if (width > maxWidth || height > maxHeight) {
-        const scale = Math.min(maxWidth / width, maxHeight / height);
-        width *= scale;
-        height *= scale;
-      }
+
+      // maintain aspect ratio
+      const scale = Math.min(maxWidth / width, maxHeight / height, 1);
+      width = width * scale;
+      height = height * scale;
+
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
 
-      // try multiple compress levels if still too big
+      let quality = initialQuality;
       let compressed = canvas.toDataURL('image/jpeg', quality);
       let sizeKB = Math.round((compressed.length * 3 / 4) / 1024);
-      while (sizeKB > 150 && quality > 0.1) {  // target < 150 KB
-        quality -= 0.1;
+
+      // reduce quality in small steps until < targetKB
+      while (sizeKB > targetKB && quality > 0.05) {
+        quality -= 0.05;
         compressed = canvas.toDataURL('image/jpeg', quality);
         sizeKB = Math.round((compressed.length * 3 / 4) / 1024);
       }
@@ -397,6 +400,7 @@ async function resizeAndCompress(file, maxWidth, maxHeight, quality = 0.5) {
     reader.readAsDataURL(file);
   });
 }
+
 
 
 function sendImageMessage(dataUrl) {
@@ -583,6 +587,7 @@ startRealtime()
 </script> 
 </body>
 </html>
+
 
 
 
