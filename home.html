@@ -233,7 +233,28 @@ let DRIVE_FILE_ID = null
 let typingTimeout = {}
 let pcMap = {}, dcMap = {}
 const typingIndicators = {}
-
+async function convertImageToWebP(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const reader = new FileReader()
+    reader.onload = () => {
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.width
+        canvas.height = img.height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0)
+        canvas.toBlob(blob => {
+          const reader2 = new FileReader()
+          reader2.onload = () => resolve(reader2.result)
+          reader2.readAsDataURL(blob)
+        }, 'image/webp', 0.9)
+      }
+      img.src = reader.result
+    }
+    reader.readAsDataURL(file)
+  })
+}
 function showTyping(peerId) {
   if (typingIndicators[peerId]) return 
   const d = document.createElement('div')
@@ -352,19 +373,76 @@ function appendIncoming(from, text, isImage, ts, id) {
   renderContacts()
   saveToDrive()
 }
+function handleDataChannelMessage(ev, from) {
+  const d = JSON.parse(ev.data)
+  if (d.type === 'video') {
+    // append video chunks to a temporary buffer
+    if (!chatStore[from].videoBuffer) chatStore[from].videoBuffer = []
+    chatStore[from].videoBuffer.push(d.data)
+    renderVideoPreview(from)
+  } else {
+    appendIncoming(from, d.text, d.isImage, d.ts, d.id)
+  }
+}
+  function renderVideoPreview(peerId) {
+  const container = messagesEl
+  // remove previous video
+  const old = container.querySelector(`#video-${peerId}`)
+  if (old) old.remove()
+
+  const video = document.createElement('video')
+  video.id = `video-${peerId}`
+  video.controls = true
+  video.autoplay = false
+  video.style.maxWidth = '75%'
+  video.style.borderRadius = '12px'
+
+  // combine ArrayBuffers into Blob
+  const buffers = chatStore[peerId].videoBuffer || []
+  const blob = new Blob(buffers, { type: 'video/webm' }) // webm default
+  video.src = URL.createObjectURL(blob)
+
+  container.appendChild(video)
+  scrollBottom()
+}
 
 // ---- Image Sending ----
 attachBtn.onclick = () => {
   const input = document.createElement('input')
-  input.type = 'file'; input.accept = 'image/*'
-  input.onchange = e => {
+  input.type = 'file'
+  input.accept = 'image/*,video/*'
+  input.onchange = async e => {
     const f = e.target.files[0]
     if (!f) return
-    const r = new FileReader()
-    r.onload = () => sendImageMessage(r.result)
-    r.readAsDataURL(f)
+
+    if (f.type.startsWith('image/')) {
+      // convert to WebP first
+      const webpDataUrl = await convertImageToWebP(f)
+      sendImageMessage(webpDataUrl) // original function already saves to Drive
+    } else if (f.type.startsWith('video/')) {
+      sendVideoMessage(f)
+    }
   }
   input.click()
+}
+  function sendVideoMessage(file) {
+  if (!currentPeer) return
+  const reader = new FileReader()
+  reader.onload = () => {
+    const chunkSize = 16_384 // 16KB chunks
+    const data = reader.result
+    let offset = 0
+
+    function sendChunk() {
+      if (!dcMap[currentPeer] || dcMap[currentPeer].readyState !== 'open') return
+      const slice = data.slice(offset, offset + chunkSize)
+      dcMap[currentPeer].send(JSON.stringify({ type: 'video', data: slice }))
+      offset += chunkSize
+      if (offset < data.byteLength) setTimeout(sendChunk, 10)
+    }
+    sendChunk()
+  }
+  reader.readAsArrayBuffer(file)
 }
 function sendImageMessage(dataUrl) {
   if (!currentPeer) return
@@ -441,10 +519,7 @@ function sendSignal(to, msg) {
 function createConnection(peer) {
   const pc = new RTCPeerConnection()
   const dc = pc.createDataChannel('chat')
-  dc.onmessage = ev => {
-    const d = JSON.parse(ev.data)
-    appendIncoming(peer, d.text, d.isImage, d.ts, d.id)
-  }
+  dc.onmessage = ev => handleDataChannelMessage(ev, peer)
   dc.onopen = () => (dcMap[peer] = dc)
   pc.onicecandidate = e => e.candidate && sendSignal(peer, { type: 'candidate', candidate: e.candidate })
   pcMap[peer] = pc
@@ -550,6 +625,7 @@ startRealtime()
 </script>  
 </body>
 </html>
+
 
 
 
