@@ -353,19 +353,45 @@ function appendIncoming(from, text, isImage, ts, id) {
   saveToDrive()
 }
 
-// ---- Image Sending ----
 attachBtn.onclick = () => {
-  const input = document.createElement('input')
-  input.type = 'file'; input.accept = 'image/*'
-  input.onchange = e => {
-    const f = e.target.files[0]
-    if (!f) return
-    const r = new FileReader()
-    r.onload = () => sendImageMessage(r.result)
-    r.readAsDataURL(f)
-  }
-  input.click()
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = async e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const dataUrl = await resizeImage(f, 800, 800); // max width/height 800px
+    sendImageMessage(dataUrl);
+  };
+  input.click();
+};
+
+// Resize image using canvas
+function resizeImage(file, maxWidth, maxHeight) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = e => {
+      img.src = e.target.result;
+    };
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxWidth || height > maxHeight) {
+        const scale = Math.min(maxWidth / width, maxHeight / height);
+        width = width * scale;
+        height = height * scale;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', 0.7)); // reduce quality too
+    };
+    reader.readAsDataURL(file);
+  });
 }
+
 function sendImageMessage(dataUrl) {
   if (!currentPeer) return
   const ts = Date.now()
@@ -550,6 +576,7 @@ startRealtime()
 </script> 
 </body>
 </html>
+
 
 
 
