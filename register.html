@@ -21,14 +21,12 @@
   --radius: 18px;
 }
 
-/* Reset */
 * {
   margin: 0; padding: 0;
   box-sizing: border-box;
   font-family: "Inter", system-ui, sans-serif;
 }
 
-/* Background and layout */
 body {
   height: 100vh;
   width: 100vw;
@@ -39,8 +37,6 @@ body {
   justify-content: center;
   align-items: center;
 }
-
-/* Floating bubbles */
 .bubble {
   position: absolute;
   border-radius: 50%;
@@ -54,7 +50,6 @@ body {
 .bubble:nth-child(3) { width: 80px; height: 80px; top: 50%; left: 60%; animation-delay: 2s; }
 @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-25px);} }
 
-/* Explorer container */
 #explorer {
   width: 85%;
   max-width: 1100px;
@@ -71,7 +66,6 @@ body {
 }
 @keyframes slideIn { to { opacity: 1; transform: translateY(0); } }
 
-/* Header */
 #explorer .header {
   background: var(--accent);
   color: white;
@@ -83,7 +77,6 @@ body {
   font-size: 18px;
 }
 
-/* Content grid */
 #explorer .content {
   flex: 1;
   display: grid;
@@ -93,7 +86,6 @@ body {
   transition: opacity 0.4s ease;
 }
 
-/* File/folder item animation */
 .item {
   background: #f9fafb;
   border-radius: var(--radius);
@@ -129,12 +121,10 @@ body {
   font-size: 15px;
 }
 
-/* Sign-in button area */
 #buttonDiv {
   margin-top: 40px;
 }
 
-/* User Info Card */
 #userInfo {
   margin-top: 40px;
   background: var(--white);
@@ -163,7 +153,6 @@ body {
   font-weight: 600;
 }
 
-/* Loading overlay */
 #loadingOverlay {
   position: fixed;
   inset: 0;
@@ -192,22 +181,18 @@ body {
 <div class="bubble"></div>
 <div class="bubble"></div>
 
-<!-- Explorer -->
 <div id="explorer">
   <div class="header"><i class="fab fa-google-drive"></i> My Drive</div>
   <div class="content" id="explorerContent"></div>
 </div>
 
-<!-- Google Sign-In -->
 <div id="buttonDiv"></div>
 
-<!-- User Info -->
 <div id="userInfo">
   <img id="userPic" alt="User">
   <h3 id="userName"></h3>
 </div>
 
-<!-- Loading Overlay -->
 <div id="loadingOverlay">
   <i class="fab fa-google-drive"></i>
   <p>Syncing to your Google Drive...</p>
@@ -215,7 +200,6 @@ body {
 <script>
 const explorerContent = document.getElementById("explorerContent");
 
-// If profile exists in localStorage, redirect immediately
 const storedProfile = localStorage.getItem("hc_profile");
 if (storedProfile) {
   window.location.href = "index.html";
@@ -266,7 +250,6 @@ function cycleFiles() {
 }
 cycleFiles();
 
-// Google Sign-In
 const CLIENT_ID = "549003131640-o9umsg7tu0uisopde76mlf3lg5krt5g7.apps.googleusercontent.com";
 const SCOPES = "https://www.googleapis.com/auth/drive.file";
 
@@ -300,7 +283,7 @@ async function handleCredentialResponse(response) {
         if (tokenResponse.error) return;
 
         const profile = {
-          id: crypto.randomUUID(),
+          id: data.sub,
           name: data.name,
           email: data.email,
           avatar: data.picture,
@@ -308,10 +291,8 @@ async function handleCredentialResponse(response) {
           time: new Date().toISOString()
         };
 
-        // Save profile in localStorage
         localStorage.setItem("hc_profile", JSON.stringify(profile));
 
-        // Upload or update account.json in Drive
         const overlay = document.getElementById("loadingOverlay");
         overlay.style.display = "flex";
 
@@ -348,5 +329,6 @@ async function handleCredentialResponse(response) {
 
 </body>
 </html>
+
 
 
