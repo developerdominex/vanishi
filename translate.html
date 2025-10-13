@@ -1,223 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Chat Translator</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Translate Chat</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
 :root {
-  --bg: #f9f9fb;
-  --primary: #3b82f6;
-  --bubble-send: #3b82f6;
-  --bubble-recv: #ffffff;
-  --text-send: #fff;
-  --text-recv: #0f172a;
-  --transition: all 0.35s cubic-bezier(.4,0,.2,1);
+  --primary: #2563eb;
+  --bg: #f7f9fc;
+  --me: #2563eb;
+  --bot: #fff;
 }
-
 body {
-  font-family: "Inter", system-ui, sans-serif;
-  background: var(--bg);
-  color: #111827;
   margin: 0;
-  padding: 0;
+  font-family: "Segoe UI", sans-serif;
+  background: var(--bg);
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  align-items: center;
+  height: 100vh;
 }
-
 header {
-  background: var(--primary);
-  color: white;
-  text-align: center;
-  padding: 16px 12px;
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  box-shadow: 0 2px 10px rgba(59,130,246,0.3);
-}
-
-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 16px;
-  overflow-y: auto;
-}
-
-.upload-box {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-  text-align: center;
-  transition: var(--transition);
-}
-.upload-box:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-}
-.upload-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--primary);
-  color: white;
-  padding: 10px 18px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: var(--transition);
-}
-.upload-label:hover { background: #2563eb; }
-
-#chatContainer {
   width: 100%;
-  max-width: 700px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.05);
-  padding: 20px;
-  display: none;
-  animation: fadeIn 0.4s ease forwards;
-}
-
-.user-section {
-  margin-bottom: 28px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
-}
-.user-header {
+  background: var(--primary);
+  color: white;
+  padding: 12px 20px;
+  font-size: 18px;
+  font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-  font-weight: 600;
+  justify-content: space-between;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
-.user-header i {
+header i { font-size: 20px; }
+
+.container {
+  width: 100%;
+  max-width: 600px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  scroll-behavior: smooth;
+}
+.message {
+  display: inline-block;
+  max-width: 80%;
+  margin: 8px 0;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 15px;
+  line-height: 1.4;
+  animation: fadeInUp 0.25s ease forwards;
+}
+.message.me {
+  background: var(--me);
+  color: white;
+  align-self: flex-end;
+  float: right;
+  border-bottom-right-radius: 4px;
+}
+.message.other {
+  background: var(--bot);
+  color: #222;
+  float: left;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.upload-area {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
   background: var(--primary);
   color: white;
   border-radius: 50%;
-  padding: 6px;
-  font-size: 0.9rem;
-}
-.messages {
+  width: 60px; height: 60px;
   display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(37,99,235,0.3);
+  animation: floaty 3s ease-in-out infinite;
+  transition: transform 0.2s ease;
+}
+.upload-area:hover { transform: scale(1.05); }
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+#fileInput {
+  display: none;
+}
+.loader {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  display: none;
   flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
 }
-.message {
-  max-width: 80%;
-  padding: 10px 14px;
-  border-radius: 16px;
-  font-size: 0.95rem;
-  line-height: 1.4;
-  animation: fadeSlide 0.3s ease forwards;
-  word-break: break-word;
+.loader .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0,0,0,0.1);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
-.message.sender {
-  align-self: flex-end;
-  background: var(--bubble-send);
-  color: var(--text-send);
-  border-bottom-right-radius: 4px;
-}
-.message.receiver {
-  align-self: flex-start;
-  background: var(--bubble-recv);
-  color: var(--text-recv);
-  border-bottom-left-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-@keyframes fadeSlide {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.98); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-@media (max-width: 600px) {
-  .upload-box { padding: 18px; }
-  #chatContainer { padding: 14px; }
-  .message { max-width: 90%; font-size: 0.9rem; }
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>
 </head>
-
 <body>
-<header><i class="fa-solid fa-language"></i> Chat Translator</header>
+  <header>
+    <span><i class="fa-solid fa-language"></i> Chat Translator</span>
+    <i class="fa-solid fa-gear"></i>
+  </header>
 
-<main>
-  <div class="upload-box">
-    <label class="upload-label" for="fileInput">
-      <i class="fa-solid fa-upload"></i> Upload chat.json
-    </label>
-    <input type="file" id="fileInput" accept=".json" hidden />
+  <div class="container" id="chatContainer"></div>
+
+  <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+    <i class="fa-solid fa-upload"></i>
   </div>
 
-  <div id="chatContainer"></div>
-</main>
+  <div class="loader" id="loader">
+    <div class="spinner"></div>
+    <div>Loading chat...</div>
+  </div>
+
+  <input type="file" id="fileInput" accept=".json">
 
 <script>
+// File input handling
 const fileInput = document.getElementById("fileInput");
 const chatContainer = document.getElementById("chatContainer");
+const loader = document.getElementById("loader");
 
 fileInput.addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  const text = await file.text();
+  loader.style.display = "flex";
+  chatContainer.innerHTML = "";
+  
   try {
-    const json = JSON.parse(text);
-    renderChat(json);
-  } catch {
-    alert("Invalid JSON format!");
+    const text = await file.text();
+    const data = JSON.parse(text);
+    displayChat(data);
+  } catch (err) {
+    alert("Invalid chat.json format!");
   }
+  loader.style.display = "none";
 });
 
-function renderChat(chatData) {
+// Display chat
+function displayChat(messages) {
   chatContainer.innerHTML = "";
-  chatContainer.style.display = "block";
+  let lastUser = null;
 
-  // When many users — group by sender/receiver
-  const grouped = {};
-  chatData.forEach(msg => {
-    const key = `${msg.sender || "Unknown"} → ${msg.receiver || "All"}`;
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(msg);
+  messages.forEach((msg, index) => {
+    const messageEl = document.createElement("div");
+    messageEl.className = "message " + (msg.sender === "me" ? "me" : "other");
+    messageEl.textContent = msg.text || msg.message || "(empty)";
+    messageEl.style.animationDelay = `${index * 0.04}s`;
+
+    // Smooth partition if many users
+    if (lastUser && lastUser !== msg.sender) {
+      const divider = document.createElement("div");
+      divider.style.textAlign = "center";
+      divider.style.margin = "10px 0";
+      divider.style.fontSize = "13px";
+      divider.style.color = "#888";
+      divider.textContent = msg.sender ? `— ${msg.sender} —` : "— New user —";
+      chatContainer.appendChild(divider);
+    }
+    lastUser = msg.sender;
+    chatContainer.appendChild(messageEl);
   });
 
-  Object.entries(grouped).forEach(([pair, msgs], index) => {
-    const section = document.createElement("div");
-    section.className = "user-section";
-    section.style.animationDelay = `${index * 0.05}s`;
-
-    const header = document.createElement("div");
-    header.className = "user-header";
-    header.innerHTML = `<i class="fa-solid fa-user-group"></i>${pair}`;
-    section.appendChild(header);
-
-    const messages = document.createElement("div");
-    messages.className = "messages";
-
-    msgs.forEach((m, i) => {
-      const el = document.createElement("div");
-      el.className = "message " + (m.sender === "You" ? "sender" : "receiver");
-      el.textContent = m.text || m.message || "";
-      el.style.animationDelay = `${i * 0.04}s`;
-      messages.appendChild(el);
-    });
-
-    section.appendChild(messages);
-    chatContainer.appendChild(section);
-  });
+  setTimeout(() => chatContainer.scrollTop = chatContainer.scrollHeight, 500);
 }
 </script>
 </body>
