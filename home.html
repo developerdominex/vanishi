@@ -202,21 +202,19 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 const storageProfileKey = 'hc_profile'
-
 const DRIVE_FILE_NAME = 'chat.json'
 
 const profile = JSON.parse(localStorage.getItem(storageProfileKey) || 'null')
-if (!profile) { location.href = 'register.html'; throw new Error('no profile') }
+if(!profile){ location.href='register.html'; throw new Error('no profile') }
 
 const myId = profile.id
 const myName = profile.name
-const myAvatar = profile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(myName)}`
-let DRIVE_TOKEN = profile.token || null
+const myAvatar = profile.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(profile.name)
+const DRIVE_TOKEN = profile.token || null
 let DRIVE_FILE_ID = null
-let chatStore = {} 
-document.getElementById('myAvatar').src = myAvatar
-document.getElementById('myName').textContent = myName
+let chatStore = {} // will be fetched from Drive
 
+// DOM references
 const contactsEl = document.getElementById('contacts')
 const searchEl = document.getElementById('search')
 const addBtn = document.getElementById('addBtn')
@@ -231,264 +229,210 @@ const sendBtn = document.getElementById('sendBtn')
 const attachBtn = document.getElementById('attach')
 
 let online = {}
+let currentPeer = null
 let pcMap = {}
 let dcMap = {}
-let currentPeer = null
+
+document.getElementById('myAvatar').src = myAvatar
+document.getElementById('myName').textContent = myName
 
 searchEl.addEventListener('input', ()=>renderContacts(searchEl.value.trim()))
 addBtn.addEventListener('click', ()=> {
   const id = searchEl.value.trim()
-  if (!id || id === myId) return
-  const temp = { uuid:id, name:'Contact', avatar:'https://ui-avatars.com/api/?name=User' }
-  online[id] = temp
+  if(!id || id===myId) return
+  if(!online[id]) online[id] = { uuid:id, name:'Contact', avatar:'https://ui-avatars.com/api/?name=User' }
   renderContacts()
 })
-logoutBtn.addEventListener('click', ()=>{
-  localStorage.removeItem(storageProfileKey)
-  location.reload()
-})
+logoutBtn.addEventListener('click', ()=> { localStorage.removeItem(storageProfileKey); location.reload() })
 
+// Render contacts
 function renderContacts(filter=''){
-  contactsEl.innerHTML = ''
-  const list = Object.values(online).filter(u=>u.uuid !== myId)
+  contactsEl.innerHTML=''
+  const list = Object.values(online).filter(u=>u.uuid!==myId)
   list.sort((a,b)=>{
     const at = (chatStore[a.uuid]?.slice(-1)[0]?.ts)||0
     const bt = (chatStore[b.uuid]?.slice(-1)[0]?.ts)||0
-    return bt - at
+    return bt-at
   })
   list.forEach(u=>{
     if(filter && !u.name.toLowerCase().includes(filter.toLowerCase()) && !u.uuid.includes(filter)) return
     const div = document.createElement('div')
-    div.className = 'contact'
+    div.className='contact'
     if(currentPeer===u.uuid) div.classList.add('selected')
-    div.innerHTML = `
-      <img class="avatar" src="${u.avatar}">
-      <div class="meta">
-        <div class="name">${u.name}</div>
-        <div class="last">${(chatStore[u.uuid]?.slice(-1)[0]?.text) || 'No messages yet'}</div>
-      </div>`
+    div.innerHTML = `<img class="avatar" src="${u.avatar}">
+      <div class="meta"><div class="name">${u.name}</div>
+      <div class="last">${(chatStore[u.uuid]?.slice(-1)[0]?.text) || 'No messages yet'}</div></div>`
     div.addEventListener('click', ()=>openChatWith(u))
     contactsEl.appendChild(div)
   })
 }
 
+// Open chat
 function openChatWith(user){
   currentPeer = user.uuid
   peerNameEl.textContent = user.name
   peerAvatarEl.src = user.avatar
-  peerAvatarEl.style.display = 'block'
-  peerStatusEl.textContent = 'Online'
-  placeholderEl.style.display = 'none'
-  messagesEl.style.display = 'flex'
-  messagesEl.innerHTML = ''
-  if(!chatStore[currentPeer]) chatStore[currentPeer] = []
-  chatStore[currentPeer].forEach(m=> renderMessage(m.text, m.me, m.isImage, false))
+  peerAvatarEl.style.display='block'
+  peerStatusEl.textContent='Online'
+  placeholderEl.style.display='none'
+  messagesEl.style.display='flex'
+  messagesEl.innerHTML=''
+  if(!chatStore[currentPeer]) chatStore[currentPeer]=[]
+  chatStore[currentPeer].forEach(m=>renderMessage(m.text,m.me,m.isImage,false))
   if(!pcMap[currentPeer]) createConnection(currentPeer)
   renderContacts()
   scrollToBottom()
 }
 
+// Render messages
 function renderMessage(text, me, isImage, animate=true){
-  const d = document.createElement('div'); d.className = 'msg ' + (me?'me':'other')
-  if(isImage){
-    const img = document.createElement('img')
-    img.src = text
-    d.appendChild(img)
-  } else d.textContent = text
+  const d = document.createElement('div'); d.className='msg '+(me?'me':'other')
+  if(isImage){ const img=document.createElement('img'); img.src=text; d.appendChild(img) }
+  else d.textContent=text
   if(animate) d.style.opacity=0
   messagesEl.appendChild(d)
   if(animate) requestAnimationFrame(()=>{ d.style.opacity=1 })
   scrollToBottom()
 }
+function scrollToBottom(){ messagesEl.scrollTop=messagesEl.scrollHeight }
 
-function scrollToBottom(){ messagesEl.scrollTop = messagesEl.scrollHeight }
-
+// WebRTC & Supabase
 async function startRealtime(){
   const pres = supabase.channel('public:presence')
-  pres.on('broadcast', { event:'user-presence' }, payload=>{
+  pres.on('broadcast',{event:'user-presence'}, payload=>{
     const u = payload.payload
     if(!u?.uuid) return
     if(u.action==='join'||u.action==='update'){ online[u.uuid]=u; renderContacts() }
     else if(u.action==='leave'){ delete online[u.uuid]; if(currentPeer===u.uuid) peerStatusEl.textContent='Offline'; renderContacts() }
   })
-
   const sig = supabase.channel('public:signaling')
-  sig.on('broadcast',{ event:'signal' }, async payload=>{
+  sig.on('broadcast',{event:'signal'}, async payload=>{
     const msg = payload.payload
-    if(!msg || msg.to!==myId) return
+    if(!msg||msg.to!==myId) return
     if(msg.type==='offer') await handleOffer(msg.from,msg.sdp)
     else if(msg.type==='answer') await handleAnswer(msg.from,msg.sdp)
     else if(msg.type==='candidate') await handleCandidate(msg.from,msg.candidate)
     else if(msg.type==='message') appendIncoming(msg.from,msg.data,msg.isImage)
   })
-
   await pres.subscribe(); await sig.subscribe()
   broadcastPresence('join')
   setInterval(()=>broadcastPresence('update'),25000)
   window.addEventListener('beforeunload',()=>broadcastPresence('leave'))
-
-  await loadChatFromDrive()
+  await fetchDriveChat()
 }
-
 function broadcastPresence(action){
-  supabase.channel('public:presence').send({
-    type:'broadcast', event:'user-presence',
-    payload:{ uuid:myId, name:myName, avatar:myAvatar, action, ts:Date.now() }
-  })
+  supabase.channel('public:presence').send({ type:'broadcast', event:'user-presence', payload:{ uuid:myId, name:myName, avatar:myAvatar, action, ts:Date.now() } })
 }
 
+// WebRTC helpers
 function createConnection(peer){
-  const pc = new RTCPeerConnection()
-  const dc = pc.createDataChannel('chat')
-  dc.onmessage = ev=>appendIncoming(peer,ev.data,false)
-  dc.onopen = ()=>{ dcMap[peer]=dc }
-  pc.onicecandidate = e=>{ if(e.candidate) sendSignal(peer,{type:'candidate',candidate:e.candidate}) }
-  pc.ondatachannel = e=>{
-    e.channel.onmessage=ev=>appendIncoming(peer,ev.data,false)
-    e.channel.onopen=()=>{ dcMap[peer]=e.channel }
-  }
+  const pc=new RTCPeerConnection()
+  const dc=pc.createDataChannel('chat')
+  dc.onmessage=ev=>appendIncoming(peer,ev.data,false)
+  dc.onopen=()=>{ dcMap[peer]=dc }
+  pc.onicecandidate=e=>{ if(e.candidate) sendSignal(peer,{type:'candidate',candidate:e.candidate}) }
+  pc.ondatachannel=e=>{ e.channel.onmessage=ev=>appendIncoming(peer,ev.data,false); e.channel.onopen=()=>{ dcMap[peer]=e.channel } }
   pcMap[peer]=pc
   makeOffer(peer)
 }
-
 async function makeOffer(peer){
-  const pc=pcMap[peer]
-  const offer=await pc.createOffer()
-  await pc.setLocalDescription(offer)
+  const pc=pcMap[peer]; if(!pc) return
+  const offer=await pc.createOffer(); await pc.setLocalDescription(offer)
   sendSignal(peer,{type:'offer',sdp:offer})
 }
 async function handleOffer(from,sdp){
   if(!pcMap[from]){
     const pc=new RTCPeerConnection()
-    pc.ondatachannel=e=>{
-      e.channel.onmessage=ev=>appendIncoming(from,ev.data,false)
-      e.channel.onopen=()=>{ dcMap[from]=e.channel }
-    }
+    pc.ondatachannel=e=>{ e.channel.onmessage=ev=>appendIncoming(from,ev.data,false); e.channel.onopen=()=>{ dcMap[from]=e.channel } }
     pc.onicecandidate=e=>{ if(e.candidate) sendSignal(from,{type:'candidate',candidate:e.candidate}) }
     pcMap[from]=pc
   }
-  const pc=pcMap[from]
-  await pc.setRemoteDescription(new RTCSessionDescription(sdp))
-  const answer=await pc.createAnswer()
-  await pc.setLocalDescription(answer)
+  const pc=pcMap[from]; await pc.setRemoteDescription(new RTCSessionDescription(sdp))
+  const answer=await pc.createAnswer(); await pc.setLocalDescription(answer)
   sendSignal(from,{type:'answer',sdp:answer})
 }
 async function handleAnswer(from,sdp){ await pcMap[from]?.setRemoteDescription(new RTCSessionDescription(sdp)) }
 async function handleCandidate(from,candidate){ await pcMap[from]?.addIceCandidate(new RTCIceCandidate(candidate)) }
-function sendSignal(to,msg){ supabase.channel('public:signaling').send({ type:'broadcast', event:'signal', payload:{...msg,from:myId,to} }) }
+function sendSignal(to,msg){ supabase.channel('public:signaling').send({ type:'broadcast', event:'signal', payload:{ ...msg, from:myId, to } }) }
 
+// Message handling (Drive-centric)
 function appendIncoming(from,text,isImage){
   if(!chatStore[from]) chatStore[from]=[]
-  chatStore[from].push({text,me:false,isImage:!!isImage,ts:Date.now(),read:currentPeer===from})
+  chatStore[from].push({ text, me:false, isImage:!!isImage, ts:Date.now(), read:currentPeer===from })
   if(currentPeer===from) renderMessage(text,false,!!isImage)
   else flashContact(from)
+  saveToDrive()
   renderContacts()
-  scheduleDriveSave()
 }
-
 function sendMessage(){
   if(!currentPeer) return
-  const val=messageInput.value.trim()
-  if(!val) return
+  const val=messageInput.value.trim(); if(!val) return
   if(!chatStore[currentPeer]) chatStore[currentPeer]=[]
-  chatStore[currentPeer].push({text:val,me:true,isImage:false,ts:Date.now(),read:true})
+  chatStore[currentPeer].push({ text:val, me:true, isImage:false, ts:Date.now(), read:true })
   renderMessage(val,true,false)
   if(dcMap[currentPeer]?.readyState==='open') dcMap[currentPeer].send(val)
   sendSignal(currentPeer,{type:'message',data:val,isImage:false})
   messageInput.value=''
-  scheduleDriveSave()
+  saveToDrive()
   renderContacts()
 }
-
 function sendImageAsMessage(dataUrl){
   if(!currentPeer) return
   if(!chatStore[currentPeer]) chatStore[currentPeer]=[]
-  chatStore[currentPeer].push({text:dataUrl,me:true,isImage:true,ts:Date.now(),read:true})
+  chatStore[currentPeer].push({ text:dataUrl, me:true, isImage:true, ts:Date.now(), read:true })
   renderMessage(dataUrl,true,true)
   if(dcMap[currentPeer]?.readyState==='open') dcMap[currentPeer].send(dataUrl)
   sendSignal(currentPeer,{type:'message',data:dataUrl,isImage:true})
-  scheduleDriveSave()
+  saveToDrive()
   renderContacts()
 }
-
 attachBtn.addEventListener('click',()=>{
-  const input=document.createElement('input')
-  input.type='file'
-  input.accept='image/*'
-  input.onchange=e=>{
-    const f=e.target.files[0]
-    if(!f) return
-    const r=new FileReader()
-    r.onload=()=>sendImageAsMessage(r.result)
-    r.readAsDataURL(f)
-  }
-  input.click()
+  const input=document.createElement('input'); input.type='file'; input.accept='image/*'
+  input.onchange=e=>{ const f=e.target.files[0]; if(!f) return
+    const r=new FileReader(); r.onload=()=>sendImageAsMessage(r.result); r.readAsDataURL(f)
+  }; input.click()
 })
 sendBtn.addEventListener('click',sendMessage)
 messageInput.addEventListener('keydown',e=>{ if(e.key==='Enter') sendMessage() })
+function flashContact(id){ const el=[...contactsEl.children].find(c=>c.querySelector('.avatar')&&c.innerText.includes(id)); if(el) el.animate([{transform:'scale(1)'},{transform:'scale(1.02)'},{transform:'scale(1)'}],{duration:300}) }
 
-function flashContact(id){
-  const el=[...contactsEl.children].find(c=>c.textContent.includes(id))
-  if(el) el.animate([{transform:'scale(1)'},{transform:'scale(1.05)'},{transform:'scale(1)'}],{duration:300})
-}
-
-async function loadChatFromDrive(){
+// Drive fetch & save
+async function fetchDriveChat(){
   if(!DRIVE_TOKEN) return
   try{
-    const listRes=await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DRIVE_FILE_NAME}' and trashed=false&fields=files(id,name)`,{
-      headers:{Authorization:'Bearer '+DRIVE_TOKEN}
-    })
-    const listData=await listRes.json()
-    DRIVE_FILE_ID=listData.files?.[0]?.id || null
+    const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DRIVE_FILE_NAME}' and trashed=false&fields=files(id,name)`,{ headers:{ Authorization:'Bearer '+DRIVE_TOKEN }})
+    const listData = await listRes.json()
+    DRIVE_FILE_ID = listData.files?.[0]?.id || null
     if(DRIVE_FILE_ID){
-      const fileRes=await fetch(`https://www.googleapis.com/drive/v3/files/${DRIVE_FILE_ID}?alt=media`,{
-        headers:{Authorization:'Bearer '+DRIVE_TOKEN}
-      })
+      const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${DRIVE_FILE_ID}?alt=media`,{ headers:{ Authorization:'Bearer '+DRIVE_TOKEN }})
       if(fileRes.ok){
-        const data=await fileRes.json().catch(()=> ({}))
-        if(data && typeof data==='object') chatStore=data
+        const data = await fileRes.json().catch(()=>({}))
+        if(typeof data==='object'){ chatStore=data; renderContacts() }
       }
-    } else {
-      await updateDriveChat()
     }
-  }catch(e){ console.error('Drive load error',e) }
-  renderContacts()
+  }catch(e){}
 }
-
-let driveSaveTimer=null
-function scheduleDriveSave(){
-  if(!DRIVE_TOKEN) return
-  if(driveSaveTimer) clearTimeout(driveSaveTimer)
-  driveSaveTimer=setTimeout(()=>updateDriveChat(),1500)
-}
-
-async function updateDriveChat(){
+async function saveToDrive(){
   if(!DRIVE_TOKEN) return
   try{
-    const metadata={name:DRIVE_FILE_NAME,mimeType:'application/json'}
+    const metadata={ name:DRIVE_FILE_NAME, mimeType:'application/json' }
     const form=new FormData()
     form.append('metadata',new Blob([JSON.stringify(metadata)],{type:'application/json'}))
     form.append('file',new Blob([JSON.stringify(chatStore)],{type:'application/json'}))
-    const uploadUrl=DRIVE_FILE_ID
-      ? `https://www.googleapis.com/upload/drive/v3/files/${DRIVE_FILE_ID}?uploadType=multipart`
-      : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart'
-    const res=await fetch(uploadUrl,{
-      method:DRIVE_FILE_ID?'PATCH':'POST',
-      headers:{Authorization:'Bearer '+DRIVE_TOKEN},
-      body:form
-    })
-    if(res.ok){
-      const j=await res.json()
-      DRIVE_FILE_ID=j.id||DRIVE_FILE_ID
-    }
-  }catch(e){ console.error('Drive save error',e) }
+    const uploadUrl = DRIVE_FILE_ID ? `https://www.googleapis.com/upload/drive/v3/files/${DRIVE_FILE_ID}?uploadType=multipart` : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`
+    const res = await fetch(uploadUrl,{ method: DRIVE_FILE_ID?'PATCH':'POST', headers:{ Authorization:'Bearer '+DRIVE_TOKEN }, body:form })
+    if(res.ok){ const j=await res.json(); DRIVE_FILE_ID=j.id||DRIVE_FILE_ID }
+  }catch(e){}
 }
 
+// Initialize
 startRealtime()
 </script>
 
+
 </body>
 </html>
+
 
 
 
