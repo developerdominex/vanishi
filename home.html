@@ -197,366 +197,321 @@ body{
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-/* === Supabase Config === */
-const SUPABASE_URL = 'https://dfzshvldanqfvfivjrqi.supabase.co'
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmenNodmxkYW5xZnZmaXZqcnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4MDIxNTEsImV4cCI6MjA3MDM3ODE1MX0.wdms-6G9eDzRuk1YiCpdyvVS-5CRKCsrq9WWWIFl9HA'
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+// === SUPABASE CONFIG ===
+const SUPABASE_URL = 'https://dfzshvldanqfvfivjrqi.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmenNodmxkYW5xZnZmaXZqcnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4MDIxNTEsImV4cCI6MjA3MDM3ODE1MX0.wdms-6G9eDzRuk1YiCpdyvVS-5CRKCsrq9WWWIFl9HA';
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-/* === Constants === */
-const STORAGE_KEY = 'hc_profile'
-const DRIVE_FILE_NAME = 'chat.json'
+// === STORAGE KEYS & DRIVE ===
+const storageProfileKey = 'hc_profile';
+const DRIVE_FILE_NAME = 'chat.json';
 
-/* === Profile === */
-const profile = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')
-if (!profile) { location.href = 'register.html'; throw new Error('No profile found.') }
+// === PROFILE ===
+const profile = JSON.parse(localStorage.getItem(storageProfileKey) || 'null');
+if(!profile) { location.href = 'register.html'; throw new Error('no profile'); }
 
-const myId = profile.id
-const myName = profile.name
-const myEmail = profile.email
-const myAvatar = profile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(myName)}`
-const DRIVE_TOKEN = profile.token || null
+const myId = profile.id;
+const myName = profile.name;
+const myEmail = profile.email;
+const myAvatar = profile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(myName)}`;
+let DRIVE_TOKEN = profile.token || null;
+let DRIVE_FILE_ID = null;
 
-/* === State === */
-let DRIVE_FILE_ID = null
-let chatStore = {}       // { peerId: [ messages ] }
-let online = {}          // { uuid: {uuid,name,email,avatar,ts} }
-let lastSeen = {}        // { uuid: timestamp }
-let pcMap = {}
-let dcMap = {}
-let currentPeer = null
-let typingTimeouts = {}
-let driveSaveTimer = null
+// === CHAT STORAGE ===
+let chatStore = {}; // main chats {partnerId:{messages:[...], name, email}}
 
-/* === Elements === */
-const avatarEl = document.getElementById('myAvatar')
-const nameEl = document.getElementById('myName')
-const searchEl = document.getElementById('search')
-const logoutEl = document.getElementById('logout')
-const chatsTab = document.getElementById('tab-chats')
-const onlineTab = document.getElementById('tab-online')
-const contactsEl = document.getElementById('contacts')
-const messagesEl = document.getElementById('messages')
-const placeholderEl = document.getElementById('placeholder')
-const peerNameEl = document.getElementById('peerName')
-const peerAvatarEl = document.getElementById('peerAvatar')
-const peerStatusEl = document.getElementById('peerStatus')
-const messageInput = document.getElementById('messageInput')
-const sendBtn = document.getElementById('sendBtn')
-const attachBtn = document.getElementById('attach')
+// === UI ELEMENTS ===
+const contactsEl = document.getElementById('contacts');
+const onlineEl = document.getElementById('onlineUsers');
+const searchEl = document.getElementById('search');
+const addBtn = document.getElementById('addBtn');
+const logoutBtn = document.getElementById('logout');
+const peerAvatarEl = document.getElementById('peerAvatar');
+const peerNameEl = document.getElementById('peerName');
+const peerStatusEl = document.getElementById('peerStatus');
+const placeholderEl = document.getElementById('placeholder');
+const messagesEl = document.getElementById('messages');
+const messageInput = document.getElementById('messageInput');
+const sendBtn = document.getElementById('sendBtn');
+const attachBtn = document.getElementById('attach');
 
-/* === Initialize UI === */
-avatarEl.src = myAvatar
-nameEl.textContent = myName
+document.getElementById('myAvatar').src = myAvatar;
+document.getElementById('myName').textContent = myName;
 
-/* === Events === */
-logoutEl.addEventListener('click',()=>{
-  localStorage.removeItem(STORAGE_KEY)
-  location.reload()
-})
-searchEl.addEventListener('input',()=>renderContacts(searchEl.value.trim()))
-chatsTab.addEventListener('click',()=>switchTab('chats'))
-onlineTab.addEventListener('click',()=>switchTab('online'))
-sendBtn.addEventListener('click',sendMessage)
-messageInput.addEventListener('keydown',e=>{
-  if(e.key==='Enter') sendMessage()
-  else if(currentPeer) sendTyping(currentPeer)
-})
-attachBtn.addEventListener('click',()=>{
-  const input=document.createElement('input')
-  input.type='file'; input.accept='image/*'
-  input.onchange=e=>{
-    const f=e.target.files[0]
-    if(!f) return
-    const r=new FileReader()
-    r.onload=()=>sendImage(r.result)
-    r.readAsDataURL(f)
-  }
-  input.click()
-})
+// === STATE ===
+let online = {};  // supabase online users {id:{name,email,avatar,lastSeen,typing}}
+let pcMap = {};
+let dcMap = {};
+let currentPeer = null;
 
-/* === Tabs === */
-let activeTab = 'chats'
-function switchTab(tab){
-  activeTab = tab
-  chatsTab.classList.toggle('active',tab==='chats')
-  onlineTab.classList.toggle('active',tab==='online')
-  renderContacts()
-}
+// === EVENTS ===
+searchEl.addEventListener('input', ()=>renderContacts(searchEl.value.trim()));
+addBtn.addEventListener('click', ()=> {
+  const id = searchEl.value.trim();
+  if(!id || id===myId) return;
+  if(!chatStore[id]) chatStore[id] = {messages:[], name:'Contact', email:''};
+  renderContacts();
+});
+logoutBtn.addEventListener('click', ()=>{
+  localStorage.removeItem(storageProfileKey);
+  location.reload();
+});
+sendBtn.addEventListener('click', sendMessage);
+messageInput.addEventListener('keydown', e=>{
+  if(e.key==='Enter') sendMessage();
+  else sendTypingStatus(true);
+});
+messageInput.addEventListener('keyup', e=>{
+  setTimeout(()=>sendTypingStatus(false), 1000);
+});
 
-/* === Render Contacts === */
+// === CONTACTS ===
 function renderContacts(filter=''){
-  contactsEl.innerHTML=''
-  const now = Date.now()
-  const list = activeTab==='chats' 
-    ? Object.keys(chatStore).map(id=>online[id] || {uuid:id,name:'Unknown',avatar:'https://ui-avatars.com/api/?name=?'})
-    : Object.values(online).filter(u=>u.uuid!==myId)
-  
-  list.sort((a,b)=>{
-    const aTime = chatStore[a.uuid]?.slice(-1)[0]?.ts || 0
-    const bTime = chatStore[b.uuid]?.slice(-1)[0]?.ts || 0
-    return bTime - aTime
-  })
-
-  list.forEach(u=>{
-    if(filter && !u.name.toLowerCase().includes(filter.toLowerCase())) return
-    const lastMsg = chatStore[u.uuid]?.slice(-1)[0]
-    const div = document.createElement('div')
-    div.className='contact'
-    if(currentPeer===u.uuid) div.classList.add('selected')
-    const onlineNow = !!online[u.uuid]
-    const dot = onlineNow ? `<span class="dot"></span>` : ''
-    const lastText = lastMsg ? (lastMsg.isImage ? '📷 Image' : lastMsg.text) : 'No messages yet'
-    const lastTime = lastMsg ? formatTime(lastMsg.ts) : ''
+  contactsEl.innerHTML = '';
+  Object.keys(chatStore).forEach(pid=>{
+    const data = chatStore[pid];
+    if(filter && !data.name.toLowerCase().includes(filter.toLowerCase()) && !pid.includes(filter)) return;
+    const lastMsg = data.messages.slice(-1)[0]?.text || 'No messages yet';
+    const div = document.createElement('div');
+    div.className='contact';
+    if(currentPeer===pid) div.classList.add('selected');
     div.innerHTML = `
-      <img class="avatar" src="${u.avatar}">
+      <img class="avatar" src="${data.avatar||'https://ui-avatars.com/api/?name=User'}">
       <div class="meta">
-        <div class="name">${u.name} ${dot}</div>
-        <div class="last">${lastText}</div>
-      </div>
-      <div class="time">${lastTime}</div>
-    `
-    div.addEventListener('click',()=>openChat(u))
-    contactsEl.appendChild(div)
-  })
+        <div class="name">${data.name}</div>
+        <div class="last">${lastMsg}</div>
+      </div>`;
+    div.addEventListener('click', ()=>openChatWith(pid));
+    contactsEl.appendChild(div);
+  });
 }
 
-/* === Chat Window === */
-function openChat(user){
-  currentPeer = user.uuid
-  peerNameEl.textContent = user.name
-  peerAvatarEl.src = user.avatar
-  peerAvatarEl.style.display='block'
-  peerStatusEl.textContent = online[user.uuid] ? 'Online' : getOfflineText(user.uuid)
-  placeholderEl.style.display='none'
-  messagesEl.style.display='flex'
-  messagesEl.innerHTML=''
-  if(!chatStore[currentPeer]) chatStore[currentPeer]=[]
-  chatStore[currentPeer].forEach(m=>renderMessage(m.text,m.me,m.isImage,false))
-  if(!pcMap[currentPeer]) createConnection(currentPeer)
-  renderContacts()
-  scrollBottom()
+// === ONLINE USERS ===
+function renderOnlineUsers(){
+  onlineEl.innerHTML = '';
+  Object.values(online).forEach(u=>{
+    if(u.id===myId) return;
+    const div = document.createElement('div');
+    div.className='online-user';
+    const dot = `<span style="background:green;border-radius:50%;width:10px;height:10px;display:inline-block;margin-right:5px;"></span>`;
+    const status = u.typing ? 'typing...' : (u.online?'Online':'Offline');
+    const lastSeen = !u.online && u.lastSeen ? ` (last seen: ${new Date(u.lastSeen).toLocaleTimeString()})` : '';
+    div.innerHTML = `${dot} ${u.name} - ${status}${lastSeen}`;
+    onlineEl.appendChild(div);
+  });
 }
 
+// === OPEN CHAT ===
+function openChatWith(pid){
+  currentPeer=pid;
+  const data=chatStore[pid];
+  peerNameEl.textContent=data.name;
+  peerAvatarEl.src=data.avatar||'https://ui-avatars.com/api/?name=User';
+  peerAvatarEl.style.display='block';
+  peerStatusEl.textContent = online[pid]?.typing?'typing...':(online[pid]?.online?'Online':'Offline');
+  placeholderEl.style.display='none';
+  messagesEl.style.display='flex';
+  messagesEl.innerHTML='';
+  data.messages.forEach(m=>renderMessage(m.text,m.me,m.isImage,false));
+  renderContacts();
+  scrollToBottom();
+  if(!pcMap[pid]) createConnection(pid);
+}
+
+// === MESSAGES ===
 function renderMessage(text,me,isImage,animate=true){
-  const div=document.createElement('div')
-  div.className='msg '+(me?'me':'other')
+  const d=document.createElement('div');
+  d.className='msg '+(me?'me':'other');
   if(isImage){
-    const img=document.createElement('img')
-    img.src=text
-    div.appendChild(img)
-  } else div.textContent=text
-  if(animate) div.style.opacity=0
-  messagesEl.appendChild(div)
-  if(animate) requestAnimationFrame(()=>div.style.opacity=1)
-  scrollBottom()
+    const img=document.createElement('img'); img.src=text; d.appendChild(img);
+  } else d.textContent=text;
+  if(animate) d.style.opacity=0;
+  messagesEl.appendChild(d);
+  if(animate) requestAnimationFrame(()=>{ d.style.opacity=1; });
+  scrollToBottom();
+}
+function scrollToBottom(){ messagesEl.scrollTop=messagesEl.scrollHeight; }
+
+// === APPEND INCOMING ===
+function appendIncoming(from,text,isImage){
+  if(!chatStore[from]) chatStore[from]={messages:[],name:online[from]?.name||'Contact',email:online[from]?.email||''};
+  chatStore[from].messages.push({text,me:false,isImage,ts:Date.now()});
+  if(currentPeer===from) renderMessage(text,false,isImage);
+  renderContacts();
+  scheduleDriveSave();
 }
 
-function renderTyping(){
-  if(!document.querySelector('.typing-bubble')){
-    const t=document.createElement('div')
-    t.className='typing-bubble'
-    t.innerHTML='<span></span><span></span><span></span>'
-    messagesEl.appendChild(t)
-    scrollBottom()
+// === SEND MESSAGE ===
+function sendMessage(){
+  if(!currentPeer) return;
+  const val=messageInput.value.trim();
+  if(!val) return;
+  if(!chatStore[currentPeer]) chatStore[currentPeer]={messages:[],name:online[currentPeer]?.name||'Contact',email:online[currentPeer]?.email||''};
+  chatStore[currentPeer].messages.push({text:val,me:true,isImage:false,ts:Date.now()});
+  renderMessage(val,true,false);
+  if(dcMap[currentPeer]?.readyState==='open') dcMap[currentPeer].send(val);
+  sendSignal(currentPeer,{type:'message',data:val,isImage:false});
+  messageInput.value='';
+  scheduleDriveSave();
+  renderContacts();
+}
+
+// === TYPING INDICATOR ===
+function sendTypingStatus(status){
+  if(!currentPeer) return;
+  sendSignal(currentPeer,{type:'typing',status});
+}
+
+// === FLASH CONTACT ===
+function flashContact(pid){
+  const el=[...contactsEl.children].find(c=>c.textContent.includes(pid));
+  if(el) el.animate([{transform:'scale(1)'},{transform:'scale(1.05)'},{transform:'scale(1)'}],{duration:300});
+}
+
+// === WEBRTC + SIGNALING ===
+function createConnection(peer){
+  const pc=new RTCPeerConnection();
+  const dc=pc.createDataChannel('chat');
+  dc.onmessage=ev=>{
+    if(ev.data==='__typing__true'){ online[peer].typing=true; renderOnlineUsers(); return; }
+    if(ev.data==='__typing__false'){ online[peer].typing=false; renderOnlineUsers(); return; }
+    appendIncoming(peer,ev.data,false);
+  };
+  dc.onopen=()=>{ dcMap[peer]=dc; };
+  pc.onicecandidate=e=>{ if(e.candidate) sendSignal(peer,{type:'candidate',candidate:e.candidate}); };
+  pc.ondatachannel=e=>{
+    e.channel.onmessage=ev=>{
+      if(ev.data==='__typing__true'){ online[peer].typing=true; renderOnlineUsers(); return; }
+      if(ev.data==='__typing__false'){ online[peer].typing=false; renderOnlineUsers(); return; }
+      appendIncoming(peer,ev.data,false);
+    };
+    e.channel.onopen=()=>{ dcMap[peer]=e.channel; };
+  };
+  pcMap[peer]=pc;
+  makeOffer(peer);
+}
+
+async function makeOffer(peer){
+  const pc=pcMap[peer];
+  const offer=await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  sendSignal(peer,{type:'offer',sdp:offer});
+}
+async function handleOffer(from,sdp){
+  if(!pcMap[from]){
+    const pc=new RTCPeerConnection();
+    pc.ondatachannel=e=>{
+      e.channel.onmessage=ev=>{
+        if(ev.data==='__typing__true'){ online[from].typing=true; renderOnlineUsers(); return; }
+        if(ev.data==='__typing__false'){ online[from].typing=false; renderOnlineUsers(); return; }
+        appendIncoming(from,ev.data,false);
+      };
+      e.channel.onopen=()=>{ dcMap[from]=e.channel; };
+    };
+    pc.onicecandidate=e=>{ if(e.candidate) sendSignal(from,{type:'candidate',candidate:e.candidate}); };
+    pcMap[from]=pc;
   }
+  const pc=pcMap[from];
+  await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+  const answer=await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  sendSignal(from,{type:'answer',sdp:answer});
 }
-function removeTyping(){ const t=document.querySelector('.typing-bubble'); if(t) t.remove() }
+async function handleAnswer(from,sdp){ await pcMap[from]?.setRemoteDescription(new RTCSessionDescription(sdp)); }
+async function handleCandidate(from,candidate){ await pcMap[from]?.addIceCandidate(new RTCIceCandidate(candidate)); }
+function sendSignal(to,msg){ supabase.channel('public:signaling').send({type:'broadcast',event:'signal',payload:{...msg,from:myId,to}});}
 
-function scrollBottom(){ messagesEl.scrollTop=messagesEl.scrollHeight }
-function formatTime(ts){
-  const d=new Date(ts)
-  let h=d.getHours(), m=d.getMinutes().toString().padStart(2,'0')
-  const ampm=h>=12?'PM':'AM'; h=h%12||12
-  return `${h}:${m} ${ampm}`
+// === DRIVE SYNC ===
+async function loadChatFromDrive(){
+  if(!DRIVE_TOKEN) return;
+  try{
+    const listRes=await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DRIVE_FILE_NAME}' and trashed=false&fields=files(id,name)`,{
+      headers:{Authorization:'Bearer '+DRIVE_TOKEN}
+    });
+    const listData=await listRes.json();
+    DRIVE_FILE_ID=listData.files?.[0]?.id || null;
+    if(DRIVE_FILE_ID){
+      const fileRes=await fetch(`https://www.googleapis.com/drive/v3/files/${DRIVE_FILE_ID}?alt=media`,{
+        headers:{Authorization:'Bearer '+DRIVE_TOKEN}
+      });
+      if(fileRes.ok){
+        const data=await fileRes.json().catch(()=>({}));
+        if(data && typeof data==='object') chatStore=data;
+      }
+    } else await updateDriveChat();
+  }catch(e){ console.error('Drive load error',e); }
+  renderContacts();
 }
-
-/* === WebRTC / Supabase === */
-async function startRealtime(){
-  const presence=supabase.channel('public:presence')
-  presence.on('broadcast',{event:'user-presence'},p=>{
-    const u=p.payload
-    if(!u?.uuid) return
-    if(u.action==='join'||u.action==='update'){
-      online[u.uuid]=u; lastSeen[u.uuid]=Date.now(); renderContacts()
-    } else if(u.action==='leave'){
-      delete online[u.uuid]
-      lastSeen[u.uuid]=Date.now()
-      if(currentPeer===u.uuid) peerStatusEl.textContent=getOfflineText(u.uuid)
-      renderContacts()
+let driveSaveTimer=null;
+function scheduleDriveSave(){
+  if(!DRIVE_TOKEN) return;
+  if(driveSaveTimer) clearTimeout(driveSaveTimer);
+  driveSaveTimer=setTimeout(updateDriveChat,1500);
+}
+async function updateDriveChat(){
+  if(!DRIVE_TOKEN) return;
+  try{
+    const metadata={name:DRIVE_FILE_NAME,mimeType:'application/json'};
+    const form=new FormData();
+    form.append('metadata',new Blob([JSON.stringify(metadata)],{type:'application/json'}));
+    // include name + email for each partner
+    const saveData={};
+    Object.keys(chatStore).forEach(pid=>{
+      saveData[pid]={...chatStore[pid]};
+    });
+    form.append('file',new Blob([JSON.stringify(saveData)],{type:'application/json'}));
+    const uploadUrl=DRIVE_FILE_ID
+      ? `https://www.googleapis.com/upload/drive/v3/files/${DRIVE_FILE_ID}?uploadType=multipart`
+      : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+    const res=await fetch(uploadUrl,{method:DRIVE_FILE_ID?'PATCH':'POST',headers:{Authorization:'Bearer '+DRIVE_TOKEN},body:form});
+    if(res.ok){
+      const j=await res.json();
+      DRIVE_FILE_ID=j.id||DRIVE_FILE_ID;
     }
-  })
+  }catch(e){ console.error('Drive save error',e); }
+}
 
-  const signaling=supabase.channel('public:signaling')
-  signaling.on('broadcast',{event:'signal'},async p=>{
-    const msg=p.payload
-    if(!msg||msg.to!==myId) return
-    if(msg.type==='offer') await handleOffer(msg.from,msg.sdp)
-    else if(msg.type==='answer') await handleAnswer(msg.from,msg.sdp)
-    else if(msg.type==='candidate') await handleCandidate(msg.from,msg.candidate)
-    else if(msg.type==='message') appendIncoming(msg.from,msg.data,msg.isImage)
-    else if(msg.type==='typing') showTyping(msg.from)
-  })
-
-  await presence.subscribe(); await signaling.subscribe()
-  broadcastPresence('join')
-  setInterval(()=>broadcastPresence('update'),25000)
-  window.addEventListener('beforeunload',()=>broadcastPresence('leave'))
-
-  await loadChatFromDrive()
+// === REALTIME PRESENCE ===
+async function startRealtime(){
+  const pres = supabase.channel('public:presence');
+  pres.on('broadcast',{event:'user-presence'}, payload=>{
+    const u = payload.payload;
+    if(!u?.uuid) return;
+    online[u.uuid]={id:u.uuid,name:u.name,email:u.email||'',avatar:u.avatar,lastSeen:Date.now(),online:u.action!=='leave',typing:false};
+    renderOnlineUsers();
+  });
+  const sig = supabase.channel('public:signaling');
+  sig.on('broadcast',{event:'signal'}, payload=>{
+    const msg=payload.payload;
+    if(!msg || msg.to!==myId) return;
+    if(msg.type==='offer') handleOffer(msg.from,msg.sdp);
+    else if(msg.type==='answer') handleAnswer(msg.from,msg.sdp);
+    else if(msg.type==='candidate') handleCandidate(msg.from,msg.candidate);
+    else if(msg.type==='message') appendIncoming(msg.from,msg.data,msg.isImage);
+    else if(msg.type==='typing') online[msg.from].typing=msg.status;
+    renderOnlineUsers();
+  });
+  await pres.subscribe(); await sig.subscribe();
+  broadcastPresence('join');
+  setInterval(()=>broadcastPresence('update'),25000);
+  window.addEventListener('beforeunload',()=>broadcastPresence('leave'));
+  await loadChatFromDrive();
 }
 function broadcastPresence(action){
   supabase.channel('public:presence').send({
     type:'broadcast',event:'user-presence',
     payload:{uuid:myId,name:myName,email:myEmail,avatar:myAvatar,action,ts:Date.now()}
-  })
+  });
 }
 
-/* === Typing === */
-function sendTyping(to){ sendSignal(to,{type:'typing'}) }
-function showTyping(from){
-  if(currentPeer!==from) return
-  peerStatusEl.textContent='Typing...'
-  renderTyping()
-  clearTimeout(typingTimeouts[from])
-  typingTimeouts[from]=setTimeout(()=>{
-    removeTyping()
-    peerStatusEl.textContent='Online'
-  },1500)
-}
-
-/* === Connection === */
-function createConnection(peer){
-  const pc=new RTCPeerConnection()
-  const dc=pc.createDataChannel('chat')
-  dc.onmessage=e=>appendIncoming(peer,e.data,false)
-  dc.onopen=()=>{dcMap[peer]=dc}
-  pc.onicecandidate=e=>{if(e.candidate) sendSignal(peer,{type:'candidate',candidate:e.candidate})}
-  pc.ondatachannel=e=>{
-    e.channel.onmessage=ev=>appendIncoming(peer,ev.data,false)
-    e.channel.onopen=()=>{dcMap[peer]=e.channel}
-  }
-  pcMap[peer]=pc
-  makeOffer(peer)
-}
-async function makeOffer(peer){
-  const pc=pcMap[peer]
-  const offer=await pc.createOffer()
-  await pc.setLocalDescription(offer)
-  sendSignal(peer,{type:'offer',sdp:offer})
-}
-async function handleOffer(from,sdp){
-  if(!pcMap[from]){
-    const pc=new RTCPeerConnection()
-    pc.ondatachannel=e=>{
-      e.channel.onmessage=ev=>appendIncoming(from,ev.data,false)
-      e.channel.onopen=()=>{dcMap[from]=e.channel}
-    }
-    pc.onicecandidate=e=>{if(e.candidate) sendSignal(from,{type:'candidate',candidate:e.candidate})}
-    pcMap[from]=pc
-  }
-  const pc=pcMap[from]
-  await pc.setRemoteDescription(new RTCSessionDescription(sdp))
-  const answer=await pc.createAnswer()
-  await pc.setLocalDescription(answer)
-  sendSignal(from,{type:'answer',sdp:answer})
-}
-async function handleAnswer(from,sdp){ await pcMap[from]?.setRemoteDescription(new RTCSessionDescription(sdp)) }
-async function handleCandidate(from,candidate){ await pcMap[from]?.addIceCandidate(new RTCIceCandidate(candidate)) }
-function sendSignal(to,msg){ supabase.channel('public:signaling').send({type:'broadcast',event:'signal',payload:{...msg,from:myId,to}}) }
-
-/* === Message Sending === */
-function sendMessage(){
-  if(!currentPeer) return
-  const val=messageInput.value.trim()
-  if(!val) return
-  pushMessage(currentPeer,val,true,false)
-  if(dcMap[currentPeer]?.readyState==='open') dcMap[currentPeer].send(val)
-  sendSignal(currentPeer,{type:'message',data:val,isImage:false})
-  messageInput.value=''
-}
-function sendImage(data){
-  if(!currentPeer) return
-  pushMessage(currentPeer,data,true,true)
-  if(dcMap[currentPeer]?.readyState==='open') dcMap[currentPeer].send(data)
-  sendSignal(currentPeer,{type:'message',data:data,isImage:true})
-}
-function appendIncoming(from,text,isImage){
-  pushMessage(from,text,false,!!isImage)
-  if(currentPeer===from) renderMessage(text,false,!!isImage)
-  renderContacts()
-  scheduleDriveSave()
-}
-function pushMessage(peer,text,me,isImage){
-  if(!chatStore[peer]) chatStore[peer]=[]
-  chatStore[peer].push({
-    text,me,isImage,ts:Date.now(),read:me,
-    senderEmail:me?myEmail:online[peer]?.email||'',
-    senderName:me?myName:online[peer]?.name||'',
-    receiverEmail:me?(online[peer]?.email||'') : myEmail,
-    receiverName:me?(online[peer]?.name||'') : myName
-  })
-  if(me) renderMessage(text,true,isImage)
-  scheduleDriveSave()
-}
-
-/* === Drive Sync === */
-async function loadChatFromDrive(){
-  if(!DRIVE_TOKEN) return
-  try{
-    const listRes=await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DRIVE_FILE_NAME}' and trashed=false&fields=files(id,name)`,{
-      headers:{Authorization:'Bearer '+DRIVE_TOKEN}
-    })
-    const listData=await listRes.json()
-    DRIVE_FILE_ID=listData.files?.[0]?.id || null
-    if(DRIVE_FILE_ID){
-      const fileRes=await fetch(`https://www.googleapis.com/drive/v3/files/${DRIVE_FILE_ID}?alt=media`,{
-        headers:{Authorization:'Bearer '+DRIVE_TOKEN}
-      })
-      if(fileRes.ok){
-        const data=await fileRes.json().catch(()=>({}))
-        if(data&&typeof data==='object') chatStore=data
-      }
-    } else await updateDrive()
-  }catch(e){ console.error('Drive load error',e) }
-  renderContacts()
-}
-function scheduleDriveSave(){
-  if(!DRIVE_TOKEN) return
-  clearTimeout(driveSaveTimer)
-  driveSaveTimer=setTimeout(()=>updateDrive(),2000)
-}
-async function updateDrive(){
-  if(!DRIVE_TOKEN) return
-  try{
-    const metadata={name:DRIVE_FILE_NAME,mimeType:'application/json'}
-    const form=new FormData()
-    form.append('metadata',new Blob([JSON.stringify(metadata)],{type:'application/json'}))
-    form.append('file',new Blob([JSON.stringify(chatStore)],{type:'application/json'}))
-    const uploadUrl=DRIVE_FILE_ID
-      ? `https://www.googleapis.com/upload/drive/v3/files/${DRIVE_FILE_ID}?uploadType=multipart`
-      : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart'
-    const res=await fetch(uploadUrl,{method:DRIVE_FILE_ID?'PATCH':'POST',headers:{Authorization:'Bearer '+DRIVE_TOKEN},body:form})
-    if(res.ok){const j=await res.json(); DRIVE_FILE_ID=j.id||DRIVE_FILE_ID}
-  }catch(e){console.error('Drive save error',e)}
-}
-
-/* === Helpers === */
-function getOfflineText(id){
-  const t=lastSeen[id]
-  if(!t) return 'Offline'
-  const diff=Math.floor((Date.now()-t)/60000)
-  if(diff<1) return 'Just went offline'
-  if(diff===1) return 'Went offline 1 min ago'
-  return `Went offline ${diff} mins ago`
-}
-
-/* === Init === */
-startRealtime()
+startRealtime();
 </script>
+
 
 
 </body>
 </html>
+
 
 
 
