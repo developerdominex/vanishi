@@ -86,143 +86,29 @@ body{
 .input input{flex:1;border:none;background:transparent;outline:none;font-size:15px;color:#071133;}
 .icon-btn{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;background:transparent;color:var(--primary);font-size:18px;}
 .send{width:48px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,var(--primary),var(--primary-600));color:white;font-size:18px;border:none;cursor:pointer;box-shadow:0 10px 24px rgba(43,156,255,0.14);}
-
-@media (max-width:900px){
-  body{padding:12px;}
-  .app{grid-template-columns:1fr;gap:12px;max-width:720px;height:100%;max-height:none;}
-  .panel{order:2;min-height:35vh;max-height:40vh;border-radius:12px;overflow-y:auto;}
-  .chat{order:1;min-height:55vh;max-height:65vh;display:flex;flex-direction:column;}
-  .chat .body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;}
-  .messages{margin-bottom:auto;}
+ .typing-indicator {
+  display: inline-flex;
+  align-items: center;
+  background: #fff;
+  color: #071133;
+  padding: 10px 14px;
+  border-radius: 18px;
+  box-shadow: 0 4px 16px rgba(2,6,23,0.06);
+  margin: 4px 0;
+  animation: fadeIn 0.3s ease forwards;
 }
-</style>
-
-</head>
-<body>
-<div class="app" id="app">
-  <div class="panel" id="sidebar">
-    <div class="header">
-      <div style="display:flex;flex-direction:column">
-        <div class="title">Hybrid</div>
-        <div class="subtitle">messaging</div>
-      </div>
-    </div>
-    <div class="search">
-      <input id="search" placeholder="Search people or paste id..." autocomplete="off">
-      <button class="icon-btn" id="addBtn" title="Add by ID"><i class="fas fa-user-plus"></i></button>
-    </div>
-    <div class="list" id="contacts"></div>
-    <div style="padding:12px;border-top:1px dashed rgba(15,23,42,0.04);display:flex;gap:8px;align-items:center;justify-content:space-between">
-      <div style="display:flex;gap:8px;align-items:center">
-        <img id="myAvatar" src="" style="width:42px;height:42px;border-radius:50%;object-fit:cover">
-        <div style="font-size:13px;color:#071133;font-weight:600" id="myName"></div>
-      </div>
-      <button id="logout" class="icon-btn" style="background:#fff;color:#ef4444;border-radius:10px;"><i class="fas fa-right-from-bracket"></i></button>
-    </div>
-  </div>
-  <div class="chat" id="chat">
-    <div class="top">
-      <img id="peerAvatar" src="" alt="avatar" style="display:none">
-      <div class="who">
-        <div class="n" id="peerName">Select a contact</div>
-        <div class="s" id="peerStatus"></div>
-      </div>
-    </div>
-    <div class="body" id="chatBody">
-      <div class="placeholder" id="placeholder">Select a contact to start chatting.</div>
-      <div class="messages" id="messages" style="display:none"></div>
-    </div>
-    <div class="composer">
-      <div class="input">
-        <input id="messageInput" placeholder="Type a message..." autocomplete="off">
-      </div>
-      <button class="icon-btn" id="attach"><i class="fas fa-paperclip"></i></button>
-      <button class="send" id="sendBtn"><i class="fas fa-paper-plane"></i></button>
-    </div>
-  </div>
-</div>
-
-<style>
-:root{
-  --bg:#e6eefc;
-  --side:#ffffff;
-  --card:#ffffff;
-  --primary:#2b9cff;
-  --primary-600:#257ed6;
-  --muted:#6b7280;
-  --shadow:0 12px 30px rgba(16,24,40,0.08);
-  --radius:14px;
+.typing-indicator.me { background: var(--primary); color: white; align-self: flex-end; }
+.typing-dots {
+  display: flex; gap: 3px; margin-left: 6px;
 }
-*{box-sizing:border-box;margin:0;padding:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,'Helvetica Neue',Arial;}
-html,body{height:100%;overflow:hidden;}
-body{
-  background:linear-gradient(180deg,#f6fbff 0%,#e6eefc 100%);
-  display:flex;align-items:center;justify-content:center;
-  height:100vh;overflow:hidden;padding:24px;
+.typing-dots span {
+  width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+  animation: blink 1.2s infinite ease-in-out;
 }
-.app{
-  width:100%;max-width:1100px;
-  height:100%;max-height:800px;
-  display:grid;grid-template-columns:320px 1fr;gap:20px;
-}
-.panel{
-  background:var(--side);border-radius:var(--radius);
-  box-shadow:var(--shadow);
-  display:flex;flex-direction:column;overflow:hidden;
-}
-.panel .header{padding:18px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(15,23,42,0.04);}
-.panel .title{font-weight:700;color:#0f172a;font-size:16px;}
-.panel .subtitle{color:var(--muted);font-size:12px;margin-top:4px;}
-.search{padding:12px 14px;border-bottom:1px solid rgba(15,23,42,0.04);display:flex;gap:8px;align-items:center;}
-.search input{flex:1;border-radius:12px;padding:10px 12px;border:1px solid rgba(15,23,42,0.06);outline:none;background:#fbfdff;font-size:14px;color:#071133;transition:box-shadow .18s ease;}
-.search input:focus{box-shadow:0 6px 18px rgba(43,156,255,0.12);border-color:var(--primary-600);}
-.list{padding:12px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;scroll-behavior:smooth;}
-.contact{display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;cursor:pointer;transition:background .12s ease,transform .12s ease;}
-.contact:hover{background:rgba(43,156,255,0.04);transform:translateY(-2px);}
-.contact.selected{background:linear-gradient(90deg,var(--primary) 0%,var(--primary-600) 100%);color:white;box-shadow:0 10px 30px rgba(43,156,255,0.12);}
-.avatar{width:48px;height:48px;border-radius:50%;object-fit:cover;box-shadow:0 6px 18px rgba(2,6,23,0.06);}
-.meta{display:flex;flex-direction:column;gap:4px;min-width:0;}
-.meta .name{font-weight:600;font-size:15px;color:#071133;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.contact.selected .name{color:white;}
-.meta .last{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.contact.selected .last{color:rgba(255,255,255,0.9);}
-.chat{
-  background:linear-gradient(180deg,#ffffff,#f7fbff);
-  border-radius:var(--radius);box-shadow:var(--shadow);
-  display:flex;flex-direction:column;overflow:hidden;
-}
-.chat .top{padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(15,23,42,0.04);}
-.chat .top img{width:44px;height:44px;border-radius:50%;object-fit:cover;}
-.chat .who{display:flex;flex-direction:column;}
-.chat .n{font-weight:700;color:#071133;}
-.chat .s{font-size:13px;color:var(--muted);}
-.chat .body{
-  flex:1;overflow-y:auto;
-  padding:20px;display:flex;flex-direction:column;
-  background:linear-gradient(180deg,#f7fbff00,#ffffff00);
-  scroll-behavior:smooth;
-  min-height:0; 
-}
-.messages{
-  display:flex;flex-direction:column;gap:8px;
-  width:100%;margin-top:auto;margin-bottom:auto;
-}
-.msg{display:inline-block;max-width:72%;padding:12px 14px;border-radius:18px;font-size:15px;line-height:1.3;box-shadow:0 6px 20px rgba(2,6,23,0.06);opacity:0;transform:translateY(8px);animation:pop .22s ease forwards;}
-@keyframes pop{to{opacity:1;transform:none;}}
-.msg.me{background:linear-gradient(180deg,var(--primary),var(--primary-600));color:white;align-self:flex-end;border-bottom-right-radius:6px;}
-.msg.other{background:#fff;color:#071133;align-self:flex-start;border-bottom-left-radius:6px;}
-.msg img{max-width:300px;border-radius:12px;display:block;}
-.placeholder{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:15px;}
-.composer{
-  padding:12px;border-top:1px solid rgba(15,23,42,0.04);
-  display:flex;gap:8px;align-items:center;
-  background:linear-gradient(180deg,#ffffff,#f7fbff);
-}
-.input{flex:1;background:#f3f6ff;padding:10px 14px;border-radius:999px;display:flex;gap:8px;align-items:center;box-shadow:inset 0 1px 0 rgba(255,255,255,0.6);}
-.input input{flex:1;border:none;background:transparent;outline:none;font-size:15px;color:#071133;}
-.icon-btn{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;background:transparent;color:var(--primary);font-size:18px;}
-.send{width:48px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,var(--primary),var(--primary-600));color:white;font-size:18px;border:none;cursor:pointer;box-shadow:0 10px 24px rgba(43,156,255,0.14);}
-
+.typing-dots span:nth-child(2){animation-delay:0.2s;}
+.typing-dots span:nth-child(3){animation-delay:0.4s;}
+@keyframes blink{0%,80%,100%{opacity:0.2;}40%{opacity:1;}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:none;}}
 @media (max-width:900px){
   body{padding:12px;}
   .app{grid-template-columns:1fr;gap:12px;max-width:720px;height:100%;max-height:none;}
@@ -320,6 +206,29 @@ let currentPeer = null
 let DRIVE_FILE_ID = null
 let typingTimeout = {}
 let pcMap = {}, dcMap = {}
+const typingIndicators = {}
+
+function showTyping(peerId) {
+  if (typingIndicators[peerId]) return 
+  const d = document.createElement('div')
+  d.className = 'typing-indicator'
+  d.innerHTML = `<span>${chatStore[peerId]?.profile?.name || 'User'} is typing</span>
+  <div class="typing-dots"><span></span><span></span><span></span></div>`
+  d.id = `typing-${peerId}`
+  messagesEl.appendChild(d)
+  typingIndicators[peerId] = d
+  scrollBottom()
+}
+
+function hideTyping(peerId) {
+  const el = typingIndicators[peerId]
+  if (el) {
+    el.style.opacity = 0
+    el.style.transform = "translateY(6px)"
+    setTimeout(() => el.remove(), 250)
+    delete typingIndicators[peerId]
+  }
+}
 
 // ---- UI: Contacts ----
 function renderContacts(filter = '') {
@@ -407,6 +316,7 @@ function sendMessage() {
 
 // ---- Incoming Message ----
 function appendIncoming(from, text, isImage, ts, id) {
+  hideTyping(from)
   const chat = chatStore[from] || (chatStore[from] = { profile: { uuid: from, name: 'User', avatar: `https://ui-avatars.com/api/?name=User` }, messages: [], unreadCount: 0 })
   if (chat.messages.some(m => m.id === id)) return
   chat.messages.push({ id, text, me: false, isImage, ts })
@@ -471,6 +381,13 @@ async function startRealtime() {
     else if (payload.type === 'answer') await handleAnswer(payload.from, payload.sdp)
     else if (payload.type === 'candidate') await handleCandidate(payload.from, payload.candidate)
     else if (payload.type === 'message') appendIncoming(payload.from, payload.data, payload.isImage, payload.ts, payload.id)
+    else if (payload.type === 'typing') {
+  if (payload.from === currentPeer) showTyping(payload.from)
+}
+else if (payload.type === 'stopTyping') {
+  hideTyping(payload.from)
+}
+
   })
 
   await presence.subscribe()
@@ -588,13 +505,26 @@ addBtn.onclick = () => {
 }
 logoutBtn.onclick = logout
 sendBtn.onclick = sendMessage
-messageInput.onkeydown = e => { if (e.key === 'Enter') sendMessage() }
+messageInput.onkeydown = e => {
+  if (!currentPeer) return
+  if (e.key === 'Enter') sendMessage()
+  else sendTypingSignal()
+}
+
+function sendTypingSignal() {
+  if (!currentPeer) return
+  clearTimeout(typingTimeout[currentPeer])
+  sendSignal(currentPeer, { type: 'typing' })
+  typingTimeout[currentPeer] = setTimeout(() => {
+    sendSignal(currentPeer, { type: 'stopTyping' })
+  }, 3000)
+}
 
 startRealtime()
-</script>
-
+</script>  
 </body>
 </html>
+
 
 
 
