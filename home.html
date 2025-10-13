@@ -197,357 +197,372 @@ body{
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-/* ---------------- CONFIGURATION ---------------- */
+/* --- CONFIG --- */
 const SUPABASE_URL = 'https://dfzshvldanqfvfivjrqi.supabase.co'
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmenNodmxkYW5xZnZmaXZqcnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4MDIxNTEsImV4cCI6MjA3MDM3ODE1MX0.wdms-6G9eDzRuk1YiCpdyvVS-5CRKCsrq9WWWIFl9HA'
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
-const DRIVE_FILE_NAME = 'chat.json'
 const storageProfileKey = 'hc_profile'
+const DRIVE_FILE_NAME = 'chat.json'
 
-/* ---------------- USER AUTH ---------------- */
+/* --- LOAD PROFILE --- */
 const profile = JSON.parse(localStorage.getItem(storageProfileKey) || 'null')
-if (!profile) { location.href = 'register.html'; throw new Error('No profile found') }
+if (!profile) { location.href = 'register.html'; throw new Error('no profile') }
 
 const myId = profile.id
 const myName = profile.name
 const myEmail = profile.email
 const myAvatar = profile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(myName)}`
-const DRIVE_TOKEN = profile.token || null
+let DRIVE_TOKEN = profile.token || null
 let DRIVE_FILE_ID = null
+let chatStore = {}
+document.getElementById('myAvatar').src = myAvatar
+document.getElementById('myName').textContent = myName
 
-/* ---------------- DOM ELEMENTS ---------------- */
-const myAvatarEl = document.getElementById('myAvatar')
-const myNameEl = document.getElementById('myName')
-const searchEl = document.getElementById('search')
-const logoutBtn = document.getElementById('logout')
-const tabs = document.querySelectorAll('.tab')
+/* --- ELEMENTS --- */
 const contactsEl = document.getElementById('contacts')
-const chatsEl = document.getElementById('chats')
+const searchEl = document.getElementById('search')
+const addBtn = document.getElementById('addBtn')
+const logoutBtn = document.getElementById('logout')
 const peerAvatarEl = document.getElementById('peerAvatar')
 const peerNameEl = document.getElementById('peerName')
 const peerStatusEl = document.getElementById('peerStatus')
+const placeholderEl = document.getElementById('placeholder')
 const messagesEl = document.getElementById('messages')
 const messageInput = document.getElementById('messageInput')
 const sendBtn = document.getElementById('sendBtn')
 const attachBtn = document.getElementById('attach')
-const placeholderEl = document.getElementById('placeholder')
 
-myAvatarEl.src = myAvatar
-myNameEl.textContent = myName
-
-/* ---------------- VARIABLES ---------------- */
 let online = {}
 let pcMap = {}
 let dcMap = {}
-let chatStore = {}
 let currentPeer = null
-let driveSaveTimer = null
-let typingTimeout = null
+let typingTimers = {}
 
-/* ---------------- TAB SWITCH ---------------- */
-tabs.forEach(tab=>{
-  tab.addEventListener('click',()=>{
-    tabs.forEach(t=>t.classList.remove('active'))
-    tab.classList.add('active')
-    if(tab.dataset.tab==='chats'){
-      chatsEl.style.display='block'
-      contactsEl.style.display='none'
-    } else {
-      contactsEl.style.display='block'
-      chatsEl.style.display='none'
+/* --- SEARCH & ADD --- */
+searchEl.addEventListener('input', () => renderContacts(searchEl.value.trim()))
+addBtn.addEventListener('click', () => {
+  const id = searchEl.value.trim()
+  if (!id || id === myId) return
+  const temp = { uuid: id, name: 'Contact', avatar: 'https://ui-avatars.com/api/?name=User' }
+  online[id] = temp
+  renderContacts()
+})
+
+logoutBtn.addEventListener('click', () => {
+  localStorage.removeItem(storageProfileKey)
+  location.reload()
+})
+
+/* --- CONTACT RENDER --- */
+function renderContacts(filter = '') {
+  contactsEl.innerHTML = ''
+
+  // Fragments
+  const yourChatsTitle = document.createElement('div')
+  yourChatsTitle.textContent = 'Your Chats'
+  yourChatsTitle.style = 'font-weight:700;margin:8px 4px;color:#071133;font-size:14px;'
+  contactsEl.appendChild(yourChatsTitle)
+
+  const list = Object.values(online).filter(u => u.uuid !== myId)
+  list.sort((a, b) => {
+    const at = (chatStore[a.uuid]?.slice(-1)[0]?.ts) || 0
+    const bt = (chatStore[b.uuid]?.slice(-1)[0]?.ts) || 0
+    return bt - at
+  })
+
+  // “Your Chats” section (those with messages)
+  list.filter(u => chatStore[u.uuid]?.length).forEach(u => {
+    if (filter && !u.name.toLowerCase().includes(filter.toLowerCase()) && !u.uuid.includes(filter)) return
+    const div = buildContactElement(u)
+    contactsEl.appendChild(div)
+  })
+
+  // “Online Users” section
+  const onlineTitle = document.createElement('div')
+  onlineTitle.textContent = 'Online Users'
+  onlineTitle.style = 'font-weight:700;margin:8px 4px;color:#071133;font-size:14px;'
+  contactsEl.appendChild(onlineTitle)
+
+  list.filter(u => !chatStore[u.uuid]?.length).forEach(u => {
+    if (filter && !u.name.toLowerCase().includes(filter.toLowerCase()) && !u.uuid.includes(filter)) return
+    const div = buildContactElement(u, true)
+    contactsEl.appendChild(div)
+  })
+}
+
+function buildContactElement(u, onlineOnly = false) {
+  const div = document.createElement('div')
+  div.className = 'contact'
+  if (currentPeer === u.uuid) div.classList.add('selected')
+  const lastMsg = chatStore[u.uuid]?.slice(-1)[0]
+  const lastText = lastMsg ? (lastMsg.isImage ? '[Image]' : lastMsg.text) : (onlineOnly ? 'Online now' : 'No messages yet')
+
+  div.innerHTML = `
+    <img class="avatar" src="${u.avatar}">
+    <div class="meta">
+      <div class="name">${u.name} ${u.online ? '<span style="color:#16a34a;font-size:12px;">●</span>' : ''}</div>
+      <div class="last">${lastText}</div>
+    </div>`
+  div.addEventListener('click', () => openChatWith(u))
+  return div
+}
+
+/* --- CHAT OPEN --- */
+function openChatWith(user) {
+  currentPeer = user.uuid
+  peerNameEl.textContent = user.name
+  peerAvatarEl.src = user.avatar
+  peerAvatarEl.style.display = 'block'
+  peerStatusEl.textContent = user.online ? 'Online' : user.lastSeen ? 'Goes offline ' + timeAgo(user.lastSeen) : 'Offline'
+  placeholderEl.style.display = 'none'
+  messagesEl.style.display = 'flex'
+  messagesEl.innerHTML = ''
+  if (!chatStore[currentPeer]) chatStore[currentPeer] = []
+  chatStore[currentPeer].forEach(m => renderMessage(m.text, m.me, m.isImage, false))
+  if (!pcMap[currentPeer]) createConnection(currentPeer)
+  renderContacts()
+  scrollToBottom()
+}
+
+/* --- MESSAGE RENDER --- */
+function renderMessage(text, me, isImage, animate = true) {
+  const d = document.createElement('div')
+  d.className = 'msg ' + (me ? 'me' : 'other')
+  if (isImage) {
+    const img = document.createElement('img')
+    img.src = text
+    d.appendChild(img)
+  } else d.textContent = text
+  if (animate) d.style.opacity = 0
+  messagesEl.appendChild(d)
+  if (animate) requestAnimationFrame(() => { d.style.opacity = 1 })
+  scrollToBottom()
+}
+
+/* --- SCROLL --- */
+function scrollToBottom() { messagesEl.scrollTop = messagesEl.scrollHeight }
+
+/* --- REALTIME --- */
+async function startRealtime() {
+  const pres = supabase.channel('public:presence')
+  pres.on('broadcast', { event: 'user-presence' }, payload => {
+    const u = payload.payload
+    if (!u?.uuid) return
+    if (u.action === 'join' || u.action === 'update') {
+      online[u.uuid] = { ...u, online: true }
+      renderContacts()
+    } else if (u.action === 'leave') {
+      online[u.uuid].online = false
+      online[u.uuid].lastSeen = Date.now()
+      if (currentPeer === u.uuid) peerStatusEl.textContent = 'Goes offline ' + timeAgo(online[u.uuid].lastSeen)
+      renderContacts()
     }
   })
-})
 
-/* ---------------- BASIC CONTROLS ---------------- */
-logoutBtn.addEventListener('click',()=>{
-  localStorage.removeItem(storageProfileKey)
-  location.href = 'register.html'
-})
-searchEl.addEventListener('input',()=>renderContacts(searchEl.value.trim()))
+  const sig = supabase.channel('public:signaling')
+  sig.on('broadcast', { event: 'signal' }, async payload => {
+    const msg = payload.payload
+    if (!msg || msg.to !== myId) return
+    if (msg.type === 'offer') await handleOffer(msg.from, msg.sdp)
+    else if (msg.type === 'answer') await handleAnswer(msg.from, msg.sdp)
+    else if (msg.type === 'candidate') await handleCandidate(msg.from, msg.candidate)
+    else if (msg.type === 'message') appendIncoming(msg.from, msg.data, msg.isImage)
+    else if (msg.type === 'typing') handleTyping(msg.from)
+  })
 
-/* ---------------- CHAT RENDER ---------------- */
-function renderContacts(filter=''){
-  contactsEl.innerHTML=''
-  Object.values(online)
-    .filter(u=>u.uuid!==myId)
-    .filter(u=>!filter || u.name.toLowerCase().includes(filter.toLowerCase()))
-    .forEach(u=>{
-      const lastSeen = u.lastSeen ? timeAgo(u.lastSeen) : ''
-      const typing = u.typing ? '<span class="typing">Typing...</span>' : ''
-      const div = document.createElement('div')
-      div.className='contact'
-      div.innerHTML=`
-        <img class="avatar" src="${u.avatar}">
-        <div class="meta">
-          <div class="name">${u.name} <span class="status">
-            ${u.online ? '<span class="dot"></span> Online' : `Goes offline ${lastSeen}`}
-          </span></div>
-          <div class="last">${typing || (chatStore[u.uuid]?.messages?.slice(-1)[0]?.text || 'No messages yet')}</div>
-        </div>
-      `
-      div.addEventListener('click',()=>openChatWith(u))
-      contactsEl.appendChild(div)
-    })
+  await pres.subscribe(); await sig.subscribe()
+  broadcastPresence('join')
+  setInterval(() => broadcastPresence('update'), 25000)
+  window.addEventListener('beforeunload', () => broadcastPresence('leave'))
+  await loadChatFromDrive()
 }
 
-function renderChats(){
-  chatsEl.innerHTML=''
-  Object.entries(chatStore).forEach(([uuid, data])=>{
-    const lastMsg=data.messages?.slice(-1)[0]
-    const div=document.createElement('div')
-    div.className='contact'
-    div.innerHTML=`
-      <img class="avatar" src="${data.avatar}">
-      <div class="meta">
-        <div class="name">${data.name} <span class="status">${lastMsg?formatTime(lastMsg.ts):''}</span></div>
-        <div class="last">${lastMsg?lastMsg.text:'No messages yet'}</div>
-      </div>`
-    div.addEventListener('click',()=>{
-      openChatWith({uuid,name:data.name,avatar:data.avatar,email:data.partnerEmail})
-    })
-    chatsEl.appendChild(div)
+/* --- TYPING --- */
+function handleTyping(from) {
+  if (currentPeer === from) {
+    peerStatusEl.textContent = 'typing...'
+    clearTimeout(typingTimers[from])
+    typingTimers[from] = setTimeout(() => {
+      peerStatusEl.textContent = online[from]?.online ? 'Online' : 'Offline'
+    }, 2000)
+  }
+}
+
+/* --- PRESENCE --- */
+function broadcastPresence(action) {
+  supabase.channel('public:presence').send({
+    type: 'broadcast', event: 'user-presence',
+    payload: { uuid: myId, name: myName, avatar: myAvatar, email: myEmail, action, ts: Date.now() }
   })
 }
 
-/* ---------------- OPEN CHAT ---------------- */
-function openChatWith(user){
-  currentPeer=user.uuid
-  peerNameEl.textContent=user.name
-  peerAvatarEl.src=user.avatar
-  peerAvatarEl.style.display='block'
-  peerStatusEl.textContent=user.typing?'Typing...':(user.online?'Online':`Goes offline ${timeAgo(user.lastSeen)}`)
-  placeholderEl.style.display='none'
-  messagesEl.style.display='flex'
-  messagesEl.innerHTML=''
-  if(!chatStore[currentPeer]) chatStore[currentPeer]={partnerEmail:user.email,name:user.name,avatar:user.avatar,messages:[]}
-  chatStore[currentPeer].messages.forEach(m=>renderMessage(m.text,m.me,m.isImage,false))
-  if(!pcMap[currentPeer]) createConnection(currentPeer)
-  scrollToBottom()
+/* --- SIGNALING --- */
+function createConnection(peer) {
+  const pc = new RTCPeerConnection()
+  const dc = pc.createDataChannel('chat')
+  dc.onmessage = ev => appendIncoming(peer, ev.data, false)
+  dc.onopen = () => { dcMap[peer] = dc }
+  pc.onicecandidate = e => { if (e.candidate) sendSignal(peer, { type: 'candidate', candidate: e.candidate }) }
+  pc.ondatachannel = e => {
+    e.channel.onmessage = ev => appendIncoming(peer, ev.data, false)
+    e.channel.onopen = () => { dcMap[peer] = e.channel }
+  }
+  pcMap[peer] = pc
+  makeOffer(peer)
 }
 
-/* ---------------- MESSAGE HANDLING ---------------- */
-function renderMessage(text,me,isImage,animate=true){
-  const d=document.createElement('div')
-  d.className='msg '+(me?'me':'other')
-  if(isImage){
-    const img=document.createElement('img')
-    img.src=text
-    d.appendChild(img)
-  } else d.textContent=text
-  if(animate) d.style.opacity=0
-  messagesEl.appendChild(d)
-  if(animate) requestAnimationFrame(()=>d.style.opacity=1)
-  scrollToBottom()
+async function makeOffer(peer) {
+  const pc = pcMap[peer]
+  const offer = await pc.createOffer()
+  await pc.setLocalDescription(offer)
+  sendSignal(peer, { type: 'offer', sdp: offer })
 }
-function scrollToBottom(){ messagesEl.scrollTop=messagesEl.scrollHeight }
+async function handleOffer(from, sdp) {
+  if (!pcMap[from]) {
+    const pc = new RTCPeerConnection()
+    pc.ondatachannel = e => {
+      e.channel.onmessage = ev => appendIncoming(from, ev.data, false)
+      e.channel.onopen = () => { dcMap[from] = e.channel }
+    }
+    pc.onicecandidate = e => { if (e.candidate) sendSignal(from, { type: 'candidate', candidate: e.candidate }) }
+    pcMap[from] = pc
+  }
+  const pc = pcMap[from]
+  await pc.setRemoteDescription(new RTCSessionDescription(sdp))
+  const answer = await pc.createAnswer()
+  await pc.setLocalDescription(answer)
+  sendSignal(from, { type: 'answer', sdp: answer })
+}
+async function handleAnswer(from, sdp) { await pcMap[from]?.setRemoteDescription(new RTCSessionDescription(sdp)) }
+async function handleCandidate(from, candidate) { await pcMap[from]?.addIceCandidate(new RTCIceCandidate(candidate)) }
+function sendSignal(to, msg) { supabase.channel('public:signaling').send({ type: 'broadcast', event: 'signal', payload: { ...msg, from: myId, to } }) }
 
-function sendMessage(){
-  if(!currentPeer) return
-  const val=messageInput.value.trim()
-  if(!val) return
-  pushMessage(currentPeer,val,true,false)
-  if(dcMap[currentPeer]?.readyState==='open') dcMap[currentPeer].send(val)
-  sendSignal(currentPeer,{type:'message',data:val,isImage:false})
-  messageInput.value=''
-}
-function sendImageAsMessage(dataUrl){
-  if(!currentPeer) return
-  pushMessage(currentPeer,dataUrl,true,true)
-  if(dcMap[currentPeer]?.readyState==='open') dcMap[currentPeer].send(dataUrl)
-  sendSignal(currentPeer,{type:'message',data:dataUrl,isImage:true})
+/* --- MESSAGES --- */
+function appendIncoming(from, text, isImage) {
+  if (!chatStore[from]) chatStore[from] = []
+  chatStore[from].push({ text, me: false, isImage: !!isImage, ts: Date.now(), read: currentPeer === from })
+  if (currentPeer === from) renderMessage(text, false, !!isImage)
+  else flashContact(from)
+  renderContacts()
+  scheduleDriveSave()
 }
 
-attachBtn.addEventListener('click',()=>{
-  const input=document.createElement('input')
-  input.type='file'
-  input.accept='image/*'
-  input.onchange=e=>{
-    const f=e.target.files[0]
-    if(!f) return
-    const r=new FileReader()
-    r.onload=()=>sendImageAsMessage(r.result)
+function sendMessage() {
+  if (!currentPeer) return
+  const val = messageInput.value.trim()
+  if (!val) return
+  chatStore[currentPeer] = chatStore[currentPeer] || []
+  chatStore[currentPeer].push({ text: val, me: true, isImage: false, ts: Date.now(), read: true })
+  renderMessage(val, true, false)
+  if (dcMap[currentPeer]?.readyState === 'open') dcMap[currentPeer].send(val)
+  sendSignal(currentPeer, { type: 'message', data: val, isImage: false })
+  messageInput.value = ''
+  scheduleDriveSave()
+  renderContacts()
+}
+
+messageInput.addEventListener('input', () => {
+  if (currentPeer) sendSignal(currentPeer, { type: 'typing' })
+})
+
+function sendImageAsMessage(dataUrl) {
+  if (!currentPeer) return
+  chatStore[currentPeer] = chatStore[currentPeer] || []
+  chatStore[currentPeer].push({ text: dataUrl, me: true, isImage: true, ts: Date.now(), read: true })
+  renderMessage(dataUrl, true, true)
+  if (dcMap[currentPeer]?.readyState === 'open') dcMap[currentPeer].send(dataUrl)
+  sendSignal(currentPeer, { type: 'message', data: dataUrl, isImage: true })
+  scheduleDriveSave()
+  renderContacts()
+}
+
+/* --- ATTACH --- */
+attachBtn.addEventListener('click', () => {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.onchange = e => {
+    const f = e.target.files[0]
+    if (!f) return
+    const r = new FileReader()
+    r.onload = () => sendImageAsMessage(r.result)
     r.readAsDataURL(f)
   }
   input.click()
 })
-sendBtn.addEventListener('click',sendMessage)
-messageInput.addEventListener('keydown',e=>{
-  if(e.key==='Enter') sendMessage()
-  else sendTyping()
-})
 
-/* ---------------- TYPING ---------------- */
-function sendTyping(){
-  if(!currentPeer) return
-  sendSignal(currentPeer,{type:'typing'})
-}
-function showTyping(from){
-  if(currentPeer===from){
-    peerStatusEl.textContent='Typing...'
-    clearTimeout(typingTimeout)
-    typingTimeout=setTimeout(()=>{
-      peerStatusEl.textContent='Online'
-    },1500)
-  }
-  if(online[from]){ online[from].typing=true; renderContacts() }
-  setTimeout(()=>{ if(online[from]){ online[from].typing=false; renderContacts() } },1500)
+sendBtn.addEventListener('click', sendMessage)
+messageInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage() })
+
+function flashContact(id) {
+  const el = [...contactsEl.children].find(c => c.textContent.includes(id))
+  if (el) el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.05)' }, { transform: 'scale(1)' }], { duration: 300 })
 }
 
-/* ---------------- SUPABASE ---------------- */
-async function startRealtime(){
-  const presence=supabase.channel('public:presence')
-  presence.on('broadcast',{event:'user-presence'},payload=>{
-    const u=payload.payload
-    if(!u?.uuid) return
-    if(u.action==='join'||u.action==='update'){
-      online[u.uuid]={...u,online:true,typing:false}
-    }else if(u.action==='leave'){
-      if(online[u.uuid]){
-        online[u.uuid].online=false
-        online[u.uuid].lastSeen=Date.now()
-      }
-    }
-    renderContacts()
-  })
-
-  const signaling=supabase.channel('public:signaling')
-  signaling.on('broadcast',{event:'signal'},async payload=>{
-    const msg=payload.payload
-    if(!msg||msg.to!==myId) return
-    if(msg.type==='offer') await handleOffer(msg.from,msg.sdp)
-    else if(msg.type==='answer') await handleAnswer(msg.from,msg.sdp)
-    else if(msg.type==='candidate') await handleCandidate(msg.from,msg.candidate)
-    else if(msg.type==='message') appendIncoming(msg.from,msg.data,msg.isImage)
-    else if(msg.type==='typing') showTyping(msg.from)
-  })
-
-  await presence.subscribe()
-  await signaling.subscribe()
-  broadcastPresence('join')
-  setInterval(()=>broadcastPresence('update'),25000)
-  window.addEventListener('beforeunload',()=>broadcastPresence('leave'))
-
-  await loadChatFromDrive()
-}
-function broadcastPresence(action){
-  supabase.channel('public:presence').send({
-    type:'broadcast',event:'user-presence',
-    payload:{uuid:myId,name:myName,email:myEmail,avatar:myAvatar,action,ts:Date.now()}
-  })
-}
-
-/* ---------------- WEBRTC ---------------- */
-function createConnection(peer){
-  const pc=new RTCPeerConnection()
-  const dc=pc.createDataChannel('chat')
-  dc.onmessage=ev=>appendIncoming(peer,ev.data,false)
-  dc.onopen=()=>dcMap[peer]=dc
-  pc.onicecandidate=e=>{ if(e.candidate) sendSignal(peer,{type:'candidate',candidate:e.candidate}) }
-  pc.ondatachannel=e=>{
-    e.channel.onmessage=ev=>appendIncoming(peer,ev.data,false)
-    e.channel.onopen=()=>dcMap[peer]=e.channel
-  }
-  pcMap[peer]=pc
-  makeOffer(peer)
-}
-async function makeOffer(peer){
-  const pc=pcMap[peer]
-  const offer=await pc.createOffer()
-  await pc.setLocalDescription(offer)
-  sendSignal(peer,{type:'offer',sdp:offer})
-}
-async function handleOffer(from,sdp){
-  if(!pcMap[from]){
-    const pc=new RTCPeerConnection()
-    pc.ondatachannel=e=>{
-      e.channel.onmessage=ev=>appendIncoming(from,ev.data,false)
-      e.channel.onopen=()=>dcMap[from]=e.channel
-    }
-    pc.onicecandidate=e=>{ if(e.candidate) sendSignal(from,{type:'candidate',candidate:e.candidate}) }
-    pcMap[from]=pc
-  }
-  const pc=pcMap[from]
-  await pc.setRemoteDescription(new RTCSessionDescription(sdp))
-  const answer=await pc.createAnswer()
-  await pc.setLocalDescription(answer)
-  sendSignal(from,{type:'answer',sdp:answer})
-}
-async function handleAnswer(from,sdp){ await pcMap[from]?.setRemoteDescription(new RTCSessionDescription(sdp)) }
-async function handleCandidate(from,candidate){ await pcMap[from]?.addIceCandidate(new RTCIceCandidate(candidate)) }
-function sendSignal(to,msg){
-  supabase.channel('public:signaling').send({
-    type:'broadcast',event:'signal',payload:{...msg,from:myId,to}
-  })
-}
-
-/* ---------------- CHAT STORAGE ---------------- */
-function pushMessage(peer,text,me,isImage){
-  if(!chatStore[peer]) chatStore[peer]={partnerEmail:online[peer]?.email||'',name:online[peer]?.name||'Unknown',avatar:online[peer]?.avatar||'',messages:[]}
-  chatStore[peer].messages.push({text,me,isImage,ts:Date.now()})
-  renderMessage(text,me,isImage)
-  renderChats()
-  scheduleDriveSave()
-}
-function appendIncoming(from,text,isImage){
-  pushMessage(from,text,false,!!isImage)
-}
-
-/* ---------------- DRIVE STORAGE ---------------- */
-async function loadChatFromDrive(){
-  if(!DRIVE_TOKEN) return
-  try{
-    const listRes=await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DRIVE_FILE_NAME}' and trashed=false&fields=files(id,name)`,{
-      headers:{Authorization:'Bearer '+DRIVE_TOKEN}
+/* --- DRIVE SYNC --- */
+async function loadChatFromDrive() {
+  if (!DRIVE_TOKEN) return
+  try {
+    const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DRIVE_FILE_NAME}' and trashed=false&fields=files(id,name)`, {
+      headers: { Authorization: 'Bearer ' + DRIVE_TOKEN }
     })
-    const listData=await listRes.json()
-    DRIVE_FILE_ID=listData.files?.[0]?.id||null
-    if(DRIVE_FILE_ID){
-      const fileRes=await fetch(`https://www.googleapis.com/drive/v3/files/${DRIVE_FILE_ID}?alt=media`,{
-        headers:{Authorization:'Bearer '+DRIVE_TOKEN}
+    const listData = await listRes.json()
+    DRIVE_FILE_ID = listData.files?.[0]?.id || null
+    if (DRIVE_FILE_ID) {
+      const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${DRIVE_FILE_ID}?alt=media`, {
+        headers: { Authorization: 'Bearer ' + DRIVE_TOKEN }
       })
-      if(fileRes.ok){
-        const data=await fileRes.json().catch(()=>({}))
-        if(data&&typeof data==='object') chatStore=data
+      if (fileRes.ok) {
+        const data = await fileRes.json().catch(() => ({}))
+        if (data && typeof data === 'object') chatStore = data
       }
     } else await updateDriveChat()
-  }catch(e){console.error('Drive load error',e)}
-  renderChats()
-}
-function scheduleDriveSave(){
-  if(!DRIVE_TOKEN) return
-  if(driveSaveTimer) clearTimeout(driveSaveTimer)
-  driveSaveTimer=setTimeout(()=>updateDriveChat(),1500)
-}
-async function updateDriveChat(){
-  if(!DRIVE_TOKEN) return
-  try{
-    const metadata={name:DRIVE_FILE_NAME,mimeType:'application/json'}
-    const form=new FormData()
-    form.append('metadata',new Blob([JSON.stringify(metadata)],{type:'application/json'}))
-    form.append('file',new Blob([JSON.stringify(chatStore)],{type:'application/json'}))
-    const uploadUrl=DRIVE_FILE_ID
-      ? `https://www.googleapis.com/upload/drive/v3/files/${DRIVE_FILE_ID}?uploadType=multipart`
-      : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart'
-    const res=await fetch(uploadUrl,{method:DRIVE_FILE_ID?'PATCH':'POST',headers:{Authorization:'Bearer '+DRIVE_TOKEN},body:form})
-    if(res.ok){
-      const j=await res.json()
-      DRIVE_FILE_ID=j.id||DRIVE_FILE_ID
-    }
-  }catch(e){console.error('Drive save error',e)}
+  } catch (e) { console.error('Drive load error', e) }
+  renderContacts()
 }
 
-/* ---------------- UTILITIES ---------------- */
-function timeAgo(ts){
-  const diff=Math.floor((Date.now()-ts)/1000)
-  if(diff<60)return diff+'s ago'
-  if(diff<3600)return Math.floor(diff/60)+'m ago'
-  if(diff<86400)return Math.floor(diff/3600)+'h ago'
-  return Math.floor(diff/86400)+'d ago'
+let driveSaveTimer = null
+function scheduleDriveSave() {
+  if (!DRIVE_TOKEN) return
+  if (driveSaveTimer) clearTimeout(driveSaveTimer)
+  driveSaveTimer = setTimeout(() => updateDriveChat(), 1500)
 }
-function formatTime(ts){
-  const d=new Date(ts)
-  return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
+
+async function updateDriveChat() {
+  if (!DRIVE_TOKEN) return
+  try {
+    const metadata = { name: DRIVE_FILE_NAME, mimeType: 'application/json' }
+    const drivePayload = {
+      ...chatStore,
+      partnerEmail: myEmail,
+      partnerName: myName,
+      lastUpdated: new Date().toISOString()
+    }
+    const form = new FormData()
+    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }))
+    form.append('file', new Blob([JSON.stringify(drivePayload)], { type: 'application/json' }))
+    const uploadUrl = DRIVE_FILE_ID
+      ? `https://www.googleapis.com/upload/drive/v3/files/${DRIVE_FILE_ID}?uploadType=multipart`
+      : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart'
+    const res = await fetch(uploadUrl, {
+      method: DRIVE_FILE_ID ? 'PATCH' : 'POST',
+      headers: { Authorization: 'Bearer ' + DRIVE_TOKEN },
+      body: form
+    })
+    if (res.ok) {
+      const j = await res.json()
+      DRIVE_FILE_ID = j.id || DRIVE_FILE_ID
+    }
+  } catch (e) { console.error('Drive save error', e) }
+}
+
+/* --- UTIL --- */
+function timeAgo(ts) {
+  const diff = Date.now() - ts
+  if (diff < 60000) return 'a few seconds ago'
+  if (diff < 3600000) return Math.floor(diff / 60000) + ' minutes ago'
+  if (diff < 86400000) return Math.floor(diff / 3600000) + ' hours ago'
+  return Math.floor(diff / 86400000) + ' days ago'
 }
 
 startRealtime()
@@ -555,6 +570,7 @@ startRealtime()
 
 </body>
 </html>
+
 
 
 
