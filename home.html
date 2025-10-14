@@ -299,6 +299,8 @@ body{
       <video id="remoteVideo" autoplay class="call-video"></video>
     </div>
     <div class="call-controls">
+      <button id="acceptCall" class="icon-btn" style="display:none"><i class="fas fa-phone"></i></button>
+      <button id="rejectCall" class="icon-btn" style="display:none"><i class="fas fa-phone-slash"></i></button>
       <button id="muteMic" class="icon-btn"><i class="fas fa-microphone"></i></button>
       <button id="toggleCamera" class="icon-btn"><i class="fas fa-video"></i></button>
       <button id="hangUpBtn" class="icon-btn"><i class="fas fa-phone-slash"></i></button>
@@ -405,7 +407,8 @@ const endCallBtn = document.getElementById('endCallBtn')
 const hangUpBtn = document.getElementById('hangUpBtn')
 const muteMicBtn = document.getElementById('muteMic')
 const toggleCameraBtn = document.getElementById('toggleCamera')
-
+const acceptCallBtn = document.getElementById('acceptCall');
+const rejectCallBtn = document.getElementById('rejectCall');
 document.querySelector('.chat-actions i.fa-video').parentNode.onclick = () => startCall('video')
 document.querySelector('.chat-actions i.fa-phone').parentNode.onclick = () => startCall('audio')
 
@@ -443,48 +446,64 @@ async function startCall(type) {
 async function handleCallSignal(msg) {
   if (msg.type === 'call-offer') {
     if (isCalling) {
-      sendSignal(msg.from, { type:'call-busy' })
-      return
+      sendSignal(msg.from, { type:'call-busy' });
+      return;
     }
 
-    const accept = await showCustomDialog(`${chatStore[msg.from].profile.name} is calling you. Accept?`, 'confirm')
-    if (!accept) return sendSignal(msg.from, { type:'call-reject' })
+    // Show incoming call UI
+    callPeerName.textContent = chatStore[msg.from].profile.name + " is calling...";
+    callDialog.style.display = 'flex';
+    acceptCallBtn.style.display = 'inline-flex';
+    rejectCallBtn.style.display = 'inline-flex';
+    hangUpBtn.style.display = 'none';
+    muteMicBtn.style.display = 'none';
+    toggleCameraBtn.style.display = 'none';
 
-    callDialog.style.display = 'flex'
-    callPeerName.textContent = chatStore[msg.from].profile.name
-    isCalling = true
-    currentCallPeer = msg.from
-    chatStore[msg.from].busy = true
+    acceptCallBtn.onclick = async () => {
+      acceptCallBtn.style.display = 'none';
+      rejectCallBtn.style.display = 'none';
+      hangUpBtn.style.display = 'inline-flex';
+      muteMicBtn.style.display = 'inline-flex';
+      toggleCameraBtn.style.display = 'inline-flex';
 
-    localStream = await navigator.mediaDevices.getUserMedia({
-      video: msg.callType === 'video',
-      audio: true
-    })
-    localVideo.srcObject = localStream
+      currentCallPeer = msg.from;
+      isCalling = true;
+      chatStore[msg.from].busy = true;
 
-    callPc = new RTCPeerConnection()
-    localStream.getTracks().forEach(track => callPc.addTrack(track, localStream))
-    callPc.ontrack = e => { remoteVideo.srcObject = e.streams[0] }
-    callPc.onicecandidate = e => { if(e.candidate) sendSignal(msg.from, { type:'candidate', candidate:e.candidate }) }
+      localStream = await navigator.mediaDevices.getUserMedia({
+        video: msg.callType === 'video',
+        audio: true
+      });
+      localVideo.srcObject = localStream;
 
-    await callPc.setRemoteDescription(new RTCSessionDescription(msg.sdp))
-    const answer = await callPc.createAnswer()
-    await callPc.setLocalDescription(answer)
-    sendSignal(msg.from, { type:'call-answer', sdp: answer })
+      callPc = new RTCPeerConnection();
+      localStream.getTracks().forEach(track => callPc.addTrack(track, localStream));
+      callPc.ontrack = e => remoteVideo.srcObject = e.streams[0];
+      callPc.onicecandidate = e => { if(e.candidate) sendSignal(msg.from, { type:'candidate', candidate:e.candidate }) };
+
+      await callPc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+      const answer = await callPc.createAnswer();
+      await callPc.setLocalDescription(answer);
+      sendSignal(msg.from, { type:'call-answer', sdp: answer });
+    };
+
+    rejectCallBtn.onclick = () => {
+      sendSignal(msg.from, { type:'call-reject' });
+      callDialog.style.display = 'none';
+    };
   }
 
   else if (msg.type === 'call-answer') {
-    await callPc.setRemoteDescription(new RTCSessionDescription(msg.sdp))
+    await callPc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
   }
 
   else if (msg.type === 'candidate') {
-    await callPc.addIceCandidate(new RTCIceCandidate(msg.candidate))
+    await callPc.addIceCandidate(new RTCIceCandidate(msg.candidate));
   }
 
-  else if (msg.type === 'call-busy') await showCustomDialog("The person you are calling is busy.", 'alert')
-  else if (msg.type === 'call-reject') await showCustomDialog("The person rejected your call.", 'alert')
+  else if (msg.type === 'call-busy') await showCustomDialog("The person you are calling is busy.", 'alert');
+  else if (msg.type === 'call-reject') await showCustomDialog("The person rejected your call.", 'alert');
 }
-
 hangUpBtn.onclick = endCall
 endCallBtn.onclick = endCall
 muteMicBtn.onclick = () => {
@@ -958,6 +977,7 @@ startRealtime()
 </script> 
 </body>
 </html>
+
 
 
 
