@@ -590,7 +590,7 @@ function logout() { localStorage.removeItem(STORAGE_KEY); location.href = 'regis
 // ---- Status Updates ----
 function updatePeerStatus(id) {
   peerStatusEl.textContent = online[id] ? 'Online' :
-    chatStore[id]?.lastSeen ? 'Last seen at' + new Date(chatStore[id].lastSeen).toLocaleTimeString() : 'Offline'
+    chatStore[id]?.lastSeen ? 'Last seen at ' + new Date(chatStore[id].lastSeen).toLocaleTimeString() : 'Offline'
 }
 
 // ---- Init ----
@@ -623,5 +623,6 @@ startRealtime()
 </script> 
 </body>
 </html>
+
 
 
