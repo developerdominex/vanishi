@@ -232,34 +232,24 @@ const typingIndicators = {}
 
 function showTyping(peerId) {
   if (typingIndicators[peerId]) return;
-
+  const name = chatStore[peerId]?.profile?.name || 'User';
   const d = document.createElement('div');
   d.className = 'typing-indicator';
-  d.innerHTML = `
-    <span class="label">${chatStore[peerId]?.profile?.name || 'User'} is typing</span>
-    <div class="typing-dots"><span></span><span></span><span></span></div>
-  `;
   d.id = `typing-${peerId}`;
+  d.innerHTML = `<span class="label">${name} is typing</span>
+    <div class="typing-dots"><span></span><span></span><span></span></div>`;
   messagesEl.appendChild(d);
   typingIndicators[peerId] = d;
-
-  requestAnimationFrame(() => {
-    messagesEl.scrollTo({
-      top: messagesEl.scrollHeight,
-      behavior: 'smooth'
-    });
-  });
+  requestAnimationFrame(() => scrollElementIntoView(d, true));
 }
-
-
 function hideTyping(peerId) {
-  const el = typingIndicators[peerId]
-  if (el) {
-    el.style.opacity = 0
-    el.style.transform = "translateY(6px)"
-    setTimeout(() => el.remove(), 250)
-    delete typingIndicators[peerId]
-  }
+  const el = typingIndicators[peerId];
+  if (!el) return;
+  el.style.transition = 'opacity .18s ease, transform .18s ease';
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(8px)';
+  setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 200);
+  delete typingIndicators[peerId];
 }
 
 // ---- UI: Contacts ----
@@ -308,28 +298,44 @@ function openChat(peerId) {
   scrollBottom()
 }
 
-// ---- Messages ----
 function renderMessage(text, me, isImage, animate = true) {
-  const d = document.createElement('div')
-  d.className = 'msg ' + (me ? 'me' : 'other')
+  const d = document.createElement('div');
+  d.className = 'msg ' + (me ? 'me' : 'other');
   if (isImage) {
-    const img = document.createElement('img')
-    img.src = text
-    d.appendChild(img)
-  } else d.textContent = text
-  messagesEl.appendChild(d)
-  if (animate) d.style.opacity = 0, requestAnimationFrame(() => d.style.opacity = 1)
-  scrollBottom()
+    const img = document.createElement('img');
+    img.src = text;
+    img.alt = 'Image message';
+    img.style.opacity = '0';
+    img.style.transition = 'opacity .25s ease';
+    d.appendChild(img);
+    messagesEl.appendChild(d);
+    img.onload = () => {
+      img.style.opacity = '1';
+      requestAnimationFrame(() => scrollElementIntoView(d, true));
+    };
+    img.onerror = () => {
+      img.style.opacity = '1';
+      requestAnimationFrame(() => scrollElementIntoView(d, true));
+    };
+  } else {
+    d.textContent = text;
+    messagesEl.appendChild(d);
+    if (animate) { d.style.opacity = 0; requestAnimationFrame(() => d.style.opacity = 1); }
+    requestAnimationFrame(() => scrollElementIntoView(d, true));
+  }
 }
-function scrollBottom() {
-  requestAnimationFrame(() => {
-    messagesEl.scrollTo({
-      top: messagesEl.scrollHeight,
-      behavior: 'smooth'
-    });
-  });
+function scrollElementIntoView(el, smooth = true) {
+  try {
+    el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'end', inline: 'nearest' });
+  } catch {
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
 }
-
+function scrollBottom(smooth = true) {
+  const last = messagesEl.lastElementChild;
+  if (last) scrollElementIntoView(last, smooth);
+  else messagesEl.scrollTop = messagesEl.scrollHeight;
+}
 function sendMessage() {
   if (!currentPeer) return
   const val = messageInput.value.trim()
