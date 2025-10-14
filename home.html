@@ -29,51 +29,7 @@ body{
   height:100%;max-height:800px;
   display:grid;grid-template-columns:320px 1fr;gap:20px;
 }
-  .custom-dialog {
-  position: fixed;
-  top:0; left:0; right:0; bottom:0;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  background: rgba(0,0,0,0.4);
-  z-index:99999;
-  opacity:0;
-  pointer-events:none;
-  transition: opacity 0.2s ease;
-}
-.custom-dialog.show {
-  opacity:1;
-  pointer-events:auto;
-}
-.custom-dialog-content {
-  background:#fff;
-  padding:20px;
-  border-radius:16px;
-  min-width:260px;
-  max-width:90vw;
-  text-align:center;
-  box-shadow:0 8px 24px rgba(0,0,0,0.2);
-  animation: popIn 0.25s ease;
-}
-.custom-dialog-buttons {
-  margin-top:15px;
-  display:flex;
-  justify-content:center;
-  gap:12px;
-}
-.custom-dialog-buttons button {
-  padding:6px 12px;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-  font-weight:600;
-  transition:0.2s;
-}
-.custom-dialog-buttons button:hover { transform:scale(1.05); }
-.custom-dialog-buttons .primary { background:#ef4444; color:#fff; }
-.custom-dialog-buttons .secondary { background:#e5e7eb; color:#111; }
 
-@keyframes popIn { from {transform:scale(0.8); opacity:0} to {transform:scale(1); opacity:1} }
 .panel{
   background:var(--side);border-radius:var(--radius);
   box-shadow:var(--shadow);
@@ -250,36 +206,57 @@ body{
   position: fixed;
   bottom: 20px;
   right: 20px;
-  width: 320px;
-  max-width: 90vw;
+  width: 300px;
+  height: 400px;
   background: #fff;
   border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: fadeIn 0.3s ease;
   z-index: 9999;
+  animation: fadeIn 0.3s ease;
 }
-.call-content { display:flex; flex-direction:column; }
-.call-header { display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:#f3f4f6; font-weight:600; }
-.call-video-container { display:flex; flex-direction:column; align-items:center; justify-content:center; background:#000; position:relative; }
-.call-video { width: 100%; max-height:200px; background:#000; border-radius:12px; margin-top:6px; }
-.call-controls { display:flex; justify-content:space-around; padding:8px; background:#f9fafb; }
-.call-controls .icon-btn { background:#ef4444; color:#fff; border-radius:50%; padding:8px; transition:0.2s; }
-.call-controls .icon-btn:hover { transform:scale(1.1); }
-@keyframes fadeIn { from {opacity:0; transform:translateY(20px);} to {opacity:1; transform:translateY(0);} }
+.call-content { display:flex; flex-direction:column; height:100%; }
+.call-header { display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:#f5f5f5; font-weight:600; }
+.call-body { flex:1; position:relative; display:flex; align-items:center; justify-content:center; background:#000; }
+#remoteVideo { width:100%; height:100%; object-fit:cover; border-radius:12px; }
+#localVideo { width:100px; height:80px; position:absolute; bottom:10px; right:10px; border-radius:12px; object-fit:cover; border:2px solid #fff; }
+.incoming-actions { position:absolute; bottom:20px; left:50%; transform:translateX(-50%); display:flex; gap:20px; }
+.incoming-actions .icon-btn { width:60px; height:60px; border-radius:50%; font-size:24px; background:#fff; box-shadow:0 4px 10px rgba(0,0,0,0.2); }
+.incoming-actions .accept { background:#4ade80; color:#fff; }
+.incoming-actions .reject { background:#ef4444; color:#fff; }
+.call-actions { display:flex; justify-content:center; gap:12px; padding:10px; background:#f5f5f5; }
+.call-actions .icon-btn { font-size:18px; padding:8px; border-radius:50%; background:#e5e7eb; transition:0.2s; }
+.call-actions .icon-btn:hover { background:#d1d5db; }
+@keyframes fadeIn { from {opacity:0; transform:scale(0.9);} to {opacity:1; transform:scale(1);} }
 </style>
 
 </head>
 <body>
-  <div id="customDialog" class="custom-dialog" style="display:none;">
-  <div class="custom-dialog-content">
-    <div class="custom-dialog-message" id="dialogMessage"></div>
-    <div class="custom-dialog-buttons" id="dialogButtons"></div>
+  <div id="callDialog" class="call-dialog" style="display:none;">
+  <div class="call-content">
+    <div class="call-header">
+      <span id="callStatus">Calling...</span>
+      <button class="icon-btn" id="endCall"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="call-body">
+      <video id="remoteVideo" autoplay playsinline></video>
+      <video id="localVideo" autoplay playsinline muted></video>
+      <div id="incomingActions" class="incoming-actions" style="display:none;">
+        <button id="acceptCall" class="icon-btn accept"><i class="fas fa-phone"></i></button>
+        <button id="rejectCall" class="icon-btn reject"><i class="fas fa-phone-slash"></i></button>
+      </div>
+    </div>
+    <div class="call-actions">
+      <button class="icon-btn" id="muteBtn"><i class="fas fa-microphone"></i></button>
+      <button class="icon-btn" id="cameraBtn"><i class="fas fa-video"></i></button>
+      <button class="icon-btn" id="hangupBtn"><i class="fas fa-phone-slash"></i></button>
+    </div>
   </div>
 </div>
-  <div id="onlineDialog" class="dialog" style="display:none;">
+
+    <div id="onlineDialog" class="dialog" style="display:none;">
   <div class="dialog-content">
     <div class="dialog-header">
       <h3>Online Users</h3>
@@ -288,25 +265,7 @@ body{
     <div id="onlineList" class="dialog-list"></div>
   </div>
 </div>
-  <div id="callDialog" class="call-dialog" style="display:none;">
-  <div class="call-content">
-    <div class="call-header">
-      <span id="callPeerName">Calling...</span>
-      <button class="icon-btn" id="endCallBtn"><i class="fas fa-phone-slash"></i></button>
-    </div>
-    <div class="call-video-container">
-      <video id="localVideo" autoplay muted class="call-video"></video>
-      <video id="remoteVideo" autoplay class="call-video"></video>
-    </div>
-    <div class="call-controls">
-      <button id="acceptCall" class="icon-btn" style="display:none"><i class="fas fa-phone"></i></button>
-      <button id="rejectCall" class="icon-btn" style="display:none"><i class="fas fa-phone-slash"></i></button>
-      <button id="muteMic" class="icon-btn"><i class="fas fa-microphone"></i></button>
-      <button id="toggleCamera" class="icon-btn"><i class="fas fa-video"></i></button>
-      <button id="hangUpBtn" class="icon-btn"><i class="fas fa-phone-slash"></i></button>
-    </div>
-  </div>
-</div>
+  
 <div class="app" id="app">
   <div class="panel" id="sidebar">
     <div class="header">
@@ -394,139 +353,142 @@ let DRIVE_FILE_ID = null
 let typingTimeout = {}
 let pcMap = {}, dcMap = {}
 const typingIndicators = {}
-let localStream = null;
-let currentCallPeer = null;
-let callPc = null;
-let isCalling = false;
+let localStream, remoteStream;
+let callPC = null;
+let callInProgress = false;
+let currentCallFrom = null; // track incoming call
 
-const callDialog = document.getElementById('callDialog')
-const localVideo = document.getElementById('localVideo')
-const remoteVideo = document.getElementById('remoteVideo')
-const callPeerName = document.getElementById('callPeerName')
-const endCallBtn = document.getElementById('endCallBtn')
-const hangUpBtn = document.getElementById('hangUpBtn')
-const muteMicBtn = document.getElementById('muteMic')
-const toggleCameraBtn = document.getElementById('toggleCamera')
+const remoteVideo = document.getElementById('remoteVideo');
+const localVideo = document.getElementById('localVideo');
+const callDialog = document.getElementById('callDialog');
+const callStatus = document.getElementById('callStatus');
+const endCallBtn = document.getElementById('endCall');
+const hangupBtn = document.getElementById('hangupBtn');
+const muteBtn = document.getElementById('muteBtn');
+const cameraBtn = document.getElementById('cameraBtn');
+const incomingActions = document.getElementById('incomingActions');
 const acceptCallBtn = document.getElementById('acceptCall');
 const rejectCallBtn = document.getElementById('rejectCall');
-document.querySelector('.chat-actions i.fa-video').parentNode.onclick = () => startCall('video')
-document.querySelector('.chat-actions i.fa-phone').parentNode.onclick = () => startCall('audio')
 
-async function startCall(type) {
-  if (!currentPeer) return await showCustomDialog("Select a contact first", 'alert')
-  if (isCalling) return await showCustomDialog("You are already in a call", 'alert')
-  if (online[currentPeer] === false) return await showCustomDialog("User is offline", 'alert')
-  if (chatStore[currentPeer]?.busy) return await showCustomDialog("The person you are calling is busy.", 'alert')
+async function startCall(peerId, type='video') {
+  if (callInProgress) { showBusy(peerId); return; }
+  if (online[peerId] === false) { showCustomDialog("The person is offline."); return; }
 
-  callPeerName.textContent = chatStore[currentPeer].profile.name
-  callDialog.style.display = 'flex'
-  isCalling = true
-  chatStore[currentPeer].busy = true
+  callInProgress = true;
+  localStream = await navigator.mediaDevices.getUserMedia({ video: type==='video', audio:true });
+  setupCallUI('Calling...');
+  setupPeerConnection(peerId);
 
-  localStream = await navigator.mediaDevices.getUserMedia({
-    video: type==='video',
-    audio: true
-  })
-  localVideo.srcObject = localStream
-
-  callPc = new RTCPeerConnection()
-  localStream.getTracks().forEach(track => callPc.addTrack(track, localStream))
-  
-  callPc.ontrack = e => { remoteVideo.srcObject = e.streams[0] }
-  callPc.onicecandidate = e => { if (e.candidate) sendSignal(currentPeer, { type:'candidate', candidate:e.candidate }) }
-
-  const dc = callPc.createDataChannel('call')
-  dc.onmessage = ev => handleCallSignal(JSON.parse(ev.data))
-
-  const offer = await callPc.createOffer()
-  await callPc.setLocalDescription(offer)
-  sendSignal(currentPeer, { type: 'call-offer', sdp: offer, callType: type })
+  const offer = await callPC.createOffer();
+  await callPC.setLocalDescription(offer);
+  sendSignal(peerId, { type:'call-offer', sdp: offer, callType: type });
 }
 
-async function handleCallSignal(msg) {
-  if (msg.type === 'call-offer') {
-    if (isCalling) {
-      sendSignal(msg.from, { type:'call-busy' });
-      return;
-    }
+async function receiveCall(from, sdp, callType) {
+  if (callInProgress) { sendSignal(from, { type:'busy' }); return; }
 
-    // Show incoming call UI
-    callPeerName.textContent = chatStore[msg.from].profile.name + " is calling...";
-    callDialog.style.display = 'flex';
-    acceptCallBtn.style.display = 'inline-flex';
-    rejectCallBtn.style.display = 'inline-flex';
-    hangUpBtn.style.display = 'none';
-    muteMicBtn.style.display = 'none';
-    toggleCameraBtn.style.display = 'none';
+  currentCallFrom = from;
+  callDialog.style.display = 'flex';
+  incomingActions.style.display = 'flex';
+  callStatus.textContent = `${chatStore[from]?.profile?.name || 'User'} is calling...`;
 
-    acceptCallBtn.onclick = async () => {
-      acceptCallBtn.style.display = 'none';
-      rejectCallBtn.style.display = 'none';
-      hangUpBtn.style.display = 'inline-flex';
-      muteMicBtn.style.display = 'inline-flex';
-      toggleCameraBtn.style.display = 'inline-flex';
+  // Accept/Reject buttons
+  acceptCallBtn.onclick = async () => {
+    incomingActions.style.display = 'none';
+    callInProgress = true;
 
-      currentCallPeer = msg.from;
-      isCalling = true;
-      chatStore[msg.from].busy = true;
+    localStream = await navigator.mediaDevices.getUserMedia({ video: callType==='video', audio:true });
+    setupCallUI(`${chatStore[from]?.profile?.name} - In Call`);
+    setupPeerConnection(from);
 
-      localStream = await navigator.mediaDevices.getUserMedia({
-        video: msg.callType === 'video',
-        audio: true
-      });
-      localVideo.srcObject = localStream;
+    await callPC.setRemoteDescription(new RTCSessionDescription(sdp));
+    const answer = await callPC.createAnswer();
+    await callPC.setLocalDescription(answer);
+    sendSignal(from, { type:'call-answer', sdp: answer });
+  };
+  rejectCallBtn.onclick = () => {
+    sendSignal(from, { type:'busy' });
+    callDialog.style.display = 'none';
+    currentCallFrom = null;
+  };
+}
 
-      callPc = new RTCPeerConnection();
-      localStream.getTracks().forEach(track => callPc.addTrack(track, localStream));
-      callPc.ontrack = e => remoteVideo.srcObject = e.streams[0];
-      callPc.onicecandidate = e => { if(e.candidate) sendSignal(msg.from, { type:'candidate', candidate:e.candidate }) };
+function setupPeerConnection(peerId) {
+  remoteStream = new MediaStream();
+  remoteVideo.srcObject = remoteStream;
 
-      await callPc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
-      const answer = await callPc.createAnswer();
-      await callPc.setLocalDescription(answer);
-      sendSignal(msg.from, { type:'call-answer', sdp: answer });
-    };
+  callPC = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
 
-    rejectCallBtn.onclick = () => {
-      sendSignal(msg.from, { type:'call-reject' });
-      callDialog.style.display = 'none';
-    };
+  localStream.getTracks().forEach(track => callPC.addTrack(track, localStream));
+  callPC.ontrack = e => e.streams[0].getTracks().forEach(t => remoteStream.addTrack(t));
+  callPC.onicecandidate = e => { if(e.candidate) sendSignal(peerId, { type:'candidate', candidate:e.candidate }); };
+}
+
+function setupCallUI(statusText) {
+  callDialog.style.display = 'flex';
+  incomingActions.style.display = 'none';
+  callStatus.textContent = statusText;
+  localVideo.srcObject = localStream;
+}
+
+function showBusy(peerId) { showCustomDialog("The person you are calling is busy."); }
+
+function showCustomDialog(msg) {
+  const d = document.createElement('div');
+  d.style.position = 'fixed';
+  d.style.top='20px';
+  d.style.right='20px';
+  d.style.padding='12px 20px';
+  d.style.background='#ef4444';
+  d.style.color='#fff';
+  d.style.borderRadius='12px';
+  d.style.boxShadow='0 5px 15px rgba(0,0,0,0.2)';
+  d.style.zIndex='10000';
+  d.textContent = msg;
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(),3000);
+}
+
+// Handle signals
+signaling.on('broadcast', { event: 'signal' }, ({ payload }) => {
+  if(!payload || payload.to!==MY_ID) return;
+
+  if(payload.type==='call-offer') receiveCall(payload.from, payload.sdp, payload.callType);
+  else if(payload.type==='call-answer') callPC?.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+  else if(payload.type==='candidate') callPC?.addIceCandidate(new RTCIceCandidate(payload.candidate));
+  else if(payload.type==='busy') showCustomDialog('The person you are calling is busy.');
+});
+
+// Call control buttons
+endCallBtn.onclick = hangupBtn.onclick = () => {
+  endCall();
+};
+muteBtn.onclick = () => {
+  localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
+  muteBtn.innerHTML = localStream.getAudioTracks()[0].enabled
+    ? '<i class="fas fa-microphone"></i>'
+    : '<i class="fas fa-microphone-slash"></i>';
+};
+cameraBtn.onclick = () => {
+  if(localStream.getVideoTracks().length > 0) {
+    localStream.getVideoTracks()[0].enabled = !localStream.getVideoTracks()[0].enabled;
+    cameraBtn.innerHTML = localStream.getVideoTracks()[0].enabled
+      ? '<i class="fas fa-video"></i>'
+      : '<i class="fas fa-video-slash"></i>';
   }
+};
 
-  else if (msg.type === 'call-answer') {
-    await callPc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
-  }
-
-  else if (msg.type === 'candidate') {
-    await callPc.addIceCandidate(new RTCIceCandidate(msg.candidate));
-  }
-
-  else if (msg.type === 'call-busy') await showCustomDialog("The person you are calling is busy.", 'alert');
-  else if (msg.type === 'call-reject') await showCustomDialog("The person rejected your call.", 'alert');
-}
-hangUpBtn.onclick = endCall
-endCallBtn.onclick = endCall
-muteMicBtn.onclick = () => {
-  if (!localStream) return
-  localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled
-  muteMicBtn.querySelector('i').classList.toggle('fa-microphone-slash')
-}
-toggleCameraBtn.onclick = () => {
-  if (!localStream) return
-  const videoTrack = localStream.getVideoTracks()[0]
-  if (videoTrack) videoTrack.enabled = !videoTrack.enabled
-  toggleCameraBtn.querySelector('i').classList.toggle('fa-video-slash')
-}
+// Chat actions integration
+document.querySelector('.chat-actions .fa-video').parentNode.onclick = () => { if(currentPeer) startCall(currentPeer,'video'); };
+document.querySelector('.chat-actions .fa-phone').parentNode.onclick = () => { if(currentPeer) startCall(currentPeer,'audio'); };
 
 function endCall() {
-  if (callPc) callPc.close()
-  if (localStream) localStream.getTracks().forEach(t => t.stop())
-  callPc = null
-  localStream = null
-  isCalling = false
-  if(currentCallPeer) chatStore[currentCallPeer].busy = false
-  currentCallPeer = null
-  callDialog.style.display = 'none'
+  callInProgress = false;
+  currentCallFrom = null;
+  callDialog.style.display = 'none';
+  callPC?.close(); callPC=null;
+  localStream?.getTracks().forEach(t=>t.stop());
+  remoteStream?.getTracks().forEach(t=>t.stop());
 }
 
 function showTyping(peerId) {
@@ -629,38 +591,6 @@ function renderMessage(text, me, isImage, animate = true) {
     requestAnimationFrame(() => scrollElementIntoView(d, true));
   }
 }
-  function showCustomDialog(message, type='alert') {
-  return new Promise(resolve => {
-    const dialog = document.getElementById('customDialog')
-    const msgEl = document.getElementById('dialogMessage')
-    const buttonsEl = document.getElementById('dialogButtons')
-    
-    msgEl.textContent = message
-    buttonsEl.innerHTML = ''
-
-    if(type==='alert') {
-      const okBtn = document.createElement('button')
-      okBtn.textContent = 'OK'
-      okBtn.className = 'primary'
-      okBtn.onclick = () => { dialog.classList.remove('show'); resolve(true) }
-      buttonsEl.appendChild(okBtn)
-    } else if(type==='confirm') {
-      const yesBtn = document.createElement('button')
-      yesBtn.textContent = 'Yes'
-      yesBtn.className = 'primary'
-      yesBtn.onclick = () => { dialog.classList.remove('show'); resolve(true) }
-      const noBtn = document.createElement('button')
-      noBtn.textContent = 'No'
-      noBtn.className = 'secondary'
-      noBtn.onclick = () => { dialog.classList.remove('show'); resolve(false) }
-      buttonsEl.appendChild(yesBtn)
-      buttonsEl.appendChild(noBtn)
-    }
-
-    dialog.classList.add('show')
-  })
-}
-
 function scrollElementIntoView(el, smooth = true) {
   try {
     el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'end', inline: 'nearest' });
@@ -973,10 +903,11 @@ function sendTypingSignal() {
   }, 3000)
 }
 
-startRealtime()
+startRealtime() 
 </script> 
 </body>
 </html>
+
 
 
 
