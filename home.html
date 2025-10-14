@@ -149,11 +149,73 @@ body{
   gap: 8px;
   align-items: center;
 }
+.dialog {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+.dialog-content {
+  background: white;
+  border-radius: 12px;
+  width: 320px;
+  max-height: 420px;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  animation: fadeInUp 0.25s ease;
+}
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.dialog-list {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dialog-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 10px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.dialog-user:hover {
+  background: #e0f2fe;
+  transform: scale(1.02);
+}
+.dialog-user img {
+  width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
+}
+.dialog-user span {
+  font-weight: 500;
+  color: #0f172a;
+}
 
 </style>
 
 </head>
 <body>
+  <div id="onlineDialog" class="dialog" style="display:none;">
+  <div class="dialog-content">
+    <div class="dialog-header">
+      <h3>Online Users</h3>
+      <button class="icon-btn" id="closeDialog"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="onlineList" class="dialog-list"></div>
+  </div>
+</div>
+  
 <div class="app" id="app">
   <div class="panel" id="sidebar">
     <div class="header">
@@ -267,10 +329,15 @@ function hideTyping(peerId) {
 // ---- UI: Contacts ----
 function renderContacts(filter = '') {
   contactsEl.innerHTML = ''
+ 
   const sorted = Object.values(chatStore)
-    .sort((a, b) => (b.lastTs || 0) - (a.lastTs || 0))
-    .filter(c => !filter || c.profile.name.toLowerCase().includes(filter.toLowerCase()))
-
+  .filter(c => c.messages && c.messages.length > 0)
+  .sort((a, b) => (b.lastTs || 0) - (a.lastTs || 0))
+  .filter(c => !filter || c.profile.name.toLowerCase().includes(filter.toLowerCase()));
+ if (sorted.length === 0) {
+  contactsEl.innerHTML = `<div style="text-align:center;color:#64748b;padding:20px">No chats yet</div>`;
+  return;
+}
   for (const c of sorted) {
     const u = c.profile
     const lastMsg = c.messages.slice(-1)[0]
@@ -596,18 +663,48 @@ function updatePeerStatus(id) {
 // ---- Init ----
 searchEl.oninput = () => renderContacts(searchEl.value.trim())
 addBtn.onclick = () => {
-  const id = searchEl.value.trim()
-  if (!id || id === MY_ID) return
-  if (!chatStore[id])
-    chatStore[id] = { profile: { uuid: id, name: 'User', avatar: `https://ui-avatars.com/api/?name=User` }, messages: [], unreadCount: 0 }
-  saveToDrive(); renderContacts()
-}
+  renderOnlineDialog();
+};
+
 logoutBtn.onclick = logout
 sendBtn.onclick = sendMessage
 messageInput.onkeydown = e => {
   if (!currentPeer) return
   if (e.key === 'Enter') sendMessage()
   else sendTypingSignal()
+}
+function renderOnlineDialog() {
+  const dialog = document.getElementById('onlineDialog');
+  const list = document.getElementById('onlineList');
+  const closeBtn = document.getElementById('closeDialog');
+  list.innerHTML = '';
+
+  const onlineUsers = Object.values(chatStore)
+    .map(c => c.profile)
+    .filter(p => online[p.uuid] && p.uuid !== MY_ID);
+
+  if (onlineUsers.length === 0) {
+    list.innerHTML = `<div style="text-align:center;color:#64748b;padding:20px">No one online</div>`;
+  } else {
+    for (const u of onlineUsers) {
+      const div = document.createElement('div');
+      div.className = 'dialog-user';
+      div.innerHTML = `
+        <img src="${u.avatar}">
+        <span>${u.name}</span>
+      `;
+      div.onclick = () => {
+        dialog.style.display = 'none';
+        if (!chatStore[u.uuid])
+          chatStore[u.uuid] = { profile: u, messages: [], unreadCount: 0 };
+        openChat(u.uuid);
+      };
+      list.appendChild(div);
+    }
+  }
+
+  dialog.style.display = 'flex';
+  closeBtn.onclick = () => dialog.style.display = 'none';
 }
 
 function sendTypingSignal() {
@@ -623,6 +720,7 @@ startRealtime()
 </script> 
 </body>
 </html>
+
 
 
 
