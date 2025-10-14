@@ -332,23 +332,28 @@ body {
 }
 
 .icon-btn {
-  width:44px;
-  height:44px;
+  width:48px;
+  height:48px;
   border-radius:50%;
   display:flex;
   align-items:center;
   justify-content:center;
+  margin-left:auto; 
   cursor:pointer;
   border:none;
-  background:transparent;
+  background:#f3f6ff; 
   color:var(--primary);
   font-size:18px;
-  transition:all .2s ease;
+  box-shadow:0 2px 8px rgba(0,0,0,0.1);
+  transition:all .25s ease;
 }
 
 .icon-btn:hover {
-  transform:scale(1.15);
+  background:var(--primary);
+  color:#fff;
+  transform:scale(1.12) translateY(-2px);
 }
+
 
 .send {
   width:48px;
@@ -1306,6 +1311,7 @@ startRealtime()
 </script> 
 </body>
 </html>
+
 
 
 
