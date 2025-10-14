@@ -143,6 +143,13 @@ body{
   .chat .body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;}
   .messages{margin-bottom:auto;}
 }
+  .chat-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 </style>
 
 </head>
@@ -170,12 +177,17 @@ body{
   </div>
   <div class="chat" id="chat">
     <div class="top">
-      <img id="peerAvatar" src="" alt="avatar" style="display:none">
-      <div class="who">
-        <div class="n" id="peerName">Select a contact</div>
-        <div class="s" id="peerStatus"></div>
-      </div>
-    </div>
+  <img id="peerAvatar" src="" alt="avatar" style="display:none">
+  <div class="who">
+    <div class="n" id="peerName">Select a contact</div>
+    <div class="s" id="peerStatus"></div>
+  </div>
+  <div class="chat-actions" id="chatActions" style="display:none">
+    <button class="icon-btn"><i class="fas fa-video"></i></button>
+    <button class="icon-btn"><i class="fas fa-phone"></i></button>
+  </div>
+</div>
+
     <div class="body" id="chatBody">
       <div class="placeholder" id="placeholder">Select a contact to start chatting.</div>
       <div class="messages" id="messages" style="display:none"></div>
@@ -284,6 +296,7 @@ function openChat(peerId) {
   peerAvatarEl.src = peer.avatar
   peerAvatarEl.style.display = 'block'
   updatePeerStatus(peerId)
+  document.getElementById('chatActions').style.display = 'flex';
 
   placeholderEl.style.display = 'none'
   messagesEl.style.display = 'flex'
@@ -331,6 +344,13 @@ function scrollElementIntoView(el, smooth = true) {
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 }
+  function resetChatView() {
+  placeholderEl.style.display = 'flex';
+  messagesEl.style.display = 'none';
+  document.getElementById('chatActions').style.display = 'none';
+}
+resetChatView();
+
 function scrollBottom(smooth = true) {
   const last = messagesEl.lastElementChild;
   if (last) scrollElementIntoView(last, smooth);
@@ -603,3 +623,4 @@ startRealtime()
 </script> 
 </body>
 </html>
+
