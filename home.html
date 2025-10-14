@@ -193,12 +193,10 @@ body{
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-// ---- Supabase Setup ----
 const SUPABASE_URL = 'https://dfzshvldanqfvfivjrqi.supabase.co'
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmenNodmxkYW5xZnZmaXZqcnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4MDIxNTEsImV4cCI6MjA3MDM3ODE1MX0.wdms-6G9eDzRuk1YiCpdyvVS-5CRKCsrq9WWWIFl9HA'
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-// ---- Google Drive Config ----
 const DRIVE_FILE_NAME = 'chat.json'
 const STORAGE_KEY = 'hc_profile'
 const profile = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')
@@ -209,7 +207,6 @@ const MY_NAME = profile.name
 const MY_AVATAR = profile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}`
 const DRIVE_TOKEN = profile.token
 
-// ---- Elements ----
 const contactsEl = document.getElementById('contacts')
 const searchEl = document.getElementById('search')
 const addBtn = document.getElementById('addBtn')
@@ -225,7 +222,6 @@ const attachBtn = document.getElementById('attach')
 document.getElementById('myAvatar').src = MY_AVATAR
 document.getElementById('myName').textContent = MY_NAME
 
-// ---- Data ----
 let chatStore = {}
 let online = {}
 let currentPeer = null
@@ -235,28 +231,37 @@ let pcMap = {}, dcMap = {}
 const typingIndicators = {}
 
 function showTyping(peerId) {
-  if (typingIndicators[peerId]) return 
-  const d = document.createElement('div')
-  d.className = 'typing-indicator'
-  d.innerHTML = `<span>${chatStore[peerId]?.profile?.name || 'User'} is typing</span>
-  <div class="typing-dots"><span></span><span></span><span></span></div>`
-  d.id = `typing-${peerId}`
-  messagesEl.appendChild(d)
-  typingIndicators[peerId] = d
-  scrollBottom()
+  if (typingIndicators[peerId]) return;
+
+  const d = document.createElement('div');
+  d.className = 'typing-indicator';
+  d.innerHTML = `
+    <span class="label">${chatStore[peerId]?.profile?.name || 'User'} is typing</span>
+    <div class="typing-dots"><span></span><span></span><span></span></div>
+  `;
+  d.id = `typing-${peerId}`;
+  messagesEl.appendChild(d);
+  typingIndicators[peerId] = d;
+
+  requestAnimationFrame(() => {
+    scrollBottom(true);
+  });
 }
 
 function hideTyping(peerId) {
-  const el = typingIndicators[peerId]
+  const el = typingIndicators[peerId];
   if (el) {
-    el.style.opacity = 0
-    el.style.transform = "translateY(6px)"
-    setTimeout(() => el.remove(), 250)
-    delete typingIndicators[peerId]
+    el.style.opacity = 0;
+    el.style.transform = "translateY(6px)";
+    setTimeout(() => {
+      el.remove();
+      delete typingIndicators[peerId];
+      scrollBottom(true); 
+    }, 250);
   }
 }
 
-// ---- UI: Contacts ----
+
 function renderContacts(filter = '') {
   contactsEl.innerHTML = ''
   const sorted = Object.values(chatStore)
@@ -280,7 +285,6 @@ function renderContacts(filter = '') {
   }
 }
 
-// ---- Open Chat ----
 function openChat(peerId) {
   currentPeer = peerId
   const peer = chatStore[peerId].profile
@@ -300,10 +304,8 @@ function openChat(peerId) {
   if (!pcMap[peerId]) createConnection(peerId)
   saveToDrive()
   renderContacts()
-  scrollBottom()
+  scrollBottom(false)
 }
-
-// ---- Messages ----
 function renderMessage(text, me, isImage, animate = true) {
   const d = document.createElement('div')
   d.className = 'msg ' + (me ? 'me' : 'other')
@@ -314,9 +316,15 @@ function renderMessage(text, me, isImage, animate = true) {
   } else d.textContent = text
   messagesEl.appendChild(d)
   if (animate) d.style.opacity = 0, requestAnimationFrame(() => d.style.opacity = 1)
-  scrollBottom()
+  scrollBottom(animate)
 }
-function scrollBottom() { messagesEl.scrollTop = messagesEl.scrollHeight }
+function scrollBottom(smooth = false) {
+  if (!messagesEl) return;
+  messagesEl.scrollTo({
+    top: messagesEl.scrollHeight,
+    behavior: smooth ? 'smooth' : 'auto'
+  });
+}
 
 function sendMessage() {
   if (!currentPeer) return
@@ -329,7 +337,6 @@ function sendMessage() {
   renderMessage(val, true, false)
   messageInput.value = ''
 
-  // Send via data channel or fallback
   const payload = { text: val, ts, id: msg.id, isImage: false }
   if (dcMap[currentPeer]?.readyState === 'open')
     dcMap[currentPeer].send(JSON.stringify(payload))
@@ -340,7 +347,6 @@ function sendMessage() {
   renderContacts()
 }
 
-// ---- Incoming Message ----
 function appendIncoming(from, text, isImage, ts, id) {
   hideTyping(from)
   const chat = chatStore[from] || (chatStore[from] = { profile: { uuid: from, name: 'User', avatar: `https://ui-avatars.com/api/?name=User` }, messages: [], unreadCount: 0 })
@@ -587,6 +593,7 @@ startRealtime()
 </script> 
 </body>
 </html>
+
 
 
 
