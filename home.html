@@ -231,36 +231,26 @@ let pcMap = {}, dcMap = {}
 const typingIndicators = {}
 
 function showTyping(peerId) {
-  if (typingIndicators[peerId]) return;
-
-  const d = document.createElement('div');
-  d.className = 'typing-indicator';
-  d.innerHTML = `
-    <span class="label">${chatStore[peerId]?.profile?.name || 'User'} is typing</span>
-    <div class="typing-dots"><span></span><span></span><span></span></div>
-  `;
-  d.id = `typing-${peerId}`;
-  messagesEl.appendChild(d);
-  typingIndicators[peerId] = d;
-
-  requestAnimationFrame(() => {
-    scrollBottom(true);
-  });
+  if (typingIndicators[peerId]) return 
+  const d = document.createElement('div')
+  d.className = 'typing-indicator'
+  d.innerHTML = `<span>${chatStore[peerId]?.profile?.name || 'User'} is typing</span>
+  <div class="typing-dots"><span></span><span></span><span></span></div>`
+  d.id = `typing-${peerId}`
+  messagesEl.appendChild(d)
+  typingIndicators[peerId] = d
+  scrollBottom()
 }
 
 function hideTyping(peerId) {
-  const el = typingIndicators[peerId];
+  const el = typingIndicators[peerId]
   if (el) {
-    el.style.opacity = 0;
-    el.style.transform = "translateY(6px)";
-    setTimeout(() => {
-      el.remove();
-      delete typingIndicators[peerId];
-      scrollBottom(true); 
-    }, 250);
+    el.style.opacity = 0
+    el.style.transform = "translateY(6px)"
+    setTimeout(() => el.remove(), 250)
+    delete typingIndicators[peerId]
   }
 }
-
 
 function renderContacts(filter = '') {
   contactsEl.innerHTML = ''
@@ -304,8 +294,9 @@ function openChat(peerId) {
   if (!pcMap[peerId]) createConnection(peerId)
   saveToDrive()
   renderContacts()
-  scrollBottom(false)
+  scrollBottom()
 }
+
 function renderMessage(text, me, isImage, animate = true) {
   const d = document.createElement('div')
   d.className = 'msg ' + (me ? 'me' : 'other')
@@ -316,13 +307,12 @@ function renderMessage(text, me, isImage, animate = true) {
   } else d.textContent = text
   messagesEl.appendChild(d)
   if (animate) d.style.opacity = 0, requestAnimationFrame(() => d.style.opacity = 1)
-  scrollBottom(animate)
+  scrollBottom()
 }
-function scrollBottom(smooth = false) {
-  if (!messagesEl) return;
+function scrollBottom() {
   messagesEl.scrollTo({
     top: messagesEl.scrollHeight,
-    behavior: smooth ? 'smooth' : 'auto'
+    behavior: 'smooth'
   });
 }
 
@@ -379,7 +369,6 @@ async function resizeAndCompress(file, maxWidth, maxHeight, initialQuality = 0.3
     img.onload = () => {
       let { width, height } = img;
 
-      // maintain aspect ratio
       const scale = Math.min(maxWidth / width, maxHeight / height, 1);
       width = width * scale;
       height = height * scale;
@@ -394,7 +383,6 @@ async function resizeAndCompress(file, maxWidth, maxHeight, initialQuality = 0.3
       let compressed = canvas.toDataURL('image/jpeg', quality);
       let sizeKB = Math.round((compressed.length * 3 / 4) / 1024);
 
-      // reduce quality in small steps until < targetKB
       while (sizeKB > targetKB && quality > 0.05) {
         quality -= 0.05;
         compressed = canvas.toDataURL('image/jpeg', quality);
@@ -425,8 +413,6 @@ function sendImageMessage(dataUrl) {
   saveToDrive()
   renderContacts()
 }
-
-// ---- Supabase Presence & Signaling ----
 async function startRealtime() {
   const presence = supabase.channel('presence')
   const signaling = supabase.channel('signaling')
@@ -480,7 +466,6 @@ function sendSignal(to, msg) {
   })
 }
 
-// ---- WebRTC ----
 function createConnection(peer) {
   const pc = new RTCPeerConnection()
   const dc = pc.createDataChannel('chat')
@@ -523,7 +508,6 @@ async function handleCandidate(from, candidate) {
   await pcMap[from]?.addIceCandidate(new RTCIceCandidate(candidate))
 }
 
-// ---- Drive Persistence ----
 async function fetchDriveData() {
   try {
     const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DRIVE_FILE_NAME}' and trashed=false&fields=files(id,name)`, {
@@ -557,13 +541,11 @@ async function saveToDrive() {
 }
 function logout() { localStorage.removeItem(STORAGE_KEY); location.href = 'register.html' }
 
-// ---- Status Updates ----
 function updatePeerStatus(id) {
   peerStatusEl.textContent = online[id] ? 'Online' :
     chatStore[id]?.lastSeen ? 'Last seen ' + new Date(chatStore[id].lastSeen).toLocaleTimeString() : 'Offline'
 }
 
-// ---- Init ----
 searchEl.oninput = () => renderContacts(searchEl.value.trim())
 addBtn.onclick = () => {
   const id = searchEl.value.trim()
@@ -593,14 +575,3 @@ startRealtime()
 </script> 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
