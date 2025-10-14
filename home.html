@@ -658,11 +658,37 @@ function endCall(){
   
 function showCallDialog(peerId,isOutgoing=false,isIncoming=false){
   callDialog.style.display='flex';
-  callPeerName.textContent = chatStore[peerId]?.profile?.name || 'User';
-  callPeerAvatar.src = chatStore[peerId]?.profile?.avatar || `https://ui-avatars.com/api/?name=User`;
-  callActions.style.display = isOutgoing?'flex':'none';
-  incomingActions.style.display = isIncoming?'flex':'none';
+  
+  const peer = chatStore[peerId]?.profile || { name: 'User', avatar: `https://ui-avatars.com/api/?name=User` };
+  
+  callPeerAvatar.src = peer.avatar;
+  callPeerAvatar.style.width = '60px';
+  callPeerAvatar.style.height = '60px';
+  callPeerAvatar.style.borderRadius = '50%';
+  callPeerAvatar.style.border = '3px solid #10b981';
+  callPeerAvatar.style.boxShadow = '0 4px 12px rgba(0,0,0,0.25)';
+  callPeerAvatar.style.objectFit = 'cover';
+  callPeerAvatar.style.transition = 'all 0.3s ease';
+  
+  callPeerName.textContent = peer.name;
+  callPeerName.style.fontSize = '18px';
+  callPeerName.style.fontWeight = '700';
+  callPeerName.style.color = '#111827';
+  callPeerName.style.marginLeft = '12px';
+  callPeerName.style.transition = 'all 0.3s ease';
+
+  const parent = callPeerName.parentElement;
+  parent.style.display = 'flex';
+  parent.style.alignItems = 'center';
+  parent.style.padding = '12px 20px';
+  parent.style.background = 'linear-gradient(135deg, #f3f4f6, #e5e7eb)';
+  parent.style.borderRadius = '15px';
+  parent.style.boxShadow = '0 6px 18px rgba(0,0,0,0.12)';
+  
+  callActions.style.display = isOutgoing ? 'flex' : 'none';
+  incomingActions.style.display = isIncoming ? 'flex' : 'none';
 }
+
   
 hangupBtn.onclick = callCloseBtn.onclick = endCall;
 muteBtn.onclick = ()=>{ localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled; }
@@ -1064,6 +1090,7 @@ startRealtime()
 </script> 
 </body>
 </html>
+
 
 
 
