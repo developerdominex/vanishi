@@ -296,9 +296,10 @@ body{
     <div class="s" id="peerStatus"></div>
   </div>
   <div class="chat-actions" id="chatActions" style="display:none">
-    <button class="icon-btn"><i class="fas fa-video"></i></button>
-    <button class="icon-btn"><i class="fas fa-phone"></i></button>
-  </div>
+  <button class="icon-btn" id="videoCallBtn"><i class="fas fa-video"></i></button>
+  <button class="icon-btn" id="audioCallBtn"><i class="fas fa-phone"></i></button>
+</div>
+
 </div>
 
     <div class="body" id="chatBody">
@@ -346,6 +347,18 @@ const sendBtn = document.getElementById('sendBtn')
 const attachBtn = document.getElementById('attach')
 document.getElementById('myAvatar').src = MY_AVATAR
 document.getElementById('myName').textContent = MY_NAME
+const videoCallBtn = document.getElementById('videoCallBtn');
+const audioCallBtn = document.getElementById('audioCallBtn');
+
+videoCallBtn.onclick = () => {
+  if (!currentPeer) return alert('Select a contact first.');
+  startCall(currentPeer, true); // video call
+}
+
+audioCallBtn.onclick = () => {
+  if (!currentPeer) return alert('Select a contact first.');
+  startCall(currentPeer, false); // audio only call
+}
 
 let chatStore = {}
 let online = {}
@@ -904,6 +917,7 @@ startRealtime()
 </script> 
 </body>
 </html>
+
 
 
 
