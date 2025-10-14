@@ -231,16 +231,26 @@ let pcMap = {}, dcMap = {}
 const typingIndicators = {}
 
 function showTyping(peerId) {
-  if (typingIndicators[peerId]) return 
-  const d = document.createElement('div')
-  d.className = 'typing-indicator'
-  d.innerHTML = `<span>${chatStore[peerId]?.profile?.name || 'User'} is typing</span>
-  <div class="typing-dots"><span></span><span></span><span></span></div>`
-  d.id = `typing-${peerId}`
-  messagesEl.appendChild(d)
-  typingIndicators[peerId] = d
-  scrollBottom()
+  if (typingIndicators[peerId]) return;
+
+  const d = document.createElement('div');
+  d.className = 'typing-indicator';
+  d.innerHTML = `
+    <span class="label">${chatStore[peerId]?.profile?.name || 'User'} is typing</span>
+    <div class="typing-dots"><span></span><span></span><span></span></div>`;
+  d.id = `typing-${peerId}`;
+
+  messagesEl.appendChild(d);
+  typingIndicators[peerId] = d;
+
+  setTimeout(() => {
+    messagesEl.scrollTo({
+      top: messagesEl.scrollHeight,
+      behavior: 'smooth'
+    });
+  }, 50);
 }
+
 
 function hideTyping(peerId) {
   const el = typingIndicators[peerId]
@@ -575,3 +585,4 @@ startRealtime()
 </script> 
 </body>
 </html>
+
