@@ -186,11 +186,10 @@ body{
   color: #0f172a;
 }
 
-/* ---- CALL DIALOG ---- */
 .call-dialog {
   position: fixed;
   bottom: 20px; right: 20px;
-  width: 350px; height: 90vh; /* responsive height */
+  width: 350px; height: 90vh; 
   max-height: 90vh;
   background: linear-gradient(145deg, #f9f9f9, #e0e0e0);
   border-radius: 20px;
@@ -201,7 +200,6 @@ body{
   font-family: 'Segoe UI', sans-serif;
 }
 
-/* Scrollable for body on mobile */
 .call-body {
   flex: 1;
   position: relative;
@@ -210,7 +208,6 @@ body{
   overflow-y: auto;
 }
 
-/* ---- HEADER ---- */
 .call-header {
   display: flex;
   justify-content: space-between;
@@ -261,7 +258,6 @@ body{
   overflow: hidden;
 }
 
-/* ---- BODY ---- */
 .call-body video {
   width: 100%;
   height: 100%;
@@ -282,7 +278,6 @@ body{
   object-fit: cover;
 }
 
-/* ---- CALL ACTIONS ---- */
 .call-actions {
   display: flex;
   justify-content: space-around;
@@ -319,7 +314,6 @@ body{
   color: #fff;
 }
 
-/* ---- INCOMING ACTIONS ---- */
 .incoming-actions {
   position: absolute;
   bottom: 30px;
@@ -389,19 +383,36 @@ body{
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background: var(--primary);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgba(43,156,255,0.25);
-  z-index: 10000;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background:#6366f1;
+  color:#fff;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:20px;
+  cursor:pointer;
+  z-index:10000;
+  box-shadow:0 6px 18px rgba(0,0,0,0.25);
+  transition: transform .2s ease;
+}
+.start-icon:hover{ transform: scale(1.1); }
+
+.assist-dialog {
+  position: fixed;
+  top: 70px; right: 16px;
+  width: 360px; height: 500px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.35);
+  transform: scale(0);
+  transform-origin: top right;
+  transition: transform .3s ease-in-out;
+  z-index: 9999;
+  background:#fff;
+}
+.assist-dialog.show { transform: scale(1); }
+
+.assist-dialog iframe {
+  width: 100%; height: 100%;
+  border: none;
 }
 
-.start-icon:hover {
-  transform: scale(1.1);
-  box-shadow: 0 8px 22px rgba(43,156,255,0.35);
-}
