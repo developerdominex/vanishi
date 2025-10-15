@@ -1,334 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Register — Hybrid Chat</title>
-<link rel="icon" type="image/png" href="hybrid.png">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="https://apis.google.com/js/api.js"></script>
-
-<style>
-:root {
-  --accent: #6366f1;
-  --accent-hover: #4f46e5;
-  --bg: #f3f4f6;
-  --white: #ffffff;
-  --shadow: rgba(0,0,0,0.15);
-  --text: #1e293b;
-  --muted: #6b7280;
-  --radius: 18px;
-}
-
-* {
-  margin: 0; padding: 0;
-  box-sizing: border-box;
-  font-family: "Inter", system-ui, sans-serif;
-}
-
-body {
-  height: 100vh;
-  width: 100vw;
-  background: radial-gradient(circle at top right, #e0e7ff, #f3f4f6);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-.bubble {
-  position: absolute;
-  border-radius: 50%;
-  background: var(--accent);
-  opacity: 0.1;
-  filter: blur(3px);
-  animation: float 8s ease-in-out infinite alternate;
-}
-.bubble:nth-child(1) { width: 180px; height: 180px; top: 5%; left: 10%; animation-delay: 0s; }
-.bubble:nth-child(2) { width: 120px; height: 120px; bottom: 10%; right: 20%; animation-delay: 1s; }
-.bubble:nth-child(3) { width: 80px; height: 80px; top: 50%; left: 60%; animation-delay: 2s; }
-@keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-25px);} }
-
-#explorer {
-  width: 85%;
-  max-width: 1100px;
-  height: 420px;
-  background: var(--white);
-  border-radius: var(--radius);
-  box-shadow: 0 12px 36px var(--shadow);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  animation: slideIn 0.8s ease forwards;
-  opacity: 0;
-  transform: translateY(40px);
-}
-@keyframes slideIn { to { opacity: 1; transform: translateY(0); } }
-
-#explorer .header {
-  background: var(--accent);
-  color: white;
-  padding: 16px 24px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 18px;
-}
-
-#explorer .content {
-  flex: 1;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 16px;
-  padding: 24px;
-  transition: opacity 0.4s ease;
-}
-
-.item {
-  background: #f9fafb;
-  border-radius: var(--radius);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 18px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.05);
-  cursor: pointer;
-  opacity: 0;
-  transform: translateY(20px) scale(0.95);
-  animation: appear 0.4s forwards ease;
-}
-@keyframes appear {
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-.item:hover {
-  background: #eef2ff;
-  transform: translateY(-3px) scale(1.03);
-}
-.item i {
-  font-size: 30px;
-  color: var(--accent);
-  transition: transform 0.3s ease;
-}
-.item:hover i { transform: rotate(-6deg) scale(1.1); }
-.item span {
-  font-weight: 500;
-  color: var(--text);
-  text-align: center;
-  font-size: 15px;
-}
-
-#buttonDiv {
-  margin-top: 40px;
-}
-
-#userInfo {
-  margin-top: 40px;
-  background: var(--white);
-  box-shadow: 0 8px 24px var(--shadow);
-  border-radius: var(--radius);
-  padding: 16px 22px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  opacity: 0;
-  transform: translateY(20px);
-  transition: all 0.6s ease;
-}
-#userInfo.show {
-  opacity: 1;
-  transform: translateY(0);
-}
-#userInfo img {
-  width: 60px; height: 60px;
-  border-radius: 50%;
-  box-shadow: 0 5px 14px var(--shadow);
-}
-#userInfo h3 {
-  font-size: 18px;
-  color: var(--text);
-  font-weight: 600;
-}
-
-#loadingOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(255,255,255,0.96);
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-#loadingOverlay i {
-  font-size: 50px;
-  color: var(--accent);
-  animation: float 2s infinite;
-}
-#loadingOverlay p {
-  color: var(--muted);
-  margin-top: 10px;
-  font-size: 15px;
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Register — Hybrid Chat</title>
+  <link rel="icon" type="image/png" href="hybrid.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="register.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://apis.google.com/js/api.js"></script>
 </head>
 <body>
+  <div class="bubble"></div>
+  <div class="bubble"></div>
+  <div class="bubble"></div>
 
-<div class="bubble"></div>
-<div class="bubble"></div>
-<div class="bubble"></div>
+  
+  <div id="explorer">
+    <div class="header"><i class="fab fa-google-drive"></i> My Drive</div>
+    <div class="content" id="explorerContent"></div>
+  </div>
 
-<div id="explorer">
-  <div class="header"><i class="fab fa-google-drive"></i> My Drive</div>
-  <div class="content" id="explorerContent"></div>
-</div>
+  <div id="buttonDiv"></div>
 
-<div id="buttonDiv"></div>
+  <div id="userInfo">
+    <img id="userPic" alt="User">
+    <h3 id="userName"></h3>
+  </div>
 
-<div id="userInfo">
-  <img id="userPic" alt="User">
-  <h3 id="userName"></h3>
-</div>
+  <div id="loadingOverlay">
+    <i class="fab fa-google-drive"></i>
+    <p>Syncing to your Google Drive...</p>
+  </div>
 
-<div id="loadingOverlay">
-  <i class="fab fa-google-drive"></i>
-  <p>Syncing to your Google Drive...</p>
-</div>
-<script>
-const explorerContent = document.getElementById("explorerContent");
-
-const storedProfile = localStorage.getItem("hc_profile");
-if (storedProfile) {
-  window.location.href = "index.html";
-}
-
-const files = [
-  { icon: "fa-folder", name: "Projects" },
-  { icon: "fa-folder", name: "Hybrid Chat" },
-  { icon: "fa-file-code", name: "main.js" },
-  { icon: "fa-file-image", name: "avatar.png" },
-  { icon: "fa-file-lines", name: "account.json" },
-  { icon: "fa-folder", name: "Documents" },
-  { icon: "fa-folder", name: "Downloads" },
-  { icon: "fa-file-video", name: "intro.mp4" },
-  { icon: "fa-file-audio", name: "welcome.mp3" },
-  { icon: "fa-folder", name: "Backups" },
-  { icon: "fa-file-zipper", name: "archive.zip" },
-  { icon: "fa-file-word", name: "notes.docx" },
-  { icon: "fa-file-pdf", name: "resume.pdf" },
-  { icon: "fa-file-powerpoint", name: "presentation.pptx" },
-  { icon: "fa-file-excel", name: "report.xlsx" }
-];
-
-function renderFilesSequentially() {
-  explorerContent.innerHTML = "";
-  let delay = 0;
-  files.forEach((f, i) => {
-    setTimeout(() => {
-      const el = document.createElement("div");
-      el.className = "item";
-      el.style.animationDelay = `${i * 0.05}s`;
-      el.innerHTML = `<i class="fas ${f.icon}"></i><span>${f.name}</span>`;
-      explorerContent.appendChild(el);
-    }, delay);
-    delay += 150;
-  });
-}
-
-function cycleFiles() {
-  renderFilesSequentially();
-  setInterval(() => {
-    explorerContent.style.opacity = 0;
-    setTimeout(() => {
-      explorerContent.style.opacity = 1;
-      renderFilesSequentially();
-    }, 600);
-  }, 7000);
-}
-cycleFiles();
-
-const CLIENT_ID = "549003131640-o9umsg7tu0uisopde76mlf3lg5krt5g7.apps.googleusercontent.com";
-const SCOPES = "https://www.googleapis.com/auth/drive.file";
-
-window.onload = () => {
-  google.accounts.id.initialize({
-    client_id: CLIENT_ID,
-    callback: handleCredentialResponse
-  });
-  google.accounts.id.renderButton(document.getElementById("buttonDiv"), {
-    theme: "outline",
-    size: "large",
-    text: "signin_with",
-    shape: "pill"
-  });
-};
-
-async function handleCredentialResponse(response) {
-  const data = JSON.parse(atob(response.credential.split('.')[1]));
-  const userInfo = document.getElementById("userInfo");
-  document.getElementById("userPic").src = data.picture;
-  document.getElementById("userName").textContent = data.name;
-  userInfo.classList.add("show");
-
-  gapi.load("client", async () => {
-    await gapi.client.init({ discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"] });
-
-    const tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
-      scope: SCOPES,
-      callback: async (tokenResponse) => {
-        if (tokenResponse.error) return;
-
-        const profile = {
-          id: data.sub,
-          name: data.name,
-          email: data.email,
-          avatar: data.picture,
-          token: tokenResponse.access_token,
-          time: new Date().toISOString()
-        };
-
-        localStorage.setItem("hc_profile", JSON.stringify(profile));
-
-        const overlay = document.getElementById("loadingOverlay");
-        overlay.style.display = "flex";
-
-        const listResponse = await fetch("https://www.googleapis.com/drive/v3/files?q=name='account.json'", {
-          headers: { Authorization: "Bearer " + tokenResponse.access_token }
-        });
-        const listData = await listResponse.json();
-        let fileId = listData.files?.[0]?.id || null;
-
-        const metadata = { name: "account.json", mimeType: "application/json" };
-        const form = new FormData();
-        form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
-        form.append("file", new Blob([JSON.stringify(profile)], { type: "application/json" }));
-
-        const uploadUrl = fileId
-          ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`
-          : "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart";
-
-        await fetch(uploadUrl, {
-          method: fileId ? "PATCH" : "POST",
-          headers: { Authorization: "Bearer " + tokenResponse.access_token },
-          body: form
-        });
-
-        setTimeout(() => window.location.href = "index.html", 1200);
-      }
-    });
-
-    tokenClient.requestAccessToken({ prompt: "consent" });
-  });
-}
-</script>
-
-
+  <script src="register.js"></script>
 </body>
 </html>
-
-
-
