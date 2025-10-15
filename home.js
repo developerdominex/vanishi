@@ -71,8 +71,21 @@ function hideTyping(peerId) {
   setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 200);
   delete typingIndicators[peerId];
 }
+const startBtn = document.getElementById('startBtn');
+const assistDialog = document.getElementById('assistDialog');
 
-// ---- UI: Contacts ----
+startBtn.addEventListener('click', () => {
+  if(assistDialog.style.display === "none"){
+    assistDialog.style.display = "block";
+    requestAnimationFrame(()=> assistDialog.classList.add("show"));
+  } else {
+    assistDialog.classList.remove("show");
+    assistDialog.addEventListener('transitionend', () => {
+      if(!assistDialog.classList.contains("show")) assistDialog.style.display="none";
+    }, {once:true});
+  }
+});
+
 function renderContacts(filter = '') {
   contactsEl.innerHTML = ''
  
