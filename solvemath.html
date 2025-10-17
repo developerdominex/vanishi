@@ -1,153 +1,249 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Natural Math Solver</title>
-  <script type="importmap">
-    {
-      "imports": {
-        "@xenova/transformers": "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.9.0/dist/transformers.min.js",
-        "mathjs": "https://cdn.jsdelivr.net/npm/mathjs@13.0.0/+esm"
-      }
-    }
-  </script>
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Natural Math Solver (LaMini + math.js)</title>
   <style>
-    body {
-      font-family: "Segoe UI", Roboto, sans-serif;
-      background-color: #f4f6fa;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .container {
-      background: white;
-      padding: 2rem;
-      border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-      width: 90%;
-      max-width: 480px;
-      text-align: center;
-    }
-    h1 {
-      font-size: 1.5rem;
-      margin-bottom: 1.5rem;
-      color: #333;
-    }
-    textarea {
-      width: 100%;
-      height: 80px;
-      padding: 0.8rem;
-      font-size: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      resize: none;
-    }
-    button {
-      margin-top: 1rem;
-      padding: 0.8rem 1.2rem;
-      border: none;
-      border-radius: 8px;
-      background-color: #2f6fed;
-      color: white;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background 0.2s ease;
-    }
-    button:hover {
-      background-color: #1e50c2;
-    }
-    .output {
-      margin-top: 1.5rem;
-      background: #f7f9fc;
-      padding: 1rem;
-      border-radius: 8px;
-      font-size: 1.1rem;
-      color: #333;
-      min-height: 2rem;
-    }
-    .loading {
-      color: #888;
-      font-style: italic;
-    }
+    body { font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; background:#f3f6fb; margin:0; display:flex;align-items:center;justify-content:center;height:100vh; }
+    .card { width:100%; max-width:620px; background:#fff; border-radius:12px; box-shadow:0 8px 30px rgba(20,30,60,0.08); padding:22px; }
+    h1{ margin:0 0 8px 0; font-size:20px; color:#0f172a; }
+    p.lead{ margin:0 0 16px 0;color:#475569;font-size:14px; }
+    textarea{ width:100%; min-height:84px; padding:12px;border-radius:10px;border:1px solid #e6eef8; font-size:15px; resize:vertical; }
+    .controls{ display:flex; gap:8px; margin-top:12px; }
+    button{ padding:10px 14px; border-radius:10px; border:0; background:#2563eb; color:white; font-weight:600; cursor:pointer; }
+    button.secondary{ background:#eef2ff; color:#1e3a8a; border:1px solid #dbeafe; }
+    .status{ margin-top:12px; font-size:13px; color:#475569; }
+    .status .ok{ color:#16a34a; font-weight:700; }
+    .status .err{ color:#dc2626; font-weight:700; }
+    .output{ margin-top:14px; background:#fbfdff; border:1px solid #e6eef8; border-radius:10px; padding:12px; min-height:56px; font-size:15px; color:#0b1220; white-space:pre-wrap; }
+    .meta{ margin-top:8px; font-size:13px; color:#64748b; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Natural Language Math Solver</h1>
-    <textarea id="userInput" placeholder="Type a math problem... e.g., 'what is the square root of 81 divided by 3'"></textarea>
-    <button id="solveBtn">Solve</button>
-    <div id="output" class="output"></div>
+  <div class="card" role="application" aria-label="Natural Math Solver">
+    <h1>Natural Math Solver</h1>
+    <p class="lead">Type a math problem in natural language or a math expression. The page uses an in-browser model to convert English to math and <strong>math.js</strong> to evaluate it. If the model is unavailable, a fallback parser will try to convert your phrase.</p>
+
+    <textarea id="userInput" placeholder="e.g. what is half of 10 plus 3 squared"></textarea>
+
+    <div class="controls">
+      <button id="solveBtn">Solve</button>
+      <button class="secondary" id="clearBtn">Clear</button>
+      <div style="flex:1"></div>
+      <div id="modelIndicator" class="status">Model: <span id="modelState">loading...</span></div>
+    </div>
+
+    <div id="output" class="output">Result will appear here.</div>
+    <div id="meta" class="meta">Expression / debug info will appear here.</div>
   </div>
 
-  <script type="module">
-    import { pipeline } from "@xenova/transformers";
-    import { evaluate } from "mathjs";
+  <!-- math.js (UMD) -->
+  <script src="https://cdn.jsdelivr.net/npm/mathjs@13.0.0/dist/math.min.js"></script>
 
-    const output = document.getElementById("output");
-    const button = document.getElementById("solveBtn");
-    const input = document.getElementById("userInput");
+  <!-- transformers.js: import as ES module at runtime (recommended) -->
+  <script type="module">
+    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.9.0/dist/transformers.min.js';
+
+    const userInput = document.getElementById('userInput');
+    const solveBtn = document.getElementById('solveBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const outputEl = document.getElementById('output');
+    const metaEl = document.getElementById('meta');
+    const modelStateEl = document.getElementById('modelState');
 
     let translator = null;
-    let modelLoaded = false;
+    let modelReady = false;
 
-    async function loadModel() {
-      output.textContent = "Loading model (this may take ~10s)...";
-      translator = await pipeline("text2text-generation", "Xenova/LaMini-Flan-T5-77M");
-      modelLoaded = true;
-      output.textContent = "Model loaded. Enter your question above.";
+    // Update model indicator helper
+    function setModelState(text, cssClass='') {
+      modelStateEl.textContent = text;
+      modelStateEl.className = cssClass;
     }
 
-    loadModel();
+    // Fallback natural-language parser (heuristic, lightweight)
+    function nlToExpression(text) {
+      if(!text || typeof text !== 'string') return '';
+      let t = text.toLowerCase().trim();
 
-    async function solveMath() {
-      if (!modelLoaded) {
-        output.textContent = "Please wait — model is still loading...";
-        return;
-      }
+      // strip polite/leading phrases
+      t = t.replace(/^(please |show |compute |calculate |what is |what's |what are |find |solve for |solve )+/i, '');
+      // common words -> operators
+      t = t.replace(/\bplus\b/g, '+');
+      t = t.replace(/\bminus\b/g, '-');
+      t = t.replace(/\btimes\b/g, '*');
+      t = t.replace(/\bmultiplied by\b/g, '*');
+      t = t.replace(/\bdivided by\b/g, '/');
+      t = t.replace(/\bover\b/g, '/');
+      t = t.replace(/\bper cent\b/g, '%');
+      t = t.replace(/\bpercent of\b/g, '%*');
+      t = t.replace(/\bpercent\b/g, '%');
+      // fractions spelled: one half, one third (very basic)
+      t = t.replace(/\bone half of ([\d\w()+.]+)\b/g, '($1/2)');
+      t = t.replace(/\bhalf of ([\d\w()+.]+)\b/g, '($1/2)');
+      t = t.replace(/\bquarter of ([\d\w()+.]+)\b/g, '($1/4)');
+      // square/cube/power & roots
+      t = t.replace(/\b(square|squared) of ([\d\w()+.]+)\b/g, '($2)^2');
+      t = t.replace(/\btwo squared\b/g, '(2)^2');
+      t = t.replace(/\bthe square of ([\d\w()+.]+)\b/g, '($1)^2');
+      t = t.replace(/\b(\d+)\s*th power of ([\d\w()+.]+)\b/g, '($2)^$1');
+      t = t.replace(/\bsquare root of ([\d\w()+.]+)\b/g, 'sqrt($1)');
+      t = t.replace(/\broot of ([\d\w()+.]+)\b/g, 'sqrt($1)');
+      t = t.replace(/\bthe sum of ([\d\w()+.]+) and ([\d\w()+.]+)\b/g, '($1+$2)');
+      t = t.replace(/\bthe product of ([\d\w()+.]+) and ([\d\w()+.]+)\b/g, '($1*$2)');
+      t = t.replace(/\btwice ([\d\w()+.]+)\b/g, '(2*$1)');
+      t = t.replace(/\bdouble ([\d\w()+.]+)\b/g, '(2*$1)');
+      t = t.replace(/\bhalf ([\d\w()+.]+)\b/g, '($1/2)');
+      // numeric words to digits (small set)
+      const small = {zero:0, one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10, eleven:11, twelve:12};
+      t = t.replace(new RegExp('\\b(' + Object.keys(small).join('|') + ')\\b','g'), w => small[w]);
+      // percent handling "25% of 200" -> "(25/100)*200"
+      t = t.replace(/(\d+)\s?%/g, '($1/100)');
+      t = t.replace(/(\d+)\s?percent\s?of\s?([\d\w()+.]+)/g, '($1/100)*($2)');
+      // remove polite words left
+      t = t.replace(/\b(the|a|an|of|is|what)\b/g, '');
+      // basic cleanup
+      t = t.replace(/[^\d+\-*/().^%sqrt ]+/g,' ').replace(/\s+/g,' ').trim();
+      return t;
+    }
 
-      const text = input.value.trim();
-      if (!text) {
-        output.textContent = "Please enter a math problem.";
-        return;
-      }
-
-      output.textContent = "Thinking...";
-      output.classList.add("loading");
-
+    // evaluate expression using math.js (global math)
+    function evaluateExpression(expr) {
       try {
-        const prompt = `Convert this math question into a clear mathematical expression only: ${text}`;
-        const result = await translator(prompt);
-        const expr = result[0].generated_text.replace(/[^0-9+\-*/().^sqrt ]/gi, "").trim();
-
-        let value;
-        try {
-          value = evaluate(expr);
-        } catch (e) {
-          value = "Could not evaluate expression.";
-        }
-
-        output.classList.remove("loading");
-        output.innerHTML = `
-          <strong>Expression:</strong> ${expr || "N/A"}<br>
-          <strong>Result:</strong> ${value}
-        `;
-      } catch (err) {
-        console.error(err);
-        output.textContent = "Error solving math problem.";
+        // handle percentage shorthand if any leftover like "(25/100)*200"
+        const value = math.evaluate(expr);
+        return {ok:true, value};
+      } catch (e) {
+        return {ok:false, error: e.message || String(e)};
       }
     }
 
-    button.addEventListener("click", solveMath);
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && e.shiftKey === false) {
+    // Attempt to parse model output and keep allowed characters
+    function cleanModelOutput(out) {
+      if(!out || typeof out !== 'string') return '';
+      // keep numbers, operators, parentheses, decimal points, ^ and sqrt and spaces
+      let s = out.replace(/[^0-9+\-*/().^%sqrt a-zA-Z]/g,' ');
+      // preserve "sqrt(" if present, remove stray letters otherwise
+      s = s.replace(/\b(sqrt)\s*\(/gi,'sqrt(');
+      s = s.replace(/[a-zA-Z]+/g, match => {
+        // allow 'sqrt' only
+        return match.toLowerCase() === 'sqrt' ? 'sqrt' : ' ';
+      });
+      s = s.replace(/\s+/g,' ').trim();
+      return s;
+    }
+
+    // Load the in-browser model and update indicator
+    async function loadModelInBrowser() {
+      setModelState('loading...', '');
+      try {
+        // Show progressive text
+        modelReady = false;
+        // pipeline may download shards from Xenova CDN; this can take seconds
+        const p = pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-77M');
+        // optional: you can show an instant hint
+        setModelState('downloading model...');
+        translator = await p;
+        modelReady = true;
+        setModelState('loaded', 'ok');
+        console.info('Model loaded (LaMini-Flan-T5-77M)');
+      } catch (err) {
+        console.error('Model load failed:', err);
+        translator = null;
+        modelReady = false;
+        setModelState('failed to load (fallback enabled)', 'err');
+      }
+    }
+
+    // set indicator helper (text + optional css)
+    function setModelState(text, cls='') {
+      modelStateEl.textContent = text;
+      modelStateEl.className = cls;
+    }
+
+    // Solve workflow
+    async function solve() {
+      const raw = userInput.value.trim();
+      if(!raw) {
+        outputEl.textContent = 'Please enter a math question.';
+        metaEl.textContent = '';
+        return;
+      }
+
+      outputEl.textContent = 'Processing...';
+      metaEl.textContent = '';
+
+      // Try model if available
+      let expr = '';
+      if(modelReady && translator) {
+        try {
+          // prompt: ask the model to return a math expression only
+          const prompt = `Convert to a precise math expression only (use sqrt(...) for roots and ^ for power): ${raw}`;
+          const res = await translator(prompt, { max_new_tokens: 60, do_sample: false });
+          // res is usually an array; take first item
+          const out = Array.isArray(res) ? (res[0].generated_text || res[0].text || '') : (res.generated_text || res.text || '');
+          expr = cleanModelOutput(out);
+          if(!expr) {
+            // fall back if model returned nothing useful
+            expr = nlToExpression(raw);
+            metaEl.textContent = 'Used fallback parser because model output was empty or invalid.';
+          } else {
+            metaEl.textContent = `Converted by model: ${out}`;
+          }
+        } catch (err) {
+          console.warn('Model conversion error, falling back:', err);
+          expr = nlToExpression(raw);
+          metaEl.textContent = 'Model error — using fallback parser.';
+        }
+      } else {
+        // model not ready: use fallback
+        expr = nlToExpression(raw);
+        metaEl.textContent = 'Model unavailable — using fallback parser.';
+      }
+
+      // If expression still empty -> show message
+      if(!expr) {
+        outputEl.textContent = 'Could not parse the input into a mathematical expression.';
+        return;
+      }
+
+      // Evaluate using math.js
+      const evalRes = evaluateExpression(expr);
+      if(evalRes.ok) {
+        outputEl.innerHTML = `Expression: <code>${expr}</code>\nResult: <strong>${String(evalRes.value)}</strong>`;
+      } else {
+        // try a last-ditch symbolic approach with nerdamer if math.js fails
+        try {
+          // load nerdamer dynamically only when needed (CDN)
+          if(typeof nerdamer === 'undefined') {
+            await import('https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js');
+          }
+          // try to simplify or solve
+          const sym = nerdamer(expr).evaluate().toString();
+          outputEl.innerHTML = `Expression: <code>${expr}</code>\nSymbolic result: <strong>${sym}</strong>`;
+        } catch (e2) {
+          outputEl.innerHTML = `Expression: <code>${expr}</code>\nError evaluating: ${evalRes.error}`;
+        }
+      }
+    }
+
+    // Attach UI handlers
+    solveBtn.addEventListener('click', solve);
+    clearBtn.addEventListener('click', () => {
+      userInput.value = '';
+      outputEl.textContent = 'Result will appear here.';
+      metaEl.textContent = '';
+    });
+    userInput.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        solveMath();
+        solve();
       }
     });
+
+    // Start loading model in background
+    loadModelInBrowser();
+
   </script>
 </body>
 </html>
