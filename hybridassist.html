@@ -180,6 +180,7 @@ const chatArea=document.getElementById('chat-area');
 const txt=document.getElementById('txt');
 const send=document.getElementById('send');
 
+/* ========== Chat UI helpers ========== */
 function appendUser(text){
   const el=document.createElement('div');
   el.className='bubble user';
@@ -205,9 +206,10 @@ function appendTyping(){
   chatArea.scrollTop=chatArea.scrollHeight;
   return el;
 }
+
 function removeTyping(){const t=document.getElementById('typingBubble');if(t)t.remove();}
 
-async function typeWriter(el,html,speed=5){
+async function typeWriter(el,html,speed=8){
   return new Promise(resolve=>{
     let i=0;
     const words=html.split(/(\s+)/);
@@ -229,6 +231,7 @@ async function typeWriter(el,html,speed=5){
 function escapeHtml(s){return(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function escapeAttr(s){return(s||'').replace(/"/g,'&quot;');}
 
+/* ========== NLP Utilities ========== */
 function normalizeForSearch(q){
   q=q.trim();
   const patterns=[/^who (is|was)\s+/i,/^what (is|are|was)\s+/i,/^tell me about\s+/i,/^define\s+/i,/^explain\s+/i];
@@ -239,128 +242,158 @@ function normalizeForSearch(q){
 function smoothText(text){
   if(!text) return "";
   text=text.replace(/\s+/g,' ').trim();
+
+  // Capitalize start of sentences
   text=text.replace(/([.!?]\s+)([a-z])/g,(m,p1,p2)=>p1+p2.toUpperCase());
   if(text.length>1) text=text[0].toUpperCase()+text.slice(1);
-  text=text.replace(/\bfor example\b/gi,'for instance')
-           .replace(/\bhowever\b/gi,'but')
-           .replace(/\btherefore\b/gi,'as a result')
-           .replace(/\bthus\b/gi,'as a result')
-           .replace(/\betc\.\b/gi,'and so on')
-           .replace(/\be\.g\.\b/gi,'for instance');
+
+  // Improve flow and readability
+  text=text
+    .replace(/\bfor example\b/gi,'for instance')
+    .replace(/\betc\.\b/gi,'and so on')
+    .replace(/\btherefore\b/gi,'as a result')
+    .replace(/\bthus\b/gi,'as a result')
+    .replace(/\bhowever\b/gi,'but')
+    .replace(/\bthis was\b/gi,'This was')
+    .replace(/\b([Ii]t|[Tt]hey) (is|are) said\b/g,'It is often described')
+    .replace(/\bwas\b/g,'was known as')
+    .replace(/\bare\b/g,'are generally regarded as');
   return text;
 }
 
-async function fetchWikiSummary(query){
-  const url=`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=3&utf8=&format=json&origin=*`;
+/* ========== Wikipedia Fetching ========== */
+async function fetchWikiSummary(title){
+  const url=`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
   const res=await fetch(url);
   const j=await res.json();
-  const results=j.query?.search||[];
-  if(!results.length) return [];
-  const summaries=[];
-  for(const r of results.slice(0,2)){
-    const title=r.title;
-    const sumUrl=`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
-    const s=await fetch(sumUrl).then(r=>r.json());
-    let text=s.extract||'';
-    let img=s.thumbnail?.source||null;
-    if(text.length>600) text=text.split(/(?<=[.!?])\s+/).slice(0,5).join(' ');
-    summaries.push({title,summary:smoothText(text),image:img});
+  if(j.extract){
+    let extract=j.extract;
+    if(extract.length>1000) extract=extract.split(/(?<=[.!?])\s+/).slice(0,5).join(' ');
+    return {title:j.title,summary:smoothText(extract),image:j.thumbnail?.source||null};
   }
-  return summaries;
+  return null;
 }
 
-function extractTopics(input){
-  const parts=input.split(/\band\b|,|plus/i).map(s=>normalizeForSearch(s)).filter(Boolean);
-  return parts.slice(0,3);
+async function fetchMultiTopics(raw){
+  // Detect multiple entities
+  const topics=raw.split(/\band\b|,|\/|\+|vs\.?/i).map(t=>normalizeForSearch(t)).filter(Boolean);
+  if(topics.length===0) return [];
+
+  const results=[];
+  for(const topic of topics){
+    const url=`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(topic)}&srlimit=1&utf8=&format=json&origin=*`;
+    const res=await fetch(url);
+    const j=await res.json();
+    const top=j.query?.search?.[0];
+    if(!top) continue;
+    const data=await fetchWikiSummary(top.title);
+    if(data) results.push(data);
+  }
+  return results;
 }
 
+/* ========== Fact expansion (More natural) ========== */
 async function handleQuery(raw){
   if(!raw?.trim()) return;
   appendUser(raw);
   const typing=appendTyping();
 
   try{
-    if(/image|photo|picture/i.test(raw)){
+    const text=raw.toLowerCase();
+
+    // If multiple subjects are requested
+    if(/\band\b|,|\/|\+|vs\.?/i.test(text)){
+      const results=await fetchMultiTopics(raw);
       removeTyping();
       const bubble=appendBotBubble();
-      bubble.innerHTML="🔍 You can type for example: <b>'Show me photos of the Great Wall of China'</b> to get image results.";
-      return;
-    }
 
-    const topics=extractTopics(raw);
-    const allSummaries=[];
-    for(const topic of topics){
-      const results=await fetchWikiSummary(topic);
-      allSummaries.push(...results);
-    }
+      if(results.length===0){
+        bubble.textContent="I couldn’t find enough reliable information for that.";
+        return;
+      }
 
-    removeTyping();
-    const bubble=appendBotBubble();
-
-    if(!allSummaries.length){
-      bubble.innerHTML="I couldn’t find much on that topic. Try rephrasing or asking something broader.";
-      return;
-    }
-
-    let response="";
-    if(allSummaries.length===1){
-      const s=allSummaries[0];
-      response+=`<div style="font-weight:600;margin-bottom:6px;">${escapeHtml(s.title)}</div>`;
-      if(s.image) response+=`<img src="${s.image}" style="max-width:100%;border-radius:8px;margin-bottom:8px;">`;
-      response+=`<div>${escapeHtml(s.summary)}</div>`;
-    } else {
-      response+="<div style='font-weight:600;margin-bottom:6px;'>Here’s what I found on those topics:</div>";
-      for(const s of allSummaries){
-        response+=`<div style="margin-top:8px;border-top:1px solid #e5e7eb;padding-top:8px;">
-          <div style="font-weight:600;margin-bottom:4px;">${escapeHtml(s.title)}</div>
-          ${s.image?`<img src="${s.image}" style="max-width:100%;border-radius:8px;margin-bottom:6px;">`:''}
-          <div style="color:#374151;">${escapeHtml(s.summary)}</div>
+      let html=`<div style="font-weight:600;margin-bottom:8px;">Here’s what I found:</div>`;
+      for(const r of results){
+        html+=`
+        <div style="margin-bottom:14px;padding:10px;border:1px solid #e5e7eb;border-radius:8px;background:#f9fafb;">
+          <div style="font-weight:600;margin-bottom:4px;">${escapeHtml(r.title)}</div>
+          ${r.image?`<img src="${r.image}" style="max-width:100%;border-radius:8px;margin:6px 0;">`:""}
+          <div style="white-space:pre-wrap;">${escapeHtml(r.summary)}</div>
         </div>`;
       }
-      response+="<div style='margin-top:10px;color:var(--muted)'>I combined information from multiple related sources to keep it clear and natural.</div>";
+      await typeWriter(bubble,html,10);
+      return;
     }
 
-    await typeWriter(bubble,response,10);
+    // Single subject (summary)
+    const query=normalizeForSearch(raw);
+    const url=`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=1&utf8=&format=json&origin=*`;
+    const res=await fetch(url);
+    const j=await res.json();
+    const top=j.query?.search?.[0];
+    removeTyping();
+
+    if(!top){
+      appendBotBubble().textContent="Sorry, I couldn’t find anything relevant.";
+      return;
+    }
+
+    const data=await fetchWikiSummary(top.title);
+    const bubble=appendBotBubble();
+    if(!data){bubble.textContent="No summary found.";return;}
+
+    let html=`<div style="font-weight:600;margin-bottom:6px;">${escapeHtml(data.title)}</div>`;
+    if(data.image) html+=`<img src="${data.image}" style="max-width:100%;border-radius:8px;margin-bottom:6px;">`;
+    html+=`<div style="white-space:pre-wrap;">${escapeHtml(data.summary)}</div>`;
+    await typeWriter(bubble,html,10);
 
   }catch(err){
-    console.error(err);
     removeTyping();
-    appendBotBubble().innerHTML="Sorry, there was an error while fetching that.";
+    appendBotBubble().textContent="Something went wrong while fetching that info.";
+    console.error(err);
   }
 }
 
+/* ========== UI Events ========== */
 async function onSend(){
   const v=txt.value.trim();
   if(!v) return;
   txt.value='';
-  send.style.display='none';
+  send.style.display="none";
   await handleQuery(v);
 }
-
 send.addEventListener('click',onSend);
 txt.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();onSend();}
 });
-txt.addEventListener('input',()=>{send.style.display=txt.value.trim()?'inline-block':'none';});
-window.addEventListener('beforeunload',()=>chatArea.innerHTML='');
+txt.addEventListener('input',()=>{
+  send.style.display=txt.value.trim()?"inline-block":"none";
+});
 
+function clearChat(){chatArea.innerHTML='';}
+window.addEventListener('beforeunload',clearChat);
+
+/* ========== Greeting ========== */
 (function greet(){
-  const welcome=`<div style="font-weight:700;margin-bottom:6px;">Hi — I’m your Natural Knowledge Assistant 🌍</div>
-  <div style="color:var(--muted)">Ask me naturally, like you’d talk to a person. I can explain facts, summarize topics, or combine multiple ideas for you.</div>
+  const welcome=`<div style="font-weight:700;margin-bottom:6px;">Hello, I’m Hybrid Assistant 🤖</div>
+  <div style="color:var(--muted)">Ask me naturally about people, wars, science, or world history — even combine topics. I’ll give you clear, factual summaries from open sources.</div>
   <div class="chips" style="margin-top:10px;">
+    <div class="chip" data-q="World War I and World War II">Compare World War I and World War II</div>
+    <div class="chip" data-q="Industrial Revolution">Tell me about the Industrial Revolution</div>
     <div class="chip" data-q="Einstein and Newton">Compare Einstein and Newton</div>
-    <div class="chip" data-q="Causes of World War 1">What caused World War 1?</div>
-    <div class="chip" data-q="Photosynthesis and Cellular Respiration">Explain Photosynthesis and Cellular Respiration</div>
   </div>`;
   const b=appendBotBubble();
   typeWriter(b,welcome,20).then(()=>{
-    b.querySelectorAll('.chip').forEach(c=>{
-      c.addEventListener('click',()=>{txt.value=c.getAttribute('data-q');onSend();});
-    });
+    b.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+      txt.value=c.getAttribute('data-q');
+      onSend();
+    }));
   });
 })();
 </script>
 
+
 </body>
 </html>
+
 
