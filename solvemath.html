@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Natural Math Solver</title>
+  <script type="importmap">
+    {
+      "imports": {
+        "@xenova/transformers": "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.9.0/dist/transformers.min.js",
+        "mathjs": "https://cdn.jsdelivr.net/npm/mathjs@13.0.0/+esm"
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: "Segoe UI", Roboto, sans-serif;
+      background-color: #f4f6fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: white;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      width: 90%;
+      max-width: 480px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      color: #333;
+    }
+    textarea {
+      width: 100%;
+      height: 80px;
+      padding: 0.8rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      resize: none;
+    }
+    button {
+      margin-top: 1rem;
+      padding: 0.8rem 1.2rem;
+      border: none;
+      border-radius: 8px;
+      background-color: #2f6fed;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    button:hover {
+      background-color: #1e50c2;
+    }
+    .output {
+      margin-top: 1.5rem;
+      background: #f7f9fc;
+      padding: 1rem;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      color: #333;
+      min-height: 2rem;
+    }
+    .loading {
+      color: #888;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Natural Language Math Solver</h1>
+    <textarea id="userInput" placeholder="Type a math problem... e.g., 'what is the square root of 81 divided by 3'"></textarea>
+    <button id="solveBtn">Solve</button>
+    <div id="output" class="output"></div>
+  </div>
+
+  <script type="module">
+    import { pipeline } from "@xenova/transformers";
+    import { evaluate } from "mathjs";
+
+    const output = document.getElementById("output");
+    const button = document.getElementById("solveBtn");
+    const input = document.getElementById("userInput");
+
+    let translator = null;
+    let modelLoaded = false;
+
+    async function loadModel() {
+      output.textContent = "Loading model (this may take ~10s)...";
+      translator = await pipeline("text2text-generation", "Xenova/LaMini-Flan-T5-77M");
+      modelLoaded = true;
+      output.textContent = "Model loaded. Enter your question above.";
+    }
+
+    loadModel();
+
+    async function solveMath() {
+      if (!modelLoaded) {
+        output.textContent = "Please wait — model is still loading...";
+        return;
+      }
+
+      const text = input.value.trim();
+      if (!text) {
+        output.textContent = "Please enter a math problem.";
+        return;
+      }
+
+      output.textContent = "Thinking...";
+      output.classList.add("loading");
+
+      try {
+        const prompt = `Convert this math question into a clear mathematical expression only: ${text}`;
+        const result = await translator(prompt);
+        const expr = result[0].generated_text.replace(/[^0-9+\-*/().^sqrt ]/gi, "").trim();
+
+        let value;
+        try {
+          value = evaluate(expr);
+        } catch (e) {
+          value = "Could not evaluate expression.";
+        }
+
+        output.classList.remove("loading");
+        output.innerHTML = `
+          <strong>Expression:</strong> ${expr || "N/A"}<br>
+          <strong>Result:</strong> ${value}
+        `;
+      } catch (err) {
+        console.error(err);
+        output.textContent = "Error solving math problem.";
+      }
+    }
+
+    button.addEventListener("click", solveMath);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && e.shiftKey === false) {
+        e.preventDefault();
+        solveMath();
+      }
+    });
+  </script>
+</body>
+</html>
