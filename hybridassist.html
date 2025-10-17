@@ -175,214 +175,197 @@ body{height:100vh;background:var(--bg);color:var(--text);display:flex;flex-direc
     </div>
   </div>
 </div>
-<script>
-const chatArea=document.getElementById('chat-area');
-const txt=document.getElementById('txt');
-const send=document.getElementById('send');
+<script type="module">
+import { pipeline } from "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0";
 
+const rephraser = await pipeline("text2text-generation", "google/flan-t5-small");
+
+const chatArea = document.getElementById('chat-area');
+const txt = document.getElementById('txt');
+const send = document.getElementById('send');
+
+// --- UI helpers ---
 function appendUser(text){
-  const el=document.createElement('div');
-  el.className='bubble user';
-  el.textContent=text;
+  const el = document.createElement('div');
+  el.className = 'bubble user';
+  el.textContent = text;
   chatArea.appendChild(el);
-  chatArea.scrollTop=chatArea.scrollHeight;
+  chatArea.scrollTop = chatArea.scrollHeight;
 }
 
 function appendBotBubble(){
-  const el=document.createElement('div');
-  el.className='bubble bot';
+  const el = document.createElement('div');
+  el.className = 'bubble bot';
   chatArea.appendChild(el);
-  chatArea.scrollTop=chatArea.scrollHeight;
+  chatArea.scrollTop = chatArea.scrollHeight;
   return el;
 }
 
 function appendTyping(){
-  const el=document.createElement('div');
-  el.className='bubble bot';
-  el.id='typingBubble';
-  el.innerHTML='<div style="display:flex;align-items:center;gap:10px;"><div class="typing"><span></span><span></span><span></span></div><div style="color:var(--muted);">Thinking...</div></div>';
+  const el = document.createElement('div');
+  el.className = 'bubble bot';
+  el.id = 'typingBubble';
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><div class="typing"><span></span><span></span><span></span></div><div style="color:var(--muted);">Thinking...</div></div>';
   chatArea.appendChild(el);
-  chatArea.scrollTop=chatArea.scrollHeight;
+  chatArea.scrollTop = chatArea.scrollHeight;
   return el;
 }
 
-function removeTyping(){const t=document.getElementById('typingBubble');if(t)t.remove();}
+function removeTyping(){
+  const t = document.getElementById('typingBubble');
+  if(t) t.remove();
+}
 
-async function typeWriter(el,html,speed=5){
-  return new Promise(resolve=>{
-    let i=0;
-    const words=html.split(/(\s+)/);
-    el.innerHTML='';
-    const cursor='<span style="border-right:2px solid #4f46e5;opacity:.6"></span>';
-    const timer=setInterval(()=>{
-      el.innerHTML=words.slice(0,i).join('')+cursor;
-      chatArea.scrollTop=chatArea.scrollHeight;
+async function typeWriter(el, html, speed = 5){
+  return new Promise(resolve => {
+    let i = 0;
+    const words = html.split(/(\s+)/);
+    el.innerHTML = '';
+    const cursor = '<span style="border-right:2px solid #4f46e5;opacity:.6"></span>';
+    const timer = setInterval(() => {
+      el.innerHTML = words.slice(0, i).join('') + cursor;
+      chatArea.scrollTop = chatArea.scrollHeight;
       i++;
-      if(i>words.length){
+      if(i > words.length){
         clearInterval(timer);
-        el.innerHTML=html;
+        el.innerHTML = html;
         resolve();
       }
-    },speed);
+    }, speed);
   });
 }
 
-function escapeHtml(s){return(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function escapeAttr(s){return(s||'').replace(/"/g,'&quot;');}
+function escapeHtml(s){return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function escapeAttr(s){return (s||'').replace(/"/g,'&quot;');}
 
 function normalizeForSearch(q){
-  q=q.trim();
-  const patterns=[/^who (is|was)\s+/i,/^what (is|are|was)\s+/i,/^tell me about\s+/i,/^define\s+/i,/^explain\s+/i];
-  for(const p of patterns) q=q.replace(p,'');
-  return q.replace(/^[^\w]+|[^\w]+$/g,'').trim()||q;
+  q = q.trim();
+  const patterns = [/^who (is|was)\s+/i,/^what (is|are|was)\s+/i,/^tell me about\s+/i,/^define\s+/i,/^explain\s+/i];
+  for(const p of patterns) q = q.replace(p,'');
+  return q.replace(/^[^\w]+|[^\w]+$/g,'').trim() || q;
 }
 
 async function fetchWikiSmart(raw){
-  const query=normalizeForSearch(raw);
-  const url=`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=5&utf8=&format=json&origin=*`;
-  const res=await fetch(url);
-  const j=await res.json();
-  const results=j.query?.search||[];
+  const query = normalizeForSearch(raw);
+  const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=5&utf8=&format=json&origin=*`;
+  const res = await fetch(url);
+  const j = await res.json();
+  const results = j.query?.search || [];
   if(!results.length) return {type:'no-result'};
-  const top=results[0];
-  const title=top.title;
-  const sumUrl=`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
-  const sum=await fetch(sumUrl).then(r=>r.json());
-  let extract=sum.extract||'';
-  let imageUrl=sum.thumbnail?.source||null;
-  if(extract.length>1000) extract=extract.split(/(?<=[.!?])\s+/).slice(0,5).join(' ');
-  return {type:'summary',title,summary:extract,imageUrl};
+  const top = results[0];
+  const title = top.title;
+  const sumUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+  const sum = await fetch(sumUrl).then(r=>r.json());
+  let extract = sum.extract || '';
+  let imageUrl = sum.thumbnail?.source || null;
+
+  if(extract.length > 1000) extract = extract.split(/(?<=[.!?])\s+/).slice(0,5).join(' ');
+
+  const prompt = "Paraphrase and smooth this text: " + extract;
+  const rephrased = await rephraser(prompt, { max_length: 256 });
+  const smoothed = rephrased[0].generated_text.trim();
+
+  return {type:'summary', title, summary: smoothed, imageUrl};
 }
 
 async function showLongSummary(title){
   appendUser(`Show more about ${title}`);
-  const typing=appendTyping();
+  const typing = appendTyping();
   try{
-    const url=`https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&format=json&titles=${encodeURIComponent(title)}&origin=*`;
-    const r=await fetch(url); const j=await r.json();
-    const pages=j.query?.pages?Object.values(j.query.pages):[];const page=pages[0]||{};
-    const ext=page.extract||'No extra details.';
+    const url = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&format=json&titles=${encodeURIComponent(title)}&origin=*`;
+    const r = await fetch(url);
+    const j = await r.json();
+    const pages = j.query?.pages ? Object.values(j.query.pages) : [];
+    const page = pages[0] || {};
+    const ext = page.extract || 'No extra details.';
     removeTyping();
-    const parts=ext.split(/(?<=[.!?])\s+/).filter(Boolean).slice(0,8).map(s=>escapeHtml(s.trim()));
-    const bubble=appendBotBubble();
-    await typeWriter(bubble,`<div style="font-weight:600;margin-bottom:6px;">${escapeHtml(title)} — details</div><div style="white-space:pre-wrap;">${parts.join('\n\n')}</div>`);
-  } catch(e){ removeTyping(); appendBotBubble().innerHTML="Couldn't load details";}
+
+    // Rephrase longer text
+    const short = ext.split(/(?<=[.!?])\s+/).slice(0,8).join(' ');
+    const rephrased = await rephraser("Rewrite clearly and concisely: " + short, { max_length: 300 });
+    const smoothed = rephrased[0].generated_text.trim();
+
+    const bubble = appendBotBubble();
+    await typeWriter(bubble, `<div style="font-weight:600;margin-bottom:6px;">${escapeHtml(title)} — details</div><div style="white-space:pre-wrap;">${escapeHtml(smoothed)}</div>`);
+  } catch(e){ removeTyping(); appendBotBubble().innerHTML="Couldn't load details"; }
 }
 
-async function showSection(title,sectionName){
+async function showSection(title, sectionName){
   appendUser(`${sectionName} of ${title}`);
-  const typing=appendTyping();
+  const typing = appendTyping();
   try{
-    const url=`https://en.wikipedia.org/api/rest_v1/page/mobile-sections/${encodeURIComponent(title)}`;
-    const r=await fetch(url); const j=await r.json();
+    const url = `https://en.wikipedia.org/api/rest_v1/page/mobile-sections/${encodeURIComponent(title)}`;
+    const r = await fetch(url);
+    const j = await r.json();
     removeTyping();
-    const allSecs=[...(j.lead?.sections||[]),...(j.remaining?.sections||[])];
-    const sec=allSecs.find(s=>(s.line||'').toLowerCase().includes(sectionName.toLowerCase()));
-    if(!sec){ appendBotBubble().innerHTML=`No section "${escapeHtml(sectionName)}"`; return;}
-    let text=sec.text||"";
-    text=text.replace(/<\/?[^>]+(>|$)/g,'');
-    const snippet=text.split(/(?<=[.!?])\s+/).slice(0,10).join('\n\n');
-    const bubble=appendBotBubble();
-    await typeWriter(bubble,`<div style="font-weight:600;margin-bottom:6px;">${escapeHtml(title)} — ${escapeHtml(sec.line)}</div><div style="white-space:pre-wrap;">${escapeHtml(snippet)}</div>`);
-  }catch(e){ removeTyping(); appendBotBubble().innerHTML="Couldn't fetch section";}
+    const allSecs = [...(j.lead?.sections||[]), ...(j.remaining?.sections||[])];
+    const sec = allSecs.find(s => (s.line||'').toLowerCase().includes(sectionName.toLowerCase()));
+    if(!sec){ appendBotBubble().innerHTML=`No section "${escapeHtml(sectionName)}"`; return; }
+    let text = sec.text || "";
+    text = text.replace(/<\/?[^>]+(>|$)/g, '');
+    const snippet = text.split(/(?<=[.!?])\s+/).slice(0,10).join(' ');
+
+    const rephrased = await rephraser("Paraphrase and simplify: " + snippet, { max_length: 256 });
+    const smoothed = rephrased[0].generated_text.trim();
+
+    const bubble = appendBotBubble();
+    await typeWriter(bubble, `<div style="font-weight:600;margin-bottom:6px;">${escapeHtml(title)} — ${escapeHtml(sec.line)}</div><div style="white-space:pre-wrap;">${escapeHtml(smoothed)}</div>`);
+  }catch(e){ removeTyping(); appendBotBubble().innerHTML="Couldn't fetch section"; }
 }
 
 async function showRelated(title){
   appendUser(`Related to ${title}`);
-  const t=appendTyping();
+  const t = appendTyping();
   try{
-    const url=`https://en.wikipedia.org/w/api.php?action=query&prop=links&titles=${encodeURIComponent(title)}&pllimit=20&format=json&origin=*`;
-    const r=await fetch(url); const j=await r.json();
+    const url = `https://en.wikipedia.org/w/api.php?action=query&prop=links&titles=${encodeURIComponent(title)}&pllimit=20&format=json&origin=*`;
+    const r = await fetch(url);
+    const j = await r.json();
     removeTyping();
-    const pages=j.query?.pages?Object.values(j.query.pages):[];
-    const links=pages[0]?.links?.map(l=>l.title).slice(0,5)||[];
-    if(!links.length){appendBotBubble().innerHTML="No related topics found"; return;}
-    const chips=links.map(l=>`<div class="chip" data-type="direct" data-q="${escapeAttr(l)}">${escapeHtml(l)}</div>`).join('');
-    const bubble=appendBotBubble();
-    bubble.innerHTML=`<div style="font-weight:600;margin-bottom:6px;">Related topics</div><div class="chips">${chips}</div>`;
-    bubble.querySelectorAll('.chip').forEach(chip=>chip.addEventListener('click',()=>{txt.value=chip.getAttribute('data-q');handleQuery(txt.value);}));
-  }catch(e){ removeTyping(); appendBotBubble().innerHTML="Couldn't load related";}
-}
-
-async function fetchWikiImages(query){
-  const url=`https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=20&prop=pageimages&format=json&origin=*&piprop=thumbnail&pithumbsize=500`;
-  const r=await fetch(url); const j=await r.json();
-  const pages=j.query?.pages?Object.values(j.query.pages):[];
-  return pages.filter(p=>p.thumbnail).map(p=>({title:p.title,src:p.thumbnail.source}));
-}
-
-function buildImageGrid(images){
-  return `
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;">
-      ${images.map(img=>`
-        <div class="image-choice" data-src="${escapeAttr(img.src)}" data-title="${escapeAttr(img.title)}" 
-             style="cursor:pointer;border:1px solid #ddd;border-radius:8px;overflow:hidden;">
-          <img src="${img.src}" style="width:100%;height:140px;object-fit:cover;">
-          <div style="padding:6px;font-size:13px;text-align:center;color:#374151;">${escapeHtml(img.title)}</div>
-        </div>
-      `).join('')}
-    </div>
-    <div style="margin-top:8px;color:var(--muted);font-size:13px;">Click an image to view 📷</div>
-  `;
-}
-
-function attachImageHandlers(bubble){
-  bubble.querySelectorAll('.image-choice').forEach(choice=>{
-    choice.addEventListener('click',()=>{
-      const src=choice.getAttribute('data-src');
-      const title=choice.getAttribute('data-title');
-      const overlay=document.createElement('div');
-      overlay.style.position="fixed";
-      overlay.style.top=0;overlay.style.left=0;overlay.style.right=0;overlay.style.bottom=0;
-      overlay.style.background="rgba(0,0,0,0.8)";
-      overlay.style.display="flex";overlay.style.justifyContent="center";overlay.style.alignItems="center";
-      overlay.style.zIndex="9999";
-      overlay.innerHTML=`
-        <div style="position:relative;max-width:90%;max-height:90%;">
-          <img src="${src}" alt="${title}" style="max-width:100%;max-height:100%;border-radius:8px;">
-          <span style="position:absolute;top:-12px;right:-12px;background:#fff;border-radius:50%;padding:6px 10px;cursor:pointer;font-weight:bold;">✖</span>
-        </div>`;
-      overlay.querySelector("span").onclick=()=>overlay.remove();
-      document.body.appendChild(overlay);
-    });
-  });
+    const pages = j.query?.pages ? Object.values(j.query.pages) : [];
+    const links = pages[0]?.links?.map(l=>l.title).slice(0,5) || [];
+    if(!links.length){ appendBotBubble().innerHTML="No related topics found"; return; }
+    const chips = links.map(l=>`<div class="chip" data-type="direct" data-q="${escapeAttr(l)}">${escapeHtml(l)}</div>`).join('');
+    const bubble = appendBotBubble();
+    bubble.innerHTML = `<div style="font-weight:600;margin-bottom:6px;">Related topics</div><div class="chips">${chips}</div>`;
+    bubble.querySelectorAll('.chip').forEach(chip => chip.addEventListener('click', ()=>{txt.value = chip.getAttribute('data-q'); handleQuery(txt.value);}));
+  }catch(e){ removeTyping(); appendBotBubble().innerHTML="Couldn't load related"; }
 }
 
 async function handleQuery(raw){
   if(!raw?.trim()) return;
   appendUser(raw); appendTyping();
   try{
-    let bubble;
-    if(/image|photo|picture/i.test(raw)){
-      const imgs=await fetchWikiImages(raw); removeTyping(); bubble=appendBotBubble();
-      if(imgs.length){ await typeWriter(bubble,buildImageGrid(imgs)); attachImageHandlers(bubble);}
-      else bubble.innerHTML="No images found 🖼️";
-    }
-    else {
-      const result=await fetchWikiSmart(raw); removeTyping(); bubble=appendBotBubble();
-      if(result.type==='no-result'){ bubble.innerHTML="No results found"; return;}
-      let card=`<div style="font-weight:600;margin-bottom:6px;">${escapeHtml(result.title)}</div>`;
-      if(result.imageUrl) card+=`<img src="${result.imageUrl}" style="max-width:100%;border-radius:8px;margin-bottom:6px;">`;
-      card+=`<div style="white-space:pre-wrap;color:#374151;">${escapeHtml(result.summary)}</div>`;
-      await typeWriter(bubble,card);
-      bubble.innerHTML+=`<div class="chips" style="margin-top:8px;">
-        <div class="chip" data-type="more" data-q="${escapeAttr(result.title)}"><i class="fa-solid fa-circle-info"></i> More details</div>
-        <div class="chip" data-type="timeline" data-q="${escapeAttr(result.title)}"><i class="fa-solid fa-clock"></i> Timeline / History</div>
-        <div class="chip" data-type="related" data-q="${escapeAttr(result.title)}"><i class="fa-solid fa-link"></i> Related topics</div>
-      </div>`;
-      bubble.querySelectorAll('.chip').forEach(chip=>{
-        chip.addEventListener('click',async()=>{
-          const type=chip.getAttribute('data-type'); const q=chip.getAttribute('data-q');
-          if(type==='more') await showLongSummary(q);
-          if(type==='timeline') await showSection(q,'Timeline');
-          if(type==='related') await showRelated(q);
-        });
+    const result = await fetchWikiSmart(raw);
+    removeTyping();
+    const bubble = appendBotBubble();
+    if(result.type === 'no-result'){ bubble.innerHTML = "No results found"; return; }
+
+    let card = `<div style="font-weight:600;margin-bottom:6px;">${escapeHtml(result.title)}</div>`;
+    if(result.imageUrl) card += `<img src="${result.imageUrl}" style="max-width:100%;border-radius:8px;margin-bottom:6px;">`;
+    card += `<div style="white-space:pre-wrap;color:#374151;">${escapeHtml(result.summary)}</div>`;
+    await typeWriter(bubble, card);
+
+    bubble.innerHTML += `<div class="chips" style="margin-top:8px;">
+      <div class="chip" data-type="more" data-q="${escapeAttr(result.title)}">More details</div>
+      <div class="chip" data-type="timeline" data-q="${escapeAttr(result.title)}">Timeline / History</div>
+      <div class="chip" data-type="related" data-q="${escapeAttr(result.title)}">Related topics</div>
+    </div>`;
+    bubble.querySelectorAll('.chip').forEach(chip=>{
+      chip.addEventListener('click',async()=>{
+        const type=chip.getAttribute('data-type'); const q=chip.getAttribute('data-q');
+        if(type==='more') await showLongSummary(q);
+        if(type==='timeline') await showSection(q,'Timeline');
+        if(type==='related') await showRelated(q);
       });
-    }
-  }catch(e){ removeTyping(); appendBotBubble().innerHTML="<i class='fa-solid fa-triangle-exclamation'></i> Error fetching info"; console.error(e);}
+    });
+  } catch(e){
+    removeTyping();
+    appendBotBubble().innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> Error fetching info";
+    console.error(e);
+  }
 }
 
-async function onSend(){ const v=txt.value.trim(); if(!v) return; txt.value=''; send.style.display="none"; await handleQuery(v);}
+async function onSend(){ const v = txt.value.trim(); if(!v) return; txt.value=''; send.style.display="none"; await handleQuery(v);}
 send.addEventListener('click',onSend);
 txt.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault(); onSend();}});
 txt.addEventListener('input',()=>{ send.style.display=txt.value.trim()? "inline-block":"none"; });
@@ -391,21 +374,17 @@ function clearChat(){ chatArea.innerHTML=''; }
 window.addEventListener('beforeunload',clearChat);
 
 (function greet(){
-  const welcome=`<div style="font-weight:700;margin-bottom:6px;">Hi — I'm Hybrid <i class="fa-solid fa-robot"></i></div>
-  <div style="color:var(--muted)">Ask me about knowledge, apps, websites, celebrities, images <i class="fa-solid fa-image"></i>.</div>
-  <div style="color:#dc2626;margin-top:6px;font-weight:600;">Disclaimer: You cannot ask for videos. I provide insights, web search, and images. If you want to ask for videos also, you'll need to use Hybrid Browser Desktop. visit https://downloadhybrid.pages.dev/ </div>
-  <div class="chips" style="margin-top:10px;">
-    <div class="chip" data-q="Alexander The Great"><i class="fa-solid fa-user"></i> Who is Alexander The Great?</div>
-    <div class="chip" data-q="Open Ai"><i class="fa-solid fa-globe"></i> Find OpenAI website</div>
-    <div class="chip" data-q="Black hole images"><i class="fa-solid fa-image"></i> Black hole images</div>
-  </div>`;
-  const b=appendBotBubble();
-  typeWriter(b,welcome,20).then(()=>{
-    b.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{txt.value=c.getAttribute('data-q'); onSend();}));
-  });
+  const welcome = `
+  <div style="font-weight:700;margin-bottom:6px;">Hi — I'm Hybrid 🤖</div>
+  <div style="color:var(--muted)">Ask me about history, wars, politics, technology, or world topics.</div>
+  `;
+  const b = appendBotBubble();
+  typeWriter(b, welcome, 20);
 })();
 </script>
 
+
 </body>
 </html>
+
 
