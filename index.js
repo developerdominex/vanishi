@@ -14,7 +14,6 @@ if (profileData) {
 
   removeBtn.addEventListener('click', () => {
     localStorage.removeItem('hc_profile');
-    localStorage.removeItem('hc_chat');
     location.reload();
   });
 
