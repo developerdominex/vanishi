@@ -61,7 +61,11 @@ window.onload = () => {
     const btn = document.getElementById("webviewLoginBtn");
     btn.style.display = "block";
 
-    btn.addEventListener("click", () => {});
+    btn.addEventListener("click", () => {
+    if (window.AndroidInterface && window.AndroidInterface.onWebviewLoginBtnClick) {
+        window.AndroidInterface.onWebviewLoginBtnClick();
+    }
+});
   } else {
     google.accounts.id.initialize({
       client_id: CLIENT_ID,
