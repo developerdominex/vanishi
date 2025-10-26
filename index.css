@@ -1,13 +1,13 @@
 :root {
-  --accent: #6366f1;
-  --accent-hover: #4f46e5;
-  --bg1: #f3f4f6;
-  --bg2: #f9fafb;
+  --accent: #4f46e5;
+  --accent-hover: #6366f1;
+  --bg1: #fefefe;
+  --bg2: #f3f4f6;
   --white: #ffffff;
   --shadow: rgba(0, 0, 0, 0.08);
   --text: #1e293b;
   --muted: #6b7280;
-  --radius: 22px;
+  --radius: 18px;
   --safe-padding: max(16px, env(safe-area-inset-bottom));
 }
 
@@ -16,55 +16,47 @@
   padding: 0;
   box-sizing: border-box;
   font-family: "Inter", system-ui, sans-serif;
-  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   height: 100vh;
+  width: 100vw;
   display: flex;
   justify-content: center;
   align-items: center;
   background: linear-gradient(135deg, var(--bg1), var(--bg2));
-  background-size: 200% 200%;
-  animation: bgShift 12s ease-in-out infinite;
-  padding: 16px;
   overflow: hidden;
+  position: relative;
+  padding: 16px;
 }
 
-@keyframes bgShift {
-  0%, 100% { background-position: left top; }
-  50% { background-position: right bottom; }
-}
-
-.floating {
+.bubble {
   position: absolute;
-  font-size: 28px;
-  color: var(--accent);
-  opacity: 0.07;
-  animation: float 14s ease-in-out infinite;
-  pointer-events: none;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.06;
+  animation: float 12s ease-in-out infinite;
 }
-.floating:nth-child(1) { top: 12%; left: 10%; animation-delay: 0s; }
-.floating:nth-child(2) { bottom: 18%; right: 12%; animation-delay: 4s; }
-.floating:nth-child(3) { top: 55%; right: 16%; animation-delay: 8s; }
-.floating:nth-child(4) { bottom: 20%; left: 22%; animation-delay: 12s; }
+.bubble1 { width: 200px; height: 200px; top: 10%; left: 5%; animation-delay: 0s; }
+.bubble2 { width: 150px; height: 150px; bottom: 15%; right: 10%; animation-delay: 4s; }
+.bubble3 { width: 100px; height: 100px; top: 50%; right: 30%; animation-delay: 8s; }
 
 @keyframes float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-20px); }
+  50% { transform: translateY(-15px); }
 }
 
 .chat-card {
   width: 100%;
   max-width: 420px;
   background: var(--white);
-  padding: 32px 24px;
+  padding: 32px 28px;
   border-radius: var(--radius);
-  box-shadow: 0 12px 24px var(--shadow);
+  box-shadow: 0 16px 32px var(--shadow);
   text-align: center;
   position: relative;
   animation: fadeUp 0.8s ease forwards;
-  transform: translateY(50px);
+  transform: translateY(40px);
   opacity: 0;
 }
 
@@ -75,13 +67,13 @@ body {
 .chat-card::before {
   content: "";
   position: absolute;
-  inset: -5px;
+  inset: -6px;
   border-radius: var(--radius);
-  background: linear-gradient(45deg, var(--accent), #a78bfa, #60a5fa, var(--accent));
-  background-size: 350% 350%;
-  filter: blur(14px);
-  animation: glow 10s linear infinite;
-  opacity: 0.1;
+  background: linear-gradient(45deg, #a78bfa, #60a5fa, var(--accent));
+  background-size: 300% 300%;
+  filter: blur(12px);
+  animation: glow 8s linear infinite;
+  opacity: 0.08;
   z-index: -1;
 }
 
@@ -98,7 +90,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .chat-card h1 i {
@@ -108,21 +100,21 @@ body {
 
 @keyframes softPulse {
   0%, 100% { transform: scale(1); opacity: 0.9; }
-  50% { transform: scale(1.15); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 1; }
 }
 
 .chat-card p {
   color: var(--muted);
   font-size: 15px;
-  margin-top: 10px;
-  line-height: 1.5;
+  margin-top: 12px;
+  line-height: 1.6;
 }
 
 .button-group {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  margin-top: 26px;
+  margin-top: 28px;
 }
 
 .button-group button {
@@ -138,25 +130,15 @@ body {
 #startBtn {
   background: var(--accent);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
 }
 #startBtn:active {
   background: var(--accent-hover);
   transform: scale(0.97);
 }
 
-#removeBtn {
-  background: #f87171;
-  color: white;
-  box-shadow: 0 4px 12px rgba(248, 113, 113, 0.25);
-}
-#removeBtn:active {
-  background: #ef4444;
-  transform: scale(0.97);
-}
-
 footer {
-  margin-top: 24px;
+  margin-top: 28px;
   font-size: 13px;
   color: var(--muted);
   padding-bottom: var(--safe-padding);
