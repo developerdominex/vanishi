@@ -51,7 +51,6 @@ cycleFiles();
 const CLIENT_ID = "549003131640-o9umsg7tu0uisopde76mlf3lg5krt5g7.apps.googleusercontent.com";
 const SCOPES = "https://www.googleapis.com/auth/drive.file";
 
-
 function isWebView() {
   return /wv|version\/.*chrome\/(?!.*mobile safari)/i.test(navigator.userAgent) ||
          window.AndroidWebView !== undefined;
@@ -59,25 +58,10 @@ function isWebView() {
 
 window.onload = () => {
   if (isWebView()) {
-    document.getElementById("buttonDiv").style.display = "none";
     const btn = document.getElementById("webviewLoginBtn");
     btn.style.display = "block";
 
-    btn.onclick = () => {
-      const loginUrl = "https://accounts.google.com/o/oauth2/v2/auth?" +
-        "client_id=" + CLIENT_ID +
-        "&redirect_uri=" + encodeURIComponent("com.message.starlight:/oauth2redirect") + 
-        "&response_type=code" +                                                          
-        "&scope=" + encodeURIComponent(SCOPES) +
-        "&access_type=offline" +                                                         
-        "&prompt=consent"; 
-
-      if (window.AndroidWebView && window.AndroidWebView.openChromeTab) {
-        window.AndroidWebView.openChromeTab(loginUrl);
-      } else {
-        window.location.href = loginUrl; 
-      }
-    };
+    btn.addEventListener("click", () => {});
   } else {
     google.accounts.id.initialize({
       client_id: CLIENT_ID,
@@ -92,6 +76,7 @@ window.onload = () => {
   }
 };
 
+// ✅ Handle normal Google login response
 async function handleCredentialResponse(response) {
   const data = JSON.parse(atob(response.credential.split('.')[1]));
   const userInfo = document.getElementById("userInfo");
