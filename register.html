@@ -201,7 +201,9 @@ async function handleCredentialResponse(response) {
   userEmail.textContent = data.email || '';
   profilePreview.style.display = 'block';
 
+  // store for continue flow
   window.currentProfile = {
+    id: data.sub,
     name: data.name,
     email: data.email,
     profile_url: data.picture || ''
@@ -234,6 +236,7 @@ continueBtn.addEventListener('click', async () => {
     const { data, error: insErr } = await supabase
       .from('users')
       .insert([{
+        id: profile.id,
         name: profile.name,
         email: profile.email,
         profile_url: profile.profile_url
@@ -255,4 +258,3 @@ initGoogleButton();
 </script>
 </body>
 </html>
-
