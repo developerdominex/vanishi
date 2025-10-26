@@ -1,190 +1,260 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Register — Hybrid Chat</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Register — Starlight</title>
 <link rel="icon" type="image/png" href="hybrid.png">
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    background-color: #f3f4f6;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-  }
-  .container {
-    background: white;
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    text-align: center;
-    width: 100%;
-    max-width: 400px;
-  }
-  #profilePreview {
-    margin-top: 20px;
-  }
-  #profilePreview.hidden, #messageBox.hidden {
-    display: none;
-  }
-  #userAvatar {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    margin-bottom: 10px;
-  }
-  #continueBtn {
-    padding: 8px 16px;
-    margin-top: 12px;
-    background-color: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-  }
-  #continueBtn:hover {
-    background-color: #2563eb;
-  }
-  #messageBox {
-    margin-top: 12px;
-    color: red;
-  }
-  #buttonDiv {
-    margin-top: 20px;
-  }
+  :root{ --bg:#f3f4f6; --card:#fff; --accent:#3b82f6; --muted:#6b7280; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);height:100vh;display:flex;align-items:center;justify-content:center}
+  .card{background:var(--card);padding:28px;border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,0.08);width:100%;max-width:420px;text-align:center}
+  h2{margin:0 0 6px;color:#0f172a}
+  p{margin:0 0 18px;color:var(--muted)}
+  #buttonDiv { margin: 10px auto; width: 280px; height: 48px; display:flex; align-items:center; justify-content:center; }
+  #profilePreview{margin-top:14px;display:none}
+  #userAvatar{width:84px;height:84px;border-radius:999px;object-fit:cover;margin:8px auto;display:block}
+  #continueBtn{margin-top:12px;background:var(--accent);color:white;border:none;padding:10px 16px;border-radius:8px;cursor:pointer}
+  #messageBox{margin-top:12px;color:#b91c1c;display:none}
+  .small{font-size:13px;color:var(--muted);margin-top:8px}
+  .hidden{display:none!important}
 </style>
 </head>
 <body>
+  <div class="card" role="main">
+    <h2>Welcome to Starlight</h2>
+    <p>Sign in with Google to continue</p>
 
-<div class="container">
-  <h2>Welcome to Starlight</h2>
-  <p>Sign in with Google to continue</p>
+    <!-- buttonDiv must have visible size -->
+    <div id="buttonDiv" aria-hidden="false"></div>
 
-  <div id="buttonDiv"></div>
+    <div id="profilePreview">
+      <img id="userAvatar" alt="Avatar">
+      <div><strong id="userName"></strong></div>
+      <div class="small" id="userEmail"></div>
+      <button id="continueBtn">Continue</button>
+    </div>
 
-  <div id="profilePreview" class="hidden">
-    <h3>Profile Preview</h3>
-    <img id="userAvatar" alt="Avatar">
-    <p><strong>Name:</strong> <span id="userName"></span></p>
-    <p><strong>Email:</strong> <span id="userEmail"></span></p>
-    <button id="continueBtn">Continue</button>
+    <div id="messageBox" role="alert"></div>
+    <div class="small">By signing in you agree to the terms.</div>
   </div>
 
-  <div id="messageBox" class="hidden"></div>
-</div>
+<script type="module">
+/*
+  register.html - robust Google Sign-In + Supabase (ESM) integration.
 
-<script>
+  Key points:
+  - Uses ESM import for Supabase: avoids global name collisions.
+  - Dynamically loads Google Identity Services script and waits for it.
+  - Renders button only after google.accounts.id is available.
+  - Safe checks, console logs and user-visible error messages.
+  - Inserts or returns existing user in Supabase and stores hc_profile in localStorage.
+*/
+
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
 const SUPABASE_URL = "https://dfzshvldanqfvfivjrqi.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmenNodmxkYW5xZnZmaXZqcnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4MDIxNTEsImV4cCI6MjA3MDM3ODE1MX0.wdms-6G9eDzRuk1YiCpdyvVS-5CRKCsrq9WWWIFl9HA";
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const profilePreview = document.getElementById("profilePreview");
-const userAvatar = document.getElementById("userAvatar");
-const userName = document.getElementById("userName");
-const userEmail = document.getElementById("userEmail");
-const continueBtn = document.getElementById("continueBtn");
-const messageBox = document.getElementById("messageBox");
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Redirect if already signed in
-const storedProfile = localStorage.getItem("hc_profile");
-if (storedProfile) {
-  window.location.href = "/";
+// DOM
+const buttonDiv = document.getElementById('buttonDiv');
+const profilePreview = document.getElementById('profilePreview');
+const userAvatar = document.getElementById('userAvatar');
+const userName = document.getElementById('userName');
+const userEmail = document.getElementById('userEmail');
+const continueBtn = document.getElementById('continueBtn');
+const messageBox = document.getElementById('messageBox');
+
+// redirect if already logged in
+const existing = localStorage.getItem('hc_profile');
+if (existing) {
+  // adjust destination as needed:
+  window.location.href = '/';
+  throw new Error('already logged in');
 }
 
-function showMessage(msg) {
+// small helper
+function showError(msg) {
   messageBox.textContent = msg;
-  messageBox.classList.remove("hidden");
+  messageBox.style.display = 'block';
+  console.error(msg);
 }
 
-// Wait until Google API is ready
-function initializeGoogleSignIn() {
-  if (!window.google || !google.accounts || !google.accounts.id) {
-    setTimeout(initializeGoogleSignIn, 100);
+// load Google Identity Services script reliably and wait for it to be ready
+function loadGoogleIdentity() {
+  return new Promise((resolve, reject) => {
+    // if already present, resolve immediately
+    if (window.google && google.accounts && google.accounts.id) {
+      return resolve();
+    }
+
+    const scriptId = 'google-identity';
+    if (document.getElementById(scriptId)) {
+      // already injected; poll until ready
+      const start = Date.now();
+      const poll = setInterval(() => {
+        if (window.google && google.accounts && google.accounts.id) {
+          clearInterval(poll);
+          resolve();
+        } else if (Date.now() - start > 5000) {
+          clearInterval(poll);
+          reject(new Error('Google Identity did not initialize in time'));
+        }
+      }, 100);
+      return;
+    }
+
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.async = true;
+    s.defer = true;
+    s.id = scriptId;
+    s.onload = () => {
+      // ensure google.accounts.id exists
+      const start = Date.now();
+      const poll = setInterval(() => {
+        if (window.google && google.accounts && google.accounts.id) {
+          clearInterval(poll);
+          resolve();
+        } else if (Date.now() - start > 5000) {
+          clearInterval(poll);
+          reject(new Error('Google Identity loaded but failed to initialize'));
+        }
+      }, 100);
+    };
+    s.onerror = () => reject(new Error('Failed to load Google Identity script'));
+    document.head.appendChild(s);
+  });
+}
+
+// Initialize and render the button when Google Identity is ready
+async function initGoogleButton() {
+  try {
+    await loadGoogleIdentity();
+  } catch (err) {
+    showError('Google Sign-In failed to load: ' + err.message);
     return;
   }
 
+  // Defensive check
+  if (!(window.google && google.accounts && google.accounts.id)) {
+    showError('Google API is not available in this environment.');
+    return;
+  }
+
+  // Configure the client
   google.accounts.id.initialize({
-    client_id: "549003131640-o9umsg7tu0uisopde76mlf3lg5krt5g7.apps.googleusercontent.com",
-    callback: handleCredentialResponse
+    client_id: '549003131640-o9umsg7tu0uisopde76mlf3lg5krt5g7.apps.googleusercontent.com',
+    callback: handleCredentialResponse,
+    auto_select: false,
+    cancel_on_tap_outside: true
   });
 
-  google.accounts.id.renderButton(
-    document.getElementById("buttonDiv"),
-    {
-      theme: "outline",
-      size: "large",
-      text: "signin_with",  // this works reliably
-      shape: "pill",
-      width: 250
-    }
-  );
+  // Render button with explicit width/height so Edge shows it
+  google.accounts.id.renderButton(buttonDiv, {
+    theme: 'outline',
+    size: 'large',
+    text: 'signin_with', // stable option
+    shape: 'pill',
+    width: 280,
+    type: 'standard'
+  });
 
-  google.accounts.id.prompt(); // optional auto prompt
+  // optional: use prompt for One Tap (we won't rely on it)
+  // google.accounts.id.prompt();
 }
 
-function handleCredentialResponse(response) {
+// parse JWT credential and return payload JSON safely
+function parseJwtPayload(jwt) {
   try {
-    const data = JSON.parse(atob(response.credential.split('.')[1]));
-    userAvatar.src = data.picture;
-    userName.textContent = data.name;
-    userEmail.textContent = data.email;
-    profilePreview.classList.remove("hidden");
-
-    window.currentProfile = {
-      id: data.sub,
-      name: data.name,
-      email: data.email,
-      profile_url: data.picture
-    };
-  } catch (err) {
-    showMessage("Failed to parse Google profile.");
+    const parts = jwt.split('.');
+    if (parts.length < 2) return null;
+    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const json = decodeURIComponent(atob(payload).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(json);
+  } catch (e) {
+    console.error('Invalid JWT', e);
+    return null;
   }
 }
 
-continueBtn.onclick = async () => {
+async function handleCredentialResponse(response) {
+  if (!response || !response.credential) {
+    showError('No credential returned by Google.');
+    return;
+  }
+
+  const data = parseJwtPayload(response.credential);
+  if (!data) {
+    showError('Failed to decode Google credential.');
+    return;
+  }
+
+  // display preview
+  userAvatar.src = data.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name || '')}`;
+  userName.textContent = data.name || '';
+  userEmail.textContent = data.email || '';
+  profilePreview.style.display = 'block';
+
+  // store for continue flow
+  window.currentProfile = {
+    id: data.sub,
+    name: data.name,
+    email: data.email,
+    profile_url: data.picture || ''
+  };
+}
+
+// Continue click -> upsert into Supabase and save to localStorage
+continueBtn.addEventListener('click', async () => {
   const profile = window.currentProfile;
-  if (!profile) return showMessage("No profile data loaded.");
+  if (!profile) { showError('No profile loaded. Please sign in first.'); return; }
 
   try {
-    const { data: existingUser, error: selectError } = await supabase
-      .from("users")
-      .select("*")
+    // Try to find existing user (maybeSingle to avoid exceptions)
+    const { data: existing, error: selErr } = await supabase
+      .from('users')
+      .select('id, name, email, profile_url, created_at, updated_at')
       .or(`id.eq.${profile.id},email.eq.${profile.email}`)
       .maybeSingle();
 
-    if (selectError) throw selectError;
+    if (selErr) throw selErr;
 
-    if (existingUser) {
-      localStorage.setItem("hc_profile", JSON.stringify(existingUser));
-    } else {
-      const { data, error } = await supabase
-        .from("users")
-        .insert([{
-          id: profile.id,
-          name: profile.name,
-          email: profile.email,
-          profile_url: profile.profile_url
-        }])
-        .select()
-        .maybeSingle();
-
-      if (error) throw error;
-      localStorage.setItem("hc_profile", JSON.stringify(data));
+    if (existing && existing?.id) {
+      // Save existing profile to localStorage exactly as in table
+      localStorage.setItem('hc_profile', JSON.stringify(existing));
+      window.location.href = '/';
+      return;
     }
 
-    window.location.href = "/";
+    // Insert new user
+    const { data, error: insErr } = await supabase
+      .from('users')
+      .insert([{
+        id: profile.id,
+        name: profile.name,
+        email: profile.email,
+        profile_url: profile.profile_url
+      }])
+      .select()
+      .maybeSingle();
+
+    if (insErr) throw insErr;
+
+    localStorage.setItem('hc_profile', JSON.stringify(data));
+    window.location.href = '/';
   } catch (err) {
-    showMessage(err.message || "Failed to save user.");
+    showError('Supabase error: ' + (err.message || JSON.stringify(err)));
   }
-};
+});
 
-window.onload = initializeGoogleSignIn;
+// Kick off init
+initGoogleButton();
 </script>
-
 </body>
 </html>
