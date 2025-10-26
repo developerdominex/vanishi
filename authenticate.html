@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Authenticate</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<style>
+  body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
+  .container { background: #fff; padding: 20px 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+  input, textarea { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; font-size: 14px; }
+  button { padding: 10px 20px; font-size: 16px; margin-top: 10px; border: none; border-radius: 5px; background: #007bff; color: #fff; cursor: pointer; }
+  button:hover { background: #0056b3; }
+  #profileDisplay { background: #f0f0f0; padding: 10px; border-radius: 5px; max-height: 200px; overflow-y: auto; margin-top: 10px; font-size: 14px; white-space: pre-wrap; }
+  .link { margin-top: 20px; text-align: center; }
+  .link a { color: #007bff; text-decoration: none; }
+  .link a:hover { text-decoration: underline; }
+  #tokenContainer { display: none; flex-direction: column; }
+
+  /* Custom dialog styles */
+  #customDialog { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 9999; }
+  #customDialogContent { background: #fff; padding: 20px 25px; border-radius: 8px; max-width: 350px; text-align: center; }
+  #customDialogContent button { margin-top: 15px; background: #007bff; color: #fff; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; }
+  #customDialogContent button:hover { background: #0056b3; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h2>Authenticate</h2>
+    <label for="tokenInput">Paste your token/profile JSON here:</label>
+    <textarea id="tokenInput" rows="6" placeholder='Paste profile JSON or token here'></textarea>
+    <button id="loadTokenBtn">Load</button>
+
+    <div id="tokenContainer">
+      <h3>Profile Info</h3>
+      <div id="profileDisplay"></div>
+      <button id="continueBtn">Continue</button>
+    </div>
+
+    <div class="link">
+      <a href="#" id="registerLink">Take me to Register</a>
+    </div>
+  </div>
+
+  <!-- Custom dialog -->
+  <div id="customDialog">
+    <div id="customDialogContent">
+      <div id="dialogMessage"></div>
+      <button id="dialogBtn">OK</button>
+    </div>
+  </div>
+
+<script>
+const loadBtn = document.getElementById('loadTokenBtn');
+const tokenInput = document.getElementById('tokenInput');
+const tokenContainer = document.getElementById('tokenContainer');
+const profileDisplay = document.getElementById('profileDisplay');
+const continueBtn = document.getElementById('continueBtn');
+const registerLink = document.getElementById('registerLink');
+
+const customDialog = document.getElementById('customDialog');
+const dialogMessage = document.getElementById('dialogMessage');
+const dialogBtn = document.getElementById('dialogBtn');
+
+let profileData = null;
+
+// Show custom dialog
+function showDialog(message) {
+  dialogMessage.textContent = message;
+  customDialog.style.display = 'flex';
+}
+dialogBtn.onclick = () => customDialog.style.display = 'none';
+
+// Load token/profile JSON
+loadBtn.onclick = () => {
+  try {
+    profileData = JSON.parse(tokenInput.value.trim());
+    if (!profileData) throw new Error("Invalid JSON");
+
+    profileDisplay.textContent = JSON.stringify(profileData, null, 2);
+    tokenContainer.style.display = 'flex';
+  } catch (e) {
+    showDialog("Invalid token/profile JSON!");
+  }
+};
+
+// Continue button
+continueBtn.onclick = () => {
+  if (!profileData) return showDialog("No profile data loaded");
+  localStorage.setItem("hc_profile", JSON.stringify(profileData));
+  window.location.href = "https://vanishiwait.pages.dev/";
+};
+
+// Open register link
+registerLink.onclick = (e) => {
+  e.preventDefault();
+  const registerUrl = "https://vanishiwait.pages.dev/register";
+
+  // Detect if inside WebView
+  const isWebView = /wv|Android/i.test(navigator.userAgent);
+
+  if (isWebView && window.AndroidInterface?.openExternal) {
+    window.AndroidInterface.openExternal(registerUrl);
+  } else {
+    window.open(registerUrl, "_blank");
+  }
+};
+</script>
+</body>
+</html>
