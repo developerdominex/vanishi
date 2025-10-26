@@ -28,18 +28,53 @@
     position:sticky;top:0;z-index:10;
   }
   header h1{font-size:1.5rem;color:#111827;}
-  .search-container{position:relative;}
-  .search-container input{
-    width:0; padding:8px; border-radius:8px; border:1px solid #d1d5db;
-    transition:0.3s; opacity:0; position:absolute; right:0; top:0;
+  
+  .search-container{
+    position:relative;
+    display:flex;
+    align-items:center;
   }
-  .search-container input.show{width:240px; opacity:1;}
-  .search-container button{background:none;border:none;font-size:1.2rem;cursor:pointer;color:#6b7280;}
+  .search-container input{
+    width:0;
+    padding:8px 12px;
+    border-radius:20px;
+    border:1px solid #d1d5db;
+    transition:0.4s ease;
+    opacity:0;
+    margin-left:8px;
+    position:relative;
+    pointer-events:none;
+  }
+  .search-container input.show{
+    width:240px;
+    opacity:1;
+    pointer-events:auto;
+  }
+  .search-container button{
+    background:none;
+    border:none;
+    font-size:1.2rem;
+    cursor:pointer;
+    color:#6b7280;
+    z-index:1;
+  }
 
-  #chat-list, #search-results{flex:1;overflow-y:auto;padding:8px;}
+  #chat-list, #search-results{
+    flex:1;
+    overflow-y:auto;
+    padding:8px;
+  }
+
   .chat-item, .search-item{
-    display:flex;align-items:center;padding:10px;background:var(--card);
-    border-radius:12px;margin-bottom:8px;cursor:pointer;transition:0.2s;position:relative;
+    display:flex;
+    align-items:center;
+    padding:10px;
+    background:var(--card);
+    border-radius:12px;
+    margin-bottom:8px;
+    cursor:pointer;
+    transition:0.2s;
+    position:relative;
   }
   .chat-item:hover, .search-item:hover{background:var(--hover);}
   .chat-item img, .search-item img{width:50px;height:50px;border-radius:50%;object-fit:cover;}
@@ -50,6 +85,10 @@
   .online-dot{width:12px;height:12px;background:var(--online);border-radius:50%;border:2px solid var(--card);position:absolute;bottom:0;right:0;}
 
   .no-chat{text-align:center;padding:32px;color:var(--muted);font-weight:500;}
+
+  /* Smooth fade animation */
+  .fade-enter {opacity:0;transform:translateY(-5px);}
+  .fade-enter-active {opacity:1;transform:translateY(0);transition:all 0.3s;}
 </style>
 </head>
 <body>
@@ -83,12 +122,19 @@ const searchInput = document.getElementById("search-input");
 const searchResults = document.getElementById("search-results");
 const chatList = document.getElementById("chat-list");
 
+// Toggle search input with smooth animation
 searchBtn.addEventListener("click", () => {
   searchInput.classList.toggle("show");
-  if(searchInput.classList.contains("show")) searchInput.focus();
-  else searchResults.classList.add("hidden");
+  if(searchInput.classList.contains("show")){
+    searchInput.focus();
+    searchResults.classList.remove("hidden");
+  } else {
+    searchResults.classList.add("hidden");
+    searchInput.value='';
+  }
 });
 
+// Search users
 async function searchUsers(query){
   if(!query) return [];
   const { data } = await supabase
@@ -99,13 +145,17 @@ async function searchUsers(query){
   return data || [];
 }
 
+// Render search results
 function renderUsers(users){
-  searchResults.innerHTML = '';
-  if(users.length===0) { searchResults.classList.add('hidden'); return; }
+  searchResults.innerHTML='';
+  if(users.length===0){ 
+    searchResults.classList.add('hidden'); 
+    return; 
+  }
   users.forEach(user=>{
-    if(user.email === hc_profile.email) return; // skip self
+    if(user.email === hc_profile.email) return;
     const div = document.createElement('div');
-    div.className='search-item';
+    div.className='search-item fade-enter';
     div.innerHTML=`
       <img src="${user.profile_url}">
       <div class="chat-info">
@@ -115,6 +165,7 @@ function renderUsers(users){
     `;
     div.addEventListener('click', ()=>window.location.href=`chat.html?name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&profile_url=${encodeURIComponent(user.profile_url)}`);
     searchResults.appendChild(div);
+    setTimeout(()=>div.classList.add('fade-enter-active'),10);
   });
   searchResults.classList.remove('hidden');
 }
@@ -124,13 +175,18 @@ searchInput.addEventListener('input', async e=>{
   renderUsers(users);
 });
 
+// Fetch chat list
 async function fetchChatList(){
   const { data } = await messagesSupabase
     .from('messages')
     .select('sender,receiver,message,created_at')
     .or(`sender.eq.${hc_profile.email},receiver.eq.${hc_profile.email}`)
     .order('created_at',{ascending:false});
-  if(!data || data.length===0) { chatList.textContent='No chat'; return; }
+  
+  if(!data || data.length===0){ 
+    chatList.textContent='No chat'; 
+    return; 
+  }
 
   const chatMap = new Map();
   data.forEach(msg=>{
@@ -142,8 +198,8 @@ async function fetchChatList(){
   for(const [email,msg] of chatMap.entries()){
     const { data:userData } = await supabase.from('users').select('name,profile_url').eq('email',email).single();
     if(!userData) continue;
-    const div=document.createElement('div');
-    div.className='chat-item';
+    const div = document.createElement('div');
+    div.className='chat-item fade-enter';
     div.innerHTML=`
       <img src="${userData.profile_url}">
       <div class="chat-info">
@@ -154,10 +210,11 @@ async function fetchChatList(){
     `;
     div.addEventListener('click', ()=>window.location.href=`chat.html?name=${encodeURIComponent(userData.name)}&email=${encodeURIComponent(email)}&profile_url=${encodeURIComponent(userData.profile_url)}`);
     chatList.appendChild(div);
+    setTimeout(()=>div.classList.add('fade-enter-active'),10);
   }
 }
 
-// Realtime online tracking
+// Realtime updates
 const channel = supabase.channel('online-status')
   .on('postgres_changes', { event:'UPDATE', schema:'public', table:'users' }, payload=>{
     fetchChatList();
