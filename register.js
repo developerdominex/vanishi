@@ -51,36 +51,19 @@ cycleFiles();
 const CLIENT_ID = "549003131640-o9umsg7tu0uisopde76mlf3lg5krt5g7.apps.googleusercontent.com";
 const SCOPES = "https://www.googleapis.com/auth/drive.file";
 
-function isWebView() {
-  return /wv|version\/.*chrome\/(?!.*mobile safari)/i.test(navigator.userAgent) ||
-         window.AndroidWebView !== undefined;
-}
-
 window.onload = () => {
-  if (isWebView()) {
-    const btn = document.getElementById("webviewLoginBtn");
-    btn.style.display = "block";
-
-    btn.addEventListener("click", () => {
-    if (window.AndroidInterface && window.AndroidInterface.onWebviewLoginBtnClick) {
-        window.AndroidInterface.onWebviewLoginBtnClick();
-    }
-});
-  } else {
-    google.accounts.id.initialize({
-      client_id: CLIENT_ID,
-      callback: handleCredentialResponse
-    });
-    google.accounts.id.renderButton(document.getElementById("buttonDiv"), {
-      theme: "outline",
-      size: "large",
-      text: "signin_with",
-      shape: "pill"
-    });
-  }
+  google.accounts.id.initialize({
+    client_id: CLIENT_ID,
+    callback: handleCredentialResponse
+  });
+  google.accounts.id.renderButton(document.getElementById("buttonDiv"), {
+    theme: "outline",
+    size: "large",
+    text: "signin_with",
+    shape: "pill"
+  });
 };
 
-// ✅ Handle normal Google login response
 async function handleCredentialResponse(response) {
   const data = JSON.parse(atob(response.credential.split('.')[1]));
   const userInfo = document.getElementById("userInfo");
@@ -138,4 +121,4 @@ async function handleCredentialResponse(response) {
 
     tokenClient.requestAccessToken({ prompt: "consent" });
   });
-}
+} 
