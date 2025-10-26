@@ -1,110 +1,167 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Hybrid — Chat</title>
-<link rel="icon" href="hybrid.png" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="stylesheet" href="home.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home - Starlight</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/feather-icons"></script>
+<style>
+    .fade-enter { opacity: 0; transform: translateY(-10px); }
+    .fade-enter-active { opacity: 1; transform: translateY(0); transition: all 0.3s; }
+</style>
 </head>
-<body>
-  
-<div id="callDialog" class="call-dialog" style="display:none;">
-  <div class="call-header">
-    <div class="peer-info">
-      <img id="callPeerAvatar" src="" alt="avatar">
-      <span id="callPeerName">Calling...</span>
-    </div>
-    <button class="icon-btn" id="callCloseBtn"><i class="fas fa-times"></i></button>
-  </div>
+<body class="bg-gray-100 h-screen flex flex-col">
 
-  <div class="call-body">
-    <video id="remoteVideo" autoplay playsinline></video>
-    <video id="localVideo" autoplay playsinline muted></video>
-    <div id="incomingActions" class="incoming-actions" style="display:none;">
-      <button id="acceptCallBtn" class="accept-btn"><i class="fas fa-phone"></i> Accept</button>
-      <button id="declineCallBtn" class="decline-btn"><i class="fas fa-phone-slash"></i> Decline</button>
+<header class="bg-white p-4 flex justify-between items-center shadow">
+    <h1 class="text-xl font-bold">Chats</h1>
+    <div class="relative">
+        <button id="search-btn" class="p-2 rounded-full hover:bg-gray-200">
+            <i data-feather="search"></i>
+        </button>
+        <input id="search-input" type="text" placeholder="Search by name or email"
+               class="absolute right-0 top-0 transform translate-x-full opacity-0 transition-all duration-300 p-2 border rounded w-64">
     </div>
-  </div>
+</header>
 
-  <div class="call-actions" style="display:none;">
-    <button id="muteBtn" class="icon-btn"><i class="fas fa-microphone"></i></button>
-    <button id="cameraBtn" class="icon-btn"><i class="fas fa-video"></i></button>
-    <button id="switchBtn" class="icon-btn"><i class="fas fa-camera"></i></button>
-    <button id="hangupBtn" class="icon-btn end-call"><i class="fas fa-phone-slash"></i></button>
-  </div>
-</div>
+<div id="search-results" class="bg-white mt-2 rounded shadow max-h-80 overflow-y-auto hidden"></div>
 
-<div id="onlineDialog" class="dialog" style="display:none;">
-  <div class="dialog-content">
-    <div class="dialog-header">
-      <h3>Online Users</h3>
-      <button class="icon-btn" id="closeDialog"><i class="fas fa-times"></i></button>
-    </div>
-    <div id="onlineList" class="dialog-list"></div>
-  </div>
-</div>
- <button id="startBtn" class="icon-btn start-icon" title="Start">
-  <i class="fas fa-robot"></i>
-</button>
+<div id="chat-list" class="flex-1 overflow-y-auto mt-2 p-2 space-y-2"></div>
 
-<div id="assistDialog" class="assist-dialog" style="display:none;">
-  <iframe id="assistFrame" src="hybridassist.html"></iframe>
-</div>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
+const SUPABASE_URL = "https://dfzshvldanqfvfivjrqi.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmenNodmxkYW5xZnZmaXZqcnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4MDIxNTEsImV4cCI6MjA3MDM3ODE1MX0.wdms-6G9eDzRuk1YiCpdyvVS-5CRKCsrq9WWWIFl9HA";
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-<div class="app" id="app">
-  <div class="panel" id="sidebar">
-    <div class="header">
-      <div style="display:flex;flex-direction:column">
-        <div class="title">Hybrid</div>
-        <div class="subtitle">messaging</div>
-      </div>
-    </div>
-    <div class="search">
-      <input id="search" placeholder="Search people or paste id..." autocomplete="off">
-      <button class="icon-btn" id="addBtn" title="Add by ID"><i class="fas fa-user-plus"></i></button>
-    </div>
-    <div class="list" id="contacts"></div>
-    <div style="padding:12px;border-top:1px dashed rgba(15,23,42,0.04);display:flex;gap:8px;align-items:center;justify-content:space-between">
-      <div style="display:flex;gap:8px;align-items:center">
-        <img id="myAvatar" src="" style="width:42px;height:42px;border-radius:50%;object-fit:cover">
-        <div style="font-size:13px;color:#071133;font-weight:600" id="myName"></div>
-      </div>
-      <button id="logout" class="icon-btn" style="background:#fff;color:#ef4444;border-radius:10px;"><i class="fas fa-right-from-bracket"></i></button>
-    </div>
-  </div>
-  <div class="chat" id="chat">
-    <div class="top">
-      <img id="peerAvatar" src="" alt="avatar" style="display:none">
-      <div class="who">
-        <div class="n" id="peerName">Select a contact</div>
-        <div class="s" id="peerStatus"></div>
-      </div>
-      <div class="chat-actions" id="chatActions" style="display:none">
-        <button class="icon-btn" id="videoCallBtn"><i class="fas fa-video"></i></button>
-        <button class="icon-btn" id="audioCallBtn"><i class="fas fa-phone"></i></button>
-      </div>
-    </div>
+const MESSAGES_URL = "https://ilgkibqwngznqwnhgavh.supabase.co";
+const MESSAGES_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsZ2tpYnF3bmd6bnF3bmhnYXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NzU3NDcsImV4cCI6MjA3NzA1MTc0N30.jFHL4VDU81BRqxpoWc4u_4VYG4sI-SB0-EkxSfPGZ5k";
+const messagesSupabase = createClient(MESSAGES_URL, MESSAGES_KEY);
 
-    <div class="body" id="chatBody">
-      <div class="placeholder" id="placeholder">Select a contact to start chatting.</div>
-      <div class="messages" id="messages" style="display:none"></div>
-    </div>
-    <div class="composer">
-      <div class="input">
-        <input id="messageInput" placeholder="Type a message..." autocomplete="off">
-      </div>
-      <button class="icon-btn" id="attach"><i class="fas fa-paperclip"></i></button>
-      <button class="send" id="sendBtn"><i class="fas fa-paper-plane"></i></button>
-    </div>
-  </div>
-</div>
+let hc_profile = JSON.parse(localStorage.getItem('hc_profile') || '{}');
 
-<script type="module" src="home.js"></script>
+feather.replace();
+
+const searchBtn = document.getElementById("search-btn");
+const searchInput = document.getElementById("search-input");
+const searchResults = document.getElementById("search-results");
+
+searchBtn.addEventListener("click", () => {
+    const isVisible = searchInput.classList.contains("opacity-100");
+    if (isVisible) {
+        searchInput.classList.remove("opacity-100", "translate-x-0");
+        searchInput.classList.add("opacity-0", "translate-x-full");
+        searchResults.classList.add("hidden");
+    } else {
+        searchInput.classList.remove("opacity-0", "translate-x-full");
+        searchInput.classList.add("opacity-100", "translate-x-0");
+        searchInput.focus();
+    }
+});
+
+async function searchUsers(query) {
+    if (!query) return [];
+    const { data, error } = await supabase
+        .from('users')
+        .select('name, email, profile_url, online')
+        .or(`name.ilike.%${query}%,email.ilike.%${query}%`);
+    if (error) console.error(error);
+    return data || [];
+}
+
+function renderSearchResults(users) {
+    searchResults.innerHTML = '';
+    users.forEach(user => {
+        const isCurrentUser = user.email === hc_profile.email;
+        const div = document.createElement('div');
+        div.className = "flex items-center p-2 hover:bg-gray-100 cursor-pointer transition rounded fade-enter";
+        div.innerHTML = `
+            <div class="relative">
+                <img src="${user.profile_url}" class="w-10 h-10 rounded-full">
+                ${user.online ? '<span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>' : ''}
+            </div>
+            <div class="ml-3 flex-1">
+                <div class="font-semibold">${user.name} ${isCurrentUser ? '(YOU)' : ''}</div>
+                <div class="text-sm text-gray-500">${user.email}</div>
+            </div>
+        `;
+        if (!isCurrentUser) {
+            div.addEventListener('click', () => {
+                window.location.href = `chat.html?name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&profile_url=${encodeURIComponent(user.profile_url)}`;
+            });
+        }
+        searchResults.appendChild(div);
+        setTimeout(() => div.classList.add('fade-enter-active'), 10);
+    });
+    searchResults.classList.toggle('hidden', users.length === 0);
+}
+
+searchInput.addEventListener('input', async (e) => {
+    const query = e.target.value.trim();
+    const users = await searchUsers(query);
+    renderSearchResults(users);
+});
+
+async function fetchChatList() {
+    const { data, error } = await messagesSupabase
+        .from('messages')
+        .select('sender, receiver, message, created_at')
+        .or(`sender.eq.${hc_profile.email},receiver.eq.${hc_profile.email}`)
+        .order('created_at', { ascending: false });
+
+    if (error) { console.error(error); return; }
+
+    const chatMap = new Map();
+    data.forEach(msg => {
+        const otherEmail = msg.sender === hc_profile.email ? msg.receiver : msg.sender;
+        if (!chatMap.has(otherEmail)) chatMap.set(otherEmail, msg);
+    });
+
+    renderChatList(Array.from(chatMap.values()));
+}
+
+async function renderChatList(messages) {
+    const container = document.getElementById('chat-list');
+    container.innerHTML = '';
+
+    for (const msg of messages) {
+        const otherEmail = msg.sender === hc_profile.email ? msg.receiver : msg.sender;
+        const { data: userData } = await supabase
+            .from('users')
+            .select('name, profile_url, online')
+            .eq('email', otherEmail)
+            .single();
+        if (!userData) continue;
+
+        const div = document.createElement('div');
+        div.className = "flex items-center p-2 bg-white rounded hover:bg-gray-100 transition cursor-pointer fade-enter";
+        div.innerHTML = `
+            <div class="relative">
+                <img src="${userData.profile_url}" class="w-12 h-12 rounded-full">
+                ${userData.online ? '<span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>' : ''}
+            </div>
+            <div class="ml-3 flex-1">
+                <div class="font-semibold">${userData.name}</div>
+                <div class="text-gray-500 text-sm truncate">${msg.message}</div>
+            </div>
+            <div class="text-xs text-gray-400 ml-2">${new Date(msg.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
+        `;
+        div.addEventListener('click', () => {
+            window.location.href = `chat.html?name=${encodeURIComponent(userData.name)}&email=${encodeURIComponent(otherEmail)}&profile_url=${encodeURIComponent(userData.profile_url)}`;
+        });
+        container.appendChild(div);
+        setTimeout(() => div.classList.add('fade-enter-active'), 10);
+    }
+}
+
+messagesSupabase.channel('realtime-messages')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, payload => {
+        fetchChatList();
+    })
+    .subscribe();
+
+fetchChatList();
+</script>
 </body>
 </html>
-
-
-
