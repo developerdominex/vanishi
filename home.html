@@ -135,13 +135,17 @@ searchBtn.addEventListener("click", () => {
 });
 
 // Search users
-async function searchUsers(query){
-  if(!query) return [];
-  const { data } = await supabase
+async function searchUsers(query) {
+  if (!query) return [];
+  const { data, error } = await supabase
     .from('users')
     .select('name,email,profile_url')
-    .ilike('name', `%${query}%`)
-    .or(`email.ilike.%${query}%`);
+    .or(`name.ilike.%${query}%,email.ilike.%${query}%`);
+  
+  if (error) {
+    console.error('Search error:', error);
+    return [];
+  }
   return data || [];
 }
 
@@ -169,11 +173,16 @@ function renderUsers(users){
   });
   searchResults.classList.remove('hidden');
 }
-
-searchInput.addEventListener('input', async e=>{
-  const users = await searchUsers(e.target.value.trim());
+searchInput.addEventListener('input', async (e) => {
+  const query = e.target.value.trim();
+  if (!query) {
+    searchResults.classList.add('hidden');
+    return;
+  }
+  const users = await searchUsers(query);
   renderUsers(users);
 });
+
 
 // Fetch chat list
 async function fetchChatList(){
@@ -225,3 +234,4 @@ fetchChatList();
 </script>
 </body>
 </html>
+
