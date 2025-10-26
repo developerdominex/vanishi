@@ -10,9 +10,7 @@
   :root {
     --bg: #f3f4f6;
     --card: #fff;
-    --accent: #3b82f6;
     --muted: #6b7280;
-    --online: #22c55e;
     --hover: #e5e7eb;
   }
 
@@ -24,10 +22,10 @@
     background: var(--card);
     border-radius: 12px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-    overflow: hidden;
     display: flex;
     flex-direction: column;
-    max-height: 90vh;
+    max-height: 600px; /* fixed height */
+    overflow: hidden;
   }
 
   header{
@@ -42,32 +40,30 @@
     z-index:10;
   }
   header h1{font-size:1.5rem;color:#111827;}
-  .search-container{position:relative;}
-  .search-container input{
-    width:0; padding:8px 12px; border-radius:8px; border:1px solid #d1d5db;
-    transition: width 0.3s ease, opacity 0.3s ease;
-    opacity:0; position:absolute; right:0; top:0;
-  }
-  .search-container input.show{
-    width:200px; opacity:1;
-  }
-  .search-container button{background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted);}
-
-  #chat-list, #search-results{
-    flex:1;overflow-y:auto;padding:8px;
+  header button{
+    background:none;
+    border:none;
+    font-size:1.2rem;
+    cursor:pointer;
+    color:var(--muted);
   }
 
-  .chat-item, .search-item{
+  #chat-list{
+    flex:1;
+    overflow-y:auto;
+    padding:8px;
+  }
+
+  .chat-item{
     display:flex;align-items:center;padding:10px;background:var(--card);
     border-radius:12px;margin-bottom:8px;cursor:pointer;transition:0.2s;
   }
-  .chat-item:hover, .search-item:hover{background:var(--hover);}
-  .chat-item img, .search-item img{width:50px;height:50px;border-radius:50%;object-fit:cover;}
+  .chat-item:hover{background:var(--hover);}
+  .chat-item img{width:50px;height:50px;border-radius:50%;object-fit:cover;}
   .chat-info{margin-left:12px;flex:1;}
   .chat-info .name{font-weight:600;color:#111827;}
-  .chat-info .email, .chat-info .last-msg{font-size:0.875rem;color:var(--muted);}
+  .chat-info .last-msg{font-size:0.875rem;color:var(--muted);}
   .chat-time{font-size:0.75rem;color:var(--muted);margin-left:8px;white-space:nowrap;}
-  .online-dot{width:12px;height:12px;background:var(--online);border-radius:50%;border:2px solid var(--card);position:absolute;bottom:0;right:0;}
 
   .no-chat{text-align:center;padding:32px;color:var(--muted);font-weight:500;}
 </style>
@@ -77,22 +73,14 @@
 <div class="card">
   <header>
     <h1>Chats</h1>
-    <div class="search-container">
-      <button id="search-btn"><i class="fas fa-magnifying-glass"></i></button>
-      <input type="text" id="search-input" placeholder="Search by name or email">
-    </div>
+    <button id="search-btn"><i class="fas fa-magnifying-glass"></i></button>
   </header>
 
-  <div id="search-results" class="hidden"></div>
   <div id="chat-list" class="no-chat">No chat</div>
 </div>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-
-const SUPABASE_URL = "https://dfzshvldanqfvfivjrqi.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmenNodmxkYW5xZnZmaXZqcnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4MDIxNTEsImV4cCI6MjA3MDM3ODE1MX0.wdms-6G9eDzRuk1YiCpdyvVS-5CRKCsrq9WWWIFl9HA"; // replace with your key
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const MESSAGES_URL = "https://ilgkibqwngznqwnhgavh.supabase.co";
 const MESSAGES_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsZ2tpYnF3bmd6bnF3bmhnYXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NzU3NDcsImV4cCI6MjA3NzA1MTc0N30.jFHL4VDU81BRqxpoWc4u_4VYG4sI-SB0-EkxSfPGZ5k"; // replace with your key
@@ -100,64 +88,12 @@ const messagesSupabase = createClient(MESSAGES_URL, MESSAGES_KEY);
 
 let hc_profile = JSON.parse(localStorage.getItem('hc_profile') || '{}');
 
-const searchBtn = document.getElementById("search-btn");
-const searchInput = document.getElementById("search-input");
-const searchResults = document.getElementById("search-results");
 const chatList = document.getElementById("chat-list");
+const searchBtn = document.getElementById("search-btn");
 
-// Smooth search toggle
-searchBtn.addEventListener("click", () => {
-  searchInput.classList.toggle("show");
-  if(searchInput.classList.contains("show")){
-    searchInput.focus();
-    searchResults.classList.remove("hidden");
-  } else {
-    searchResults.classList.add("hidden");
-    searchInput.value='';
-  }
-});
-
-// Supabase search
-async function searchUsers(query){
-  if(!query) return [];
-  const { data, error } = await supabase
-    .from('users')
-    .select('name,email,profile_url')
-    .or(`name.ilike.%${query}%,email.ilike.%${query}%`);
-
-  if(error) console.error(error);
-  return data || [];
-}
-
-// Render search results
-function renderUsers(users){
-  searchResults.innerHTML='';
-  if(users.length===0){ 
-    searchResults.classList.add('hidden'); 
-    return; 
-  }
-  users.forEach(user=>{
-    if(user.email === hc_profile.email) return;
-    const div = document.createElement('div');
-    div.className='search-item';
-    div.innerHTML=`
-      <img src="${user.profile_url}">
-      <div class="chat-info">
-        <div class="name">${user.name}</div>
-        <div class="email">${user.email}</div>
-      </div>
-    `;
-    div.addEventListener('click', ()=>window.location.href=`chat.html?name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&profile_url=${encodeURIComponent(user.profile_url)}`);
-    searchResults.appendChild(div);
-  });
-  searchResults.classList.remove('hidden');
-}
-
-searchInput.addEventListener('input', async e=>{
-  const query = e.target.value.trim();
-  if(!query) { searchResults.classList.add('hidden'); return; }
-  const users = await searchUsers(query);
-  renderUsers(users);
+// Redirect to search page
+searchBtn.addEventListener('click', () => {
+  window.location.href = 'search.html';
 });
 
 // Fetch chats
@@ -181,7 +117,11 @@ async function fetchChatList(){
 
   chatList.innerHTML='';
   for(const [email,msg] of chatMap.entries()){
-    const { data:userData } = await supabase.from('users').select('name,profile_url').eq('email',email).single();
+    const { data:userData } = await messagesSupabase
+      .from('users')
+      .select('name,profile_url')
+      .eq('email',email)
+      .single();
     if(!userData) continue;
     const div = document.createElement('div');
     div.className='chat-item';
@@ -199,7 +139,7 @@ async function fetchChatList(){
 }
 
 // Realtime updates
-supabase.channel('online-status')
+messagesSupabase.channel('online-status')
   .on('postgres_changes', { event:'UPDATE', schema:'public', table:'users' }, payload=>{
     fetchChatList();
   })
