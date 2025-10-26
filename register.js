@@ -66,10 +66,6 @@ window.onload = () => {
 
 async function handleCredentialResponse(response) {
   const data = JSON.parse(atob(response.credential.split('.')[1]));
-  const userInfo = document.getElementById("userInfo");
-  document.getElementById("userPic").src = data.picture;
-  document.getElementById("userName").textContent = data.name;
-  userInfo.classList.add("show");
 
   gapi.load("client", async () => {
     await gapi.client.init({ discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"] });
@@ -89,36 +85,77 @@ async function handleCredentialResponse(response) {
           time: new Date().toISOString()
         };
 
-        localStorage.setItem("hc_profile", JSON.stringify(profile));
-
-        const overlay = document.getElementById("loadingOverlay");
-        overlay.style.display = "flex";
-
-        const listResponse = await fetch("https://www.googleapis.com/drive/v3/files?q=name='account.json'", {
-          headers: { Authorization: "Bearer " + tokenResponse.access_token }
-        });
-        const listData = await listResponse.json();
-        let fileId = listData.files?.[0]?.id || null;
-
-        const metadata = { name: "account.json", mimeType: "application/json" };
-        const form = new FormData();
-        form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
-        form.append("file", new Blob([JSON.stringify(profile)], { type: "application/json" }));
-
-        const uploadUrl = fileId
-          ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`
-          : "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart";
-
-        await fetch(uploadUrl, {
-          method: fileId ? "PATCH" : "POST",
-          headers: { Authorization: "Bearer " + tokenResponse.access_token },
-          body: form
-        });
-
-        setTimeout(() => window.location.href = "index.html", 1200);
+        showTokenDialog(profile, tokenResponse.access_token);
       }
     });
 
     tokenClient.requestAccessToken({ prompt: "consent" });
   });
-} 
+}
+
+function showTokenDialog(profile, accessToken) {
+  const dialog = document.createElement("div");
+  dialog.style.position = "fixed";
+  dialog.style.top = 0;
+  dialog.style.left = 0;
+  dialog.style.width = "100%";
+  dialog.style.height = "100%";
+  dialog.style.background = "rgba(0,0,0,0.7)";
+  dialog.style.display = "flex";
+  dialog.style.flexDirection = "column";
+  dialog.style.justifyContent = "center";
+  dialog.style.alignItems = "center";
+  dialog.style.zIndex = 9999;
+
+  dialog.innerHTML = `
+    <div style="background:#fff; padding:20px; border-radius:8px; max-width:400px; text-align:center;">
+      <h3>Google Tokens</h3>
+      <textarea readonly style="width:100%; height:120px;">${JSON.stringify(profile, null, 2)}</textarea>
+      <br/><br/>
+      <button id="copyTokenBtn">Copy</button>
+      <button id="proceedBtn">Proceed</button>
+      <button id="dismissBtn">Dismiss</button>
+    </div>
+  `;
+
+  document.body.appendChild(dialog);
+
+  document.getElementById("copyTokenBtn").onclick = () => {
+    navigator.clipboard.writeText(JSON.stringify(profile)).then(() => alert("Copied!"));
+  };
+
+  document.getElementById("proceedBtn").onclick = async () => {
+    localStorage.setItem("hc_profile", JSON.stringify(profile));
+
+    const overlay = document.getElementById("loadingOverlay");
+    overlay.style.display = "flex";
+
+    const listResponse = await fetch("https://www.googleapis.com/drive/v3/files?q=name='account.json'", {
+      headers: { Authorization: "Bearer " + accessToken }
+    });
+    const listData = await listResponse.json();
+    let fileId = listData.files?.[0]?.id || null;
+
+    const metadata = { name: "account.json", mimeType: "application/json" };
+    const form = new FormData();
+    form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
+    form.append("file", new Blob([JSON.stringify(profile)], { type: "application/json" }));
+
+    const uploadUrl = fileId
+      ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`
+      : "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
+
+    await fetch(uploadUrl, {
+      method: fileId ? "PATCH" : "POST",
+      headers: { Authorization: "Bearer " + accessToken },
+      body: form
+    });
+
+    window.location.href = "index.html";
+  };
+
+  document.getElementById("dismissBtn").onclick = () => {
+    localStorage.removeItem("hc_profile");
+    document.body.removeChild(dialog);
+  };
+}
