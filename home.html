@@ -24,7 +24,7 @@
     box-shadow: 0 8px 24px rgba(0,0,0,0.1);
     display: flex;
     flex-direction: column;
-    max-height: 600px; /* fixed height */
+    max-height: 600px; /* Fixed height */
     overflow: hidden;
   }
 
@@ -63,7 +63,7 @@
   .chat-info{margin-left:12px;flex:1;}
   .chat-info .name{font-weight:600;color:#111827;}
   .chat-info .last-msg{font-size:0.875rem;color:var(--muted);}
-  .chat-time{font-size:0.75rem;color:var(--muted);margin-left:8px;white-space:nowrap;}
+  .chat-time{font-size:0.75rem;color:var(--muted);white-space:nowrap;}
 
   .no-chat{text-align:center;padding:32px;color:var(--muted);font-weight:500;}
 </style>
@@ -83,7 +83,7 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
 const MESSAGES_URL = "https://ilgkibqwngznqwnhgavh.supabase.co";
-const MESSAGES_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsZ2tpYnF3bmd6bnF3bmhnYXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NzU3NDcsImV4cCI6MjA3NzA1MTc0N30.jFHL4VDU81BRqxpoWc4u_4VYG4sI-SB0-EkxSfPGZ5k"; // replace with your key
+const MESSAGES_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsZ2tpYnF3bmd6bnF3bmhnYXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NzU3NDcsImV4cCI6MjA3NzA1MTc0N30.jFHL4VDU81BRqxpoWc4u_4VYG4sI-SB0-EkxSfPGZ5k";
 const messagesSupabase = createClient(MESSAGES_URL, MESSAGES_KEY);
 
 let hc_profile = JSON.parse(localStorage.getItem('hc_profile') || '{}');
@@ -91,56 +91,58 @@ let hc_profile = JSON.parse(localStorage.getItem('hc_profile') || '{}');
 const chatList = document.getElementById("chat-list");
 const searchBtn = document.getElementById("search-btn");
 
-// Redirect to search page
 searchBtn.addEventListener('click', () => {
   window.location.href = 'search.html';
 });
 
-// Fetch chats
 async function fetchChatList(){
   const { data } = await messagesSupabase
     .from('messages')
     .select('sender,receiver,message,created_at')
     .or(`sender.eq.${hc_profile.email},receiver.eq.${hc_profile.email}`)
-    .order('created_at',{ascending:false});
+    .order('created_at', { ascending: false });
 
-  if(!data || data.length===0){ 
-    chatList.textContent='No chat'; 
-    return; 
+  if(!data || data.length === 0){
+    chatList.textContent = 'No chat';
+    return;
   }
 
   const chatMap = new Map();
-  data.forEach(msg=>{
-    const otherEmail = msg.sender===hc_profile.email ? msg.receiver : msg.sender;
-    if(!chatMap.has(otherEmail)) chatMap.set(otherEmail,msg);
+  data.forEach(msg => {
+    const otherEmail = msg.sender === hc_profile.email ? msg.receiver : msg.sender;
+    if(!chatMap.has(otherEmail)) chatMap.set(otherEmail, msg);
   });
 
-  chatList.innerHTML='';
-  for(const [email,msg] of chatMap.entries()){
+  chatList.innerHTML = '';
+  for(const [email, msg] of chatMap.entries()){
     const { data:userData } = await messagesSupabase
       .from('users')
-      .select('name,profile_url')
-      .eq('email',email)
+      .select('name, profile_url')
+      .eq('email', email)
       .single();
     if(!userData) continue;
+
     const div = document.createElement('div');
-    div.className='chat-item';
-    div.innerHTML=`
+    div.className = 'chat-item';
+    div.innerHTML = `
       <img src="${userData.profile_url}">
       <div class="chat-info">
         <div class="name">${userData.name}</div>
         <div class="last-msg">${msg.message}</div>
       </div>
-      <div class="chat-time">${new Date(msg.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})</div>
+      <div class="chat-time">${new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
     `;
-    div.addEventListener('click', ()=>window.location.href=`chat.html?name=${encodeURIComponent(userData.name)}&email=${encodeURIComponent(email)}&profile_url=${encodeURIComponent(userData.profile_url)}`);
+    div.addEventListener('click', () => {
+      window.location.href = `chat.html?name=${encodeURIComponent(userData.name)}&email=${encodeURIComponent(email)}&profile_url=${encodeURIComponent(userData.profile_url)}`;
+    });
     chatList.appendChild(div);
   }
 }
 
-// Realtime updates
-messagesSupabase.channel('online-status')
-  .on('postgres_changes', { event:'UPDATE', schema:'public', table:'users' }, payload=>{
+messagesSupabase
+  .channel('user-presence')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, payload => {
+    console.log("User update detected:", payload);
     fetchChatList();
   })
   .subscribe();
