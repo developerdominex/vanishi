@@ -249,43 +249,53 @@ supabase.channel(typingChannel).on('broadcast',{event:'typing'},({payload})=>{
 // -------------------- WEBRTC --------------------
 let pc = null, localStream = null, remoteStream = null;
 let audioCtx = null, analyser = null, source = null;
+let callType = null; // 'video' or 'audio'
 
-// -------------------- PEER CONNECTION --------------------
+// Create or return existing PeerConnection
 function ensurePeer() {
   if (pc) return pc;
 
   pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
 
+  // Handle remote tracks
   pc.ontrack = (event) => {
     if (!remoteStream) remoteStream = new MediaStream();
     remoteStream.addTrack(event.track);
 
-    if (event.track.kind === 'video') showCallModal('remote', remoteStream);
-    if (event.track.kind === 'audio') playRemoteAudio(remoteStream);
+    if (callType === 'video') showCallModal('remote', remoteStream);
+    if (callType === 'audio') showRemoteVoice(remoteStream);
   };
 
-  pc.onicecandidate = (e) => {
-    if (e.candidate) sendSignal({ type: 'candidate', candidate: e.candidate });
-  };
+  pc.onicecandidate = (e) => { if (e.candidate) sendSignal({ type: 'candidate', candidate: e.candidate }); };
 
   return pc;
 }
 
-// -------------------- SIGNALING --------------------
-function sendSignal(payload){
-  supabase.channel('webrtc-'+[hc_profile.email, chatUser.email].sort().join('-'))
-    .send({ type:'broadcast', event:'signal', payload:{ from: hc_profile.email, to: chatUser.email, ...payload } });
+// Send signaling
+function sendSignal(payload) {
+  supabase.channel('webrtc-'+[hc_profile.email,chatUser.email].sort().join('-'))
+    .send({ type: 'broadcast', event: 'signal', payload:{from:hc_profile.email,to:chatUser.email,...payload} });
 }
 
-supabase.channel('webrtc-'+[hc_profile.email, chatUser.email].sort().join('-'))
-  .on('broadcast', {event:'signal'}, async ({payload})=>{
+// Receive signaling
+supabase.channel('webrtc-'+[hc_profile.email,chatUser.email].sort().join('-'))
+  .on('broadcast',{event:'signal'}, async ({payload})=>{
     if(!payload || payload.to!==hc_profile.email) return;
 
     switch(payload.type){
-      case 'call-offer': showCallModal('incoming', payload.callType, payload.sdp); break;
-      case 'call-answer': await ensurePeer().setRemoteDescription(new RTCSessionDescription(payload.sdp)); break;
-      case 'candidate': try{ await ensurePeer().addIceCandidate(new RTCIceCandidate(payload.candidate)); }catch(e){console.error(e);} break;
-      case 'call-end': endCall(); break;
+      case 'call-offer':
+        callType = payload.callType;
+        showCallModal('incoming', callType, payload.sdp);
+        break;
+      case 'call-answer':
+        await ensurePeer().setRemoteDescription(new RTCSessionDescription(payload.sdp));
+        break;
+      case 'candidate':
+        try { await ensurePeer().addIceCandidate(new RTCIceCandidate(payload.candidate)); } catch(e){console.error(e);}
+        break;
+      case 'call-end':
+        endCall();
+        break;
     }
   }).subscribe();
 
@@ -307,13 +317,13 @@ function showCallModal(mode, type='video', sdp=null){
 
     const accept = document.createElement('button'); accept.textContent='Accept';
     Object.assign(accept.style,{background:'#16a34a',color:'#fff',border:'none',padding:'10px 16px',borderRadius:'12px',cursor:'pointer'});
-    accept.onclick=async()=>{
+    accept.onclick = async ()=>{
       localStream = await navigator.mediaDevices.getUserMedia(type==='video'?{video:true,audio:true}:{audio:true});
-      localStream.getTracks().forEach(track=>ensurePeer().addTrack(track, localStream));
+      localStream.getTracks().forEach(track=>ensurePeer().addTrack(track,localStream));
       await ensurePeer().setRemoteDescription(new RTCSessionDescription(sdp));
       const answer = await ensurePeer().createAnswer();
       await ensurePeer().setLocalDescription(answer);
-      sendSignal({type:'call-answer',sdp:answer});
+      sendSignal({type:'call-answer', sdp:answer});
       showLocalStream(localStream, type);
       if(type==='audio') visualizeAudio(localStream);
       modal.remove();
@@ -321,79 +331,69 @@ function showCallModal(mode, type='video', sdp=null){
 
     const decline = document.createElement('button'); decline.textContent='Decline';
     Object.assign(decline.style,{background:'#ef4444',color:'#fff',border:'none',padding:'10px 16px',borderRadius:'12px',cursor:'pointer'});
-    decline.onclick=()=>{ sendSignal({type:'call-end'}); endCall(); modal.remove(); };
+    decline.onclick = ()=>{ sendSignal({type:'call-end'}); endCall(); modal.remove(); };
+
     btnContainer.append(accept,decline);
 
   } else if(mode==='outgoing'){
     title.textContent=`Calling ${chatUser.name}`; sub.textContent='Ringing...';
-    const cancel=document.createElement('button'); cancel.textContent='Cancel';
+    const cancel = document.createElement('button'); cancel.textContent='Cancel';
     Object.assign(cancel.style,{background:'#6b7280',color:'#fff',border:'none',padding:'10px 16px',borderRadius:'12px',cursor:'pointer'});
-    cancel.onclick=()=>{ sendSignal({type:'call-end'}); endCall(); modal.remove(); };
+    cancel.onclick = ()=>{ sendSignal({type:'call-end'}); endCall(); modal.remove(); };
     btnContainer.append(cancel);
 
   } else if(mode==='remote'){
     title.textContent='Call Connected'; sub.textContent='';
-    if(type instanceof MediaStream){
-      const video=document.createElement('video'); video.autoplay=true; video.playsInline=true; video.srcObject=type;
+    if(type==='video'){
+      const video=document.createElement('video'); video.autoplay=true; video.playsInline=true; video.srcObject=streamOrType;
       Object.assign(video.style,{width:'260px',height:'200px',borderRadius:'12px',objectFit:'cover'});
       card.append(video);
-    } else if(type==='audio'){ showVoiceUI(); }
-
-    const endBtn=document.createElement('button'); endBtn.textContent='End Call';
+    } else if(type==='audio'){
+      showRemoteVoice(streamOrType);
+    }
+    const endBtn = document.createElement('button'); endBtn.textContent='End Call';
     Object.assign(endBtn.style,{background:'#ef4444',color:'#fff',border:'none',padding:'10px 16px',borderRadius:'12px',cursor:'pointer'});
-    endBtn.onclick=()=>{ sendSignal({type:'call-end'}); endCall(); modal.remove(); };
-
+    endBtn.onclick = ()=>{ sendSignal({type:'call-end'}); endCall(); };
     btnContainer.append(endBtn);
   }
 
-  card.append(btnContainer); modal.append(card); document.body.append(modal);
+  card.append(btnContainer);
+  modal.append(card);
+  document.body.append(modal);
 }
 
 // -------------------- LOCAL STREAM --------------------
-function showLocalStream(stream, type='video'){
+function showLocalStream(stream,type){
   removeLocalStream();
   const video=document.createElement('video'); video.autoplay=true; video.playsInline=true; video.muted=true; video.srcObject=stream;
-  Object.assign(video.style,{width:type==='video'?120:0,height:type==='video'?100:0,position:'fixed',bottom:'20px',right:'20px',borderRadius:'12px',objectFit:'cover',zIndex:1000});
+  Object.assign(video.style,{width:type==='video'?120:80,height:type==='video'?100:80,position:'fixed',bottom:'20px',right:'20px',borderRadius:'12px',objectFit:'cover',zIndex:1000});
   video.className='local-stream';
   document.body.append(video);
 }
 
-// -------------------- REMOVE STREAM --------------------
-function removeLocalStream(){ const v=document.querySelector('.local-stream'); if(v) v.remove(); }
-function removeRemoteAudio(){ const a=document.querySelector('.remote-audio'); if(a) a.remove(); }
-
 // -------------------- REMOTE AUDIO --------------------
-function playRemoteAudio(stream){
+function showRemoteVoice(stream){
   let audio=document.querySelector('.remote-audio');
   if(!audio){ audio=document.createElement('audio'); audio.autoplay=true; audio.className='remote-audio'; document.body.append(audio); }
   audio.srcObject=stream;
-}
 
-// -------------------- AUDIO VISUALIZATION (VOICE WAVE) --------------------
-function visualizeAudio(stream){
-  audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-  source = audioCtx.createMediaStreamSource(stream);
-  analyser = audioCtx.createAnalyser();
-  source.connect(analyser);
-  analyser.fftSize=256;
-  const dataArray = new Uint8Array(analyser.frequencyBinCount);
+  // Add simple speaking wave effect
+  if(!audioCtx){
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    source = audioCtx.createMediaStreamSource(stream);
+    analyser = audioCtx.createAnalyser();
+    source.connect(analyser);
+    analyser.fftSize = 256;
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-  // Voice wave UI
-  let micIcon = document.querySelector('.mic-icon');
-  if(!micIcon){
-    micIcon = document.createElement('div'); micIcon.className='mic-icon';
-    Object.assign(micIcon.style,{width:'40px',height:'40px',borderRadius:'50%',background:'#007aff',position:'fixed',bottom:'20px',left:'20px',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontSize:'18px',zIndex:1000});
-    micIcon.textContent='🎤';
-    document.body.append(micIcon);
+    function animateWave(){
+      analyser.getByteFrequencyData(dataArray);
+      const volume = dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
+      document.querySelector('.local-stream')?.style.borderColor = volume>15?'#16a34a':'#ccc';
+      requestAnimationFrame(animateWave);
+    }
+    animateWave();
   }
-
-  function update(){
-    analyser.getByteFrequencyData(dataArray);
-    const volume = dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
-    micIcon.style.transform=`scale(${1 + volume/150})`;
-    requestAnimationFrame(update);
-  }
-  update();
 }
 
 // -------------------- END CALL --------------------
@@ -401,16 +401,19 @@ function endCall(){
   if(pc){ pc.close(); pc=null; }
   if(localStream){ localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
   if(remoteStream){ remoteStream.getTracks().forEach(t=>t.stop()); remoteStream=null; }
-  removeLocalStream(); removeRemoteAudio();
-  const micIcon=document.querySelector('.mic-icon'); if(micIcon) micIcon.remove();
+  removeLocalStream();
+  document.querySelector('.call-modal')?.remove();
+  document.querySelector('.remote-audio')?.remove();
+  if(audioCtx){ audioCtx.close(); audioCtx=null; analyser=null; source=null; }
 }
 
 // -------------------- START CALL --------------------
 async function startCall(type='video'){
   if(chatStatusEl.textContent!=='Online') return;
-  showCallModal('outgoing',type);
+  callType = type;
+  showCallModal('outgoing', type);
   localStream = await navigator.mediaDevices.getUserMedia(type==='video'?{video:true,audio:true}:{audio:true});
-  localStream.getTracks().forEach(track=>ensurePeer().addTrack(track,localStream));
+  localStream.getTracks().forEach(track => ensurePeer().addTrack(track, localStream));
   const offer = await ensurePeer().createOffer();
   await ensurePeer().setLocalDescription(offer);
   sendSignal({type:'call-offer', callType:type, sdp:offer});
