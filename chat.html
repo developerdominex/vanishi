@@ -21,6 +21,7 @@
   --muted:#6b7280;
   --radius:24px;
 }
+
 *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,Arial,Helvetica,sans-serif}
 html,body{height:100%}
 body{
@@ -91,7 +92,7 @@ header{
 
 /* sent message (right) */
 .bubble.me{
-  margin-left:auto;
+  align-self:flex-end; /* fix alignment to right */
   background:linear-gradient(135deg, var(--sent), var(--sent-dark));
   color:#fff;
   border-bottom-right-radius:8px;
@@ -104,7 +105,7 @@ header{
 
 /* received message (left) */
 .bubble.other{
-  margin-right:auto;
+  align-self:flex-start; /* fix alignment to left */
   background:var(--received);
   color:#111;
   border-bottom-left-radius:8px;
