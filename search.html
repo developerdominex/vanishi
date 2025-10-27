@@ -14,61 +14,69 @@
   --hover: #e5e7eb;
 }
 
-*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;}
-body{background:var(--bg);display:flex;justify-content:center;align-items:flex-start;height:100vh;padding-top:50px;}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial, Helvetica, sans-serif;}
 
-.card {
-  width: 50%;
-  background: var(--card);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-  display: flex;
-  flex-direction: column;
-  max-height: 600px;
-  overflow: hidden;
+body{
+  background:var(--bg);
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.card{
+  width:450px;
+  height:85vh;              /* ✅ Full height box */
+  background:var(--card);
+  border-radius:12px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.1);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
 }
 
 header{
-  background: var(--card);
-  padding:16px;
   display:flex;
   align-items:center;
-  box-shadow:0 2px 6px rgba(0,0,0,0.05);
-  position: sticky;
+  gap:10px;
+  padding:16px;
+  position:sticky;
   top:0;
+  background:var(--card);
+  border-bottom:1px solid #e5e7eb;
   z-index:10;
 }
 
 header button{
   background:none;
   border:none;
-  font-size:1.2rem;
+  font-size:1.3rem;
   cursor:pointer;
   color:var(--muted);
-  margin-right:8px;
 }
 
 header input{
   flex:1;
   padding:8px 12px;
-  border-radius:8px;
   border:1px solid #d1d5db;
+  border-radius:8px;
   font-size:1rem;
 }
 
 #search-results{
   flex:1;
   overflow-y:auto;
-  padding:8px;
+  padding:12px;
 }
 
 .search-item{
   display:flex;
   align-items:center;
-  padding:10px;
+  gap:12px;
   background:var(--card);
+  padding:10px;
   border-radius:12px;
-  margin-bottom:8px;
+  margin-bottom:10px;
   cursor:pointer;
   transition:0.2s;
 }
@@ -84,18 +92,14 @@ header input{
   object-fit:cover;
 }
 
-.chat-info{
-  margin-left:12px;
-  flex:1;
+.chat-info .name{font-weight:600;color:#111;}
+.chat-info .email{font-size:0.85rem;color:var(--muted);}
+
+.no-results{
+  text-align:center;
+  color:var(--muted);
+  padding:40px 16px;
 }
-
-.chat-info .name{font-weight:600;color:#111827;}
-.chat-info .email{font-size:0.875rem;color:var(--muted);}
-
-.fade-enter { opacity: 0; transform: translateY(10px); }
-.fade-enter-active { opacity: 1; transform: translateY(0); transition: all 0.3s; }
-
-.no-results{text-align:center;color:var(--muted);padding:32px;font-weight:500;}
 </style>
 </head>
 <body>
@@ -103,9 +107,9 @@ header input{
 <div class="card">
   <header>
     <button id="back-btn"><i class="fas fa-arrow-left"></i></button>
-    <input type="text" id="search-input" placeholder="Search by name or email">
+    <input type="text" id="search-input" placeholder="Search by name or email...">
   </header>
-
+  
   <div id="search-results" class="no-results">Type to search...</div>
 </div>
 
@@ -113,62 +117,65 @@ header input{
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
 const SUPABASE_URL = "https://dfzshvldanqfvfivjrqi.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmenNodmxkYW5xZnZmaXZqcnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4MDIxNTEsImV4cCI6MjA3MDM3ODE1MX0.wdms-6G9eDzRuk1YiCpdyvVS-5CRKCsrq9WWWIFl9HA"; // replace with your key
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmenNodmxkYW5xZnZmaXZqcnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4MDIxNTEsImV4cCI6MjA3MDM3ODE1MX0.wdms-6G9eDzRuk1YiCpdyvVS-5CRKCsrq9WWWIFl9HA"; 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Load local profile
 let hc_profile = JSON.parse(localStorage.getItem('hc_profile') || '{}');
 
 const backBtn = document.getElementById('back-btn');
 const searchInput = document.getElementById('search-input');
 const searchResults = document.getElementById('search-results');
 
-// Back button
+// ✅ Back to Home
 backBtn.addEventListener('click', () => {
-  window.location.href = 'home.html';
+  window.location.href = "home.html";
 });
 
-// Search users
+// ✅ Fetch users by email or name
 async function searchUsers(query){
   if(!query) return [];
   const { data, error } = await supabase
     .from('users')
-    .select('name,email,profile_url')
+    .select('id, name, email, profile_url')
     .or(`name.ilike.%${query}%,email.ilike.%${query}%`);
-  if(error) console.error(error);
+
+  if (error) console.error(error);
   return data || [];
 }
 
-// Render search results
+// ✅ Render search results
 function renderUsers(users){
-  searchResults.innerHTML='';
-  if(users.length===0){
-    searchResults.innerHTML='<div class="no-results">No users found</div>';
+  searchResults.innerHTML = '';
+  if(users.length === 0){
+    searchResults.innerHTML = '<div class="no-results">No users found</div>';
     return;
   }
-  users.forEach(user=>{
-    if(user.email === hc_profile.email) return; // skip self
-    const div = document.createElement('div');
-    div.className='search-item fade-enter';
-    div.innerHTML=`
-      <img src="${user.profile_url}">
+
+  users.forEach(user => {
+    if(user.email === hc_profile.email) return; // Skip self
+    const item = document.createElement('div');
+    item.className = 'search-item';
+    item.innerHTML = `
+      <img src="${user.profile_url || 'default.png'}">
       <div class="chat-info">
         <div class="name">${user.name}</div>
         <div class="email">${user.email}</div>
       </div>
     `;
-    div.addEventListener('click', ()=>{
-      window.location.href = `chat.html?name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&profile_url=${encodeURIComponent(user.profile_url)}`;
+    item.addEventListener('click', () => {
+      window.location.href = 
+        `chat.html?name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&profile_url=${encodeURIComponent(user.profile_url)}`;
     });
-    searchResults.appendChild(div);
-    setTimeout(()=>div.classList.add('fade-enter-active'),10);
+    searchResults.appendChild(item);
   });
 }
 
-// Input listener
-searchInput.addEventListener('input', async e=>{
+// ✅ Input Listener
+searchInput.addEventListener('input', async e => {
   const query = e.target.value.trim();
   if(!query){
-    searchResults.innerHTML='<div class="no-results">Type to search...</div>';
+    searchResults.innerHTML = '<div class="no-results">Type to search...</div>';
     return;
   }
   const users = await searchUsers(query);
