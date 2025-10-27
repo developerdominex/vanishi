@@ -12,7 +12,8 @@
   --card:#ffffff;
   --sent:#4f46e5;
   --sent-dark:#4338ca;
-  --received:#f1f5f9;
+  --received:#f0f0f0;
+  --received-border:#d1d5db;
   --typing:#a5d6a7;
   --accent:#2563eb;
   --green:#16a34a;
@@ -28,6 +29,7 @@ body{
   justify-content:center;
   background:var(--bg);
 }
+/* container */
 .container{
   width:420px;
   height:calc(100vh - 64px);
@@ -38,6 +40,7 @@ body{
   flex-direction:column;
   overflow:hidden;
 }
+/* header */
 header{
   display:flex;
   align-items:center;
@@ -59,6 +62,7 @@ header{
 .icon-btn:hover{background:#f1f5f9}
 .icon-btn.disabled{opacity:0.4;pointer-events:none}
 
+/* messages area */
 .messages {
   flex:1;
   padding:16px;
@@ -66,6 +70,7 @@ header{
   display:flex;
   flex-direction:column;
   gap:10px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.05), transparent);
 }
 .bubble{
   max-width:70%;
@@ -79,24 +84,29 @@ header{
 }
 .bubble.me{
   margin-left:auto;
-  background:linear-gradient(180deg,var(--sent),var(--sent-dark));
+  background:linear-gradient(135deg,var(--sent),var(--sent-dark));
   color:#fff;
   border-bottom-right-radius:6px;
+  box-shadow:0 4px 12px rgba(79,70,229,0.3);
 }
 .bubble.other{
   margin-right:auto;
   background:var(--received);
-  color:#000;
+  color:#111;
   border-bottom-left-radius:6px;
+  border:1px solid var(--received-border);
+  box-shadow:0 2px 6px rgba(0,0,0,0.05);
 }
 .ts{
   font-size:11px;
   color:var(--muted);
   position:absolute;
   bottom:4px;
-  right:8px;
-  opacity:0.7;
+  right:10px;
+  opacity:0.6;
 }
+
+/* input area */
 .composer {
   padding:12px;
   display:flex;
@@ -113,7 +123,7 @@ header{
 .send-btn.hidden{display:none}
 
 /* call dialog */
-#call-dialog{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:1200;backdrop-filter:blur(4px);}
+#call-dialog{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:1200}
 .call-card{
   width:360px;
   background:var(--card);
@@ -121,18 +131,17 @@ header{
   padding:20px;
   text-align:center;
   box-shadow:0 20px 60px rgba(0,0,0,0.3);
-  display:flex;flex-direction:column;gap:12px;
-  border:2px solid var(--accent);
+  display:flex;flex-direction:column;gap:12px
 }
 .call-peers{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.call-peer{display:flex;flex-direction:column;align-items:center;gap:6px}
 .call-peer video, .call-peer img{width:120px;height:120px;border-radius:12px;object-fit:cover;background:#000}
-.call-text{font-weight:700;margin-bottom:4px;font-size:18px;}
+.call-text{font-weight:700;margin-bottom:4px}
 .call-sub{color:var(--muted);font-size:13px;margin-bottom:6px}
-.call-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.call-actions{display:flex;gap:12px;justify-content:center}
 .btn-accept{background:var(--green);color:white;padding:10px 16px;border-radius:12px;border:none;cursor:pointer}
 .btn-decline{background:var(--danger);color:white;padding:10px 16px;border-radius:12px;border:none}
 .btn-cancel{background:#94a3b8;color:white;padding:10px 16px;border-radius:12px;border:none}
-.btn-end{background:#ef4444;color:white;padding:10px 16px;border-radius:12px;border:none;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -170,7 +179,6 @@ header{
       <button id="accept-call" class="btn-accept">Accept</button>
       <button id="decline-call" class="btn-decline">Decline</button>
       <button id="cancel-call" class="btn-cancel">Cancel</button>
-      <button id="end-call" class="btn-end">End Call</button>
     </div>
   </div>
 </div>
@@ -179,7 +187,7 @@ header{
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
 const SUPABASE_URL = "https://ilgkibqwngznqwnhgavh.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsZ2tpYnF3bmd6bnNnaGtoYXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NzU3NDcsImV4cCI6MjA3NzA1MTc0N30.jFHL4VDU81BRqxpoWc4u_4VYG4sI-SB0-EkxSfPGZ5k";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsZ2tpYnF3bmd6bnF3bmhnYXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NzU3NDcsImV4cCI6MjA3NzA1MTc0N30.jFHL4VDU81BRqxpoWc4u_4VYG4sI-SB0-EkxSfPGZ5k"; // your anon key
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const hc_profile = JSON.parse(localStorage.getItem('hc_profile')||'{}');
@@ -207,70 +215,63 @@ const callPeerSub = document.getElementById('call-peer-sub');
 const acceptBtn = document.getElementById('accept-call');
 const declineBtn = document.getElementById('decline-call');
 const cancelBtn = document.getElementById('cancel-call');
-const endBtn = document.getElementById('end-call');
 
 backBtn.addEventListener('click', ()=>location.href='home.html');
 chatNameEl.textContent = chatUser.name;
 chatProfileEl.src = chatUser.profile_url;
 
-// ---------------- Messages ----------------
-let lastMessageTime = null;
-async function loadMessages() {
+// messages
+let lastMessageTime=null;
+async function loadMessages(){
   const { data } = await supabase.from('messages').select('*')
     .or(`and(sender.eq.${hc_profile.email},receiver.eq.${chatUser.email}),and(sender.eq.${chatUser.email},receiver.eq.${hc_profile.email})`)
-    .order('created_at', { ascending: true })
+    .order('created_at',{ascending:true})
     .gt('created_at', lastMessageTime || '1970-01-01T00:00:00Z');
-  if (data.length > 0) {
+  if(data.length>0){
     data.forEach(appendMessage);
     lastMessageTime = data[data.length-1].created_at;
   }
 }
-
-function appendMessage(m) {
+function appendMessage(m){
   const d = document.createElement('div');
-  d.className = 'bubble ' + (m.sender === hc_profile.email ? 'me' : 'other');
-  d.textContent = m.message;
-  const ts = document.createElement('div'); ts.className = 'ts';
-  ts.textContent = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  d.className='bubble '+(m.sender===hc_profile.email?'me':'other');
+  d.textContent=m.message;
+  const ts = document.createElement('div'); ts.className='ts';
+  ts.textContent=new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
   d.appendChild(ts);
   messagesEl.appendChild(d);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
+
+// polling
 setInterval(loadMessages, 1500);
 
-// ---------------- Send Message ----------------
+// send message
 sendBtn.addEventListener('click', sendMessage);
 inputEl.addEventListener('input', () => sendBtn.classList.toggle('hidden', inputEl.value.trim().length === 0));
 inputEl.addEventListener('keydown', e => { if(e.key==='Enter') sendBtn.click(); });
 
-async function sendMessage() {
+async function sendMessage(){
   const text = inputEl.value.trim();
-  if (!text) return;
-  inputEl.value = ''; sendBtn.classList.add('hidden');
+  if(!text) return;
+  inputEl.value=''; sendBtn.classList.add('hidden');
   await supabase.from('messages').insert([{ sender: hc_profile.email, receiver: chatUser.email, message: text, created_at: new Date().toISOString() }]);
 }
 
-// ---------------- Typing Indicator ----------------
-const typingChannel = 'typing-' + [hc_profile.email, chatUser.email].sort().join('-');
-let typingTimeout;
-function sendTyping(flag) {
-  supabase.channel(typingChannel).send({ type:'broadcast', event:'typing', payload:{ from: hc_profile.email, to: chatUser.email, typing: flag } });
-}
-inputEl.addEventListener('input', () => {
-  const isTyping = inputEl.value.trim().length > 0;
-  sendTyping(isTyping);
-  clearTimeout(typingTimeout);
-  if (isTyping) typingTimeout = setTimeout(()=>sendTyping(false),2000);
-});
-supabase.channel(typingChannel).on('broadcast',{ event:'typing' },({payload})=>{
+// typing indicator
+const typingChannel = 'typing-'+[hc_profile.email,chatUser.email].sort().join('-');
+function sendTyping(flag){ supabase.channel(typingChannel).send({type:'broadcast',event:'typing',payload:{from:hc_profile.email,to:chatUser.email,typing:flag}});}
+inputEl.addEventListener('input',()=>sendTyping(inputEl.value.trim().length>0));
+
+supabase.channel(typingChannel).on('broadcast',{event:'typing'},({payload})=>{
   if(payload.from===chatUser.email && payload.to===hc_profile.email){
     chatStatusEl.textContent = payload.typing?'Typing...':'Online';
   }
 }).subscribe();
 
-// ---------------- Presence ----------------
+// online/offline
 const presenceChannel = 'presence-global';
-supabase.channel(presenceChannel).on('broadcast',{ event:'presence' },({payload})=>{
+supabase.channel(presenceChannel).on('broadcast',{event:'presence'},({payload})=>{
   if(payload.user===chatUser.email){
     chatStatusEl.textContent = payload.online?'Online':'Offline';
     videoBtn.classList.toggle('disabled',!payload.online);
@@ -278,79 +279,62 @@ supabase.channel(presenceChannel).on('broadcast',{ event:'presence' },({payload}
   }
 }).subscribe();
 
-// ---------------- WebRTC Calls ----------------
+// WebRTC
 let pc=null,localStream=null;
-function ensurePeer() {
+function ensurePeer(){
   if(pc) return pc;
-  pc = new RTCPeerConnection({ iceServers:[{urls:'stun:stun.l.google.com:19302'}] });
-  pc.onicecandidate = e => { if(e.candidate) sendSignal({type:'candidate',candidate:e.candidate}); };
-  pc.ontrack = e => {
+  pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
+  pc.onicecandidate=e=>{ if(e.candidate) sendSignal({type:'candidate',candidate:e.candidate});};
+  pc.ontrack=e=>{
     const v = document.createElement('video'); v.autoplay=true; v.playsInline=true;
     v.srcObject=e.streams[0]; callPeers.appendChild(v);
   };
   return pc;
 }
-function sendSignal(payload){
-  supabase.channel('webrtc-'+[hc_profile.email,chatUser.email].sort().join('-')).send({ type:'broadcast', event:'signal', payload:{ from:hc_profile.email, to:chatUser.email, ...payload } });
-}
-
-supabase.channel('webrtc-'+[hc_profile.email,chatUser.email].sort().join('-')).on('broadcast',{ event:'signal' }, async ({payload})=>{
+function sendSignal(payload){ supabase.channel('webrtc-'+[hc_profile.email,chatUser.email].sort().join('-')).send({type:'broadcast',event:'signal',payload:{from:hc_profile.email,to:chatUser.email,...payload}}); }
+supabase.channel('webrtc-'+[hc_profile.email,chatUser.email].sort().join('-')).on('broadcast',{event:'signal'}, async ({payload})=>{
   if(!payload || payload.to!==hc_profile.email) return;
   if(payload.type==='call-offer') showCallDialog('incoming',payload.callType,payload.sdp);
   else if(payload.type==='call-answer') await ensurePeer().setRemoteDescription(new RTCSessionDescription(payload.sdp));
   else if(payload.type==='candidate') await ensurePeer().addIceCandidate(new RTCIceCandidate(payload.candidate));
-  else if(payload.type==='call-end') hideCallDialog();
 }).subscribe();
 
-function showCallDialog(mode='outgoing', callType='video', sdp=null){
+function showCallDialog(mode='outgoing',callType='video',sdp=null){
   callDialog.style.display='flex'; callPeers.innerHTML='';
-  endBtn.style.display='none';
   if(mode==='outgoing'){
     callPeerName.textContent=`Calling ${chatUser.name}`; callPeerSub.textContent='Ringing...';
     acceptBtn.style.display='none'; declineBtn.style.display='none'; cancelBtn.style.display='inline-block';
   } else {
     callPeerName.textContent=chatUser.name; callPeerSub.textContent='Incoming call';
     acceptBtn.style.display='inline-block'; declineBtn.style.display='inline-block'; cancelBtn.style.display='none';
-    acceptBtn.onclick = async () => {
-      localStream = await navigator.mediaDevices.getUserMedia(callType==='video'?{video:true,audio:true}:{audio:true});
+    acceptBtn.onclick=async ()=>{
+      localStream=await navigator.mediaDevices.getUserMedia(callType==='video'?{video:true,audio:true}:{audio:true});
       localStream.getTracks().forEach(track=>ensurePeer().addTrack(track,localStream));
       await ensurePeer().setRemoteDescription(new RTCSessionDescription(sdp));
       const answer = await ensurePeer().createAnswer();
       await ensurePeer().setLocalDescription(answer);
-      sendSignal({ type:'call-answer', sdp:answer });
-      acceptBtn.style.display='none'; declineBtn.style.display='none'; endBtn.style.display='inline-block';
-      callPeerSub.textContent='In Call';
+      sendSignal({type:'call-answer',sdp:answer}); hideCallDialog();
     };
-    declineBtn.onclick = () => { hideCallDialog(); sendSignal({ type:'call-end' }); };
+    declineBtn.onclick=()=>{ hideCallDialog(); sendSignal({type:'call-decline'}); };
   }
-  cancelBtn.onclick = () => { hideCallDialog(); sendSignal({ type:'call-end' }); };
-  endBtn.onclick = () => { hideCallDialog(); sendSignal({ type:'call-end' }); };
+  cancelBtn.onclick=()=>{ hideCallDialog(); sendSignal({type:'call-cancel'});}
 }
-
-function hideCallDialog(){
-  callDialog.style.display='none'; callPeers.innerHTML=''; pc?.close(); pc=null; localStream?.getTracks().forEach(t=>t.stop()); localStream=null;
-}
-
+function hideCallDialog(){ callDialog.style.display='none'; callPeers.innerHTML='';}
 async function startCall(callType='video'){
   if(chatStatusEl.textContent!=='Online') return;
   showCallDialog('outgoing',callType);
-  localStream = await navigator.mediaDevices.getUserMedia(callType==='video'?{video:true,audio:true}:{audio:true});
+  localStream=await navigator.mediaDevices.getUserMedia(callType==='video'?{video:true,audio:true}:{audio:true});
   localStream.getTracks().forEach(track=>ensurePeer().addTrack(track,localStream));
-  const offer = await ensurePeer().createOffer();
-  await ensurePeer().setLocalDescription(offer);
-  sendSignal({ type:'call-offer', callType, sdp:offer });
-  endBtn.style.display='inline-block';
-  callPeerSub.textContent='In Call';
+  const offer=await ensurePeer().createOffer(); await ensurePeer().setLocalDescription(offer);
+  sendSignal({type:'call-offer',callType,sdp:offer});
 }
-
 videoBtn.addEventListener('click',()=>startCall('video'));
 voiceBtn.addEventListener('click',()=>startCall('audio'));
 
-// ---------------- Init ----------------
 (async function init(){
   if(!hc_profile || !hc_profile.email){ alert('No profile'); location.href='register.html'; return; }
   await loadMessages();
 })();
 </script>
 </body>
-</html>
+</html> 
