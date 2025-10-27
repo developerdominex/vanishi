@@ -133,16 +133,27 @@ backBtn.addEventListener('click', () => {
 });
 
 // ✅ Fetch users by email or name
-async function searchUsers(query){
-  if(!query) return [];
-  const { data, error } = await supabase
-    .from('users')
-    .select('id, name, email, profile_url')
-    .or(`name.ilike.%${query}%,email.ilike.%${query}%`);
+async function searchUsers(query) {
+    if (!query) return [];
 
-  if (error) console.error(error);
-  return data || [];
-}
+    let { data, error } = await supabase
+      .from('users')
+      .select('id, name, email, profile_url')
+      .like('name', `%${query}%`);
+
+    if (error) console.error(error);
+
+    // If no match by name, then try by email
+    if (!data || data.length === 0) {
+      const result = await supabase
+        .from('users')
+        .select('id, name, email, profile_url')
+        .like('email', `%${query}%`);
+      return result.data || [];
+    }
+
+    return data;
+  }
 
 // ✅ Render search results
 function renderUsers(users){
