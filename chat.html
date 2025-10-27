@@ -246,53 +246,56 @@ supabase.channel(typingChannel).on('broadcast',{event:'typing'},({payload})=>{
     chatStatusEl.textContent = payload.typing?'Typing...':'Online';
   }
 }).subscribe();
-// -------------------- WebRTC --------------------
-let pc = null;
-let localStream = null;
-let remoteStream = null;
+// -------------------- WEBRTC --------------------
+let pc = null, localStream = null, remoteStream = null, audioCtx=null, analyser=null, source=null;
 
 function ensurePeer() {
   if (pc) return pc;
+
   pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+
+  // When a remote track is added
+  pc.ontrack = (event) => {
+    if (!remoteStream) remoteStream = new MediaStream();
+    remoteStream.addTrack(event.track);
+
+    if (event.track.kind === 'video') showCallModal('remote', remoteStream);
+    if (event.track.kind === 'audio') playRemoteAudio(remoteStream);
+  };
 
   pc.onicecandidate = (e) => {
     if (e.candidate) sendSignal({ type: 'candidate', candidate: e.candidate });
   };
 
-  pc.ontrack = (e) => {
-    if (!remoteStream) {
-      remoteStream = new MediaStream();
-      showCallModal('remote', remoteStream);
-    }
-    e.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
-  };
-
   return pc;
 }
 
+// Send signaling through Supabase channel
 function sendSignal(payload) {
   supabase.channel('webrtc-' + [hc_profile.email, chatUser.email].sort().join('-'))
     .send({ type: 'broadcast', event: 'signal', payload: { from: hc_profile.email, to: chatUser.email, ...payload } });
 }
 
-// Listen for signals
+// Receive signaling
 supabase.channel('webrtc-' + [hc_profile.email, chatUser.email].sort().join('-'))
   .on('broadcast', { event: 'signal' }, async ({ payload }) => {
     if (!payload || payload.to !== hc_profile.email) return;
 
-    if (payload.type === 'call-offer') {
-      // Incoming call
-      showCallModal('incoming', payload.callType, payload.sdp);
-    } else if (payload.type === 'call-answer') {
-      await ensurePeer().setRemoteDescription(new RTCSessionDescription(payload.sdp));
-    } else if (payload.type === 'candidate') {
-      try { await ensurePeer().addIceCandidate(new RTCIceCandidate(payload.candidate)); } 
-      catch (err) { console.error(err); }
+    switch (payload.type) {
+      case 'call-offer':
+        showCallModal('incoming', payload.callType, payload.sdp);
+        break;
+      case 'call-answer':
+        await ensurePeer().setRemoteDescription(new RTCSessionDescription(payload.sdp));
+        break;
+      case 'candidate':
+        try { await ensurePeer().addIceCandidate(new RTCIceCandidate(payload.candidate)); } catch (err) { console.error(err); }
+        break;
     }
   }).subscribe();
 
 // -------------------- CALL MODAL --------------------
-function showCallModal(mode, callType = 'video', sdp = null, stream = null) {
+function showCallModal(mode, streamOrType='video', sdp=null) {
   const existing = document.querySelector('.call-modal'); if (existing) existing.remove();
   const modal = document.createElement('div'); modal.className = 'call-modal';
   Object.assign(modal.style, { position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', zIndex: 1000 });
@@ -301,50 +304,47 @@ function showCallModal(mode, callType = 'video', sdp = null, stream = null) {
   Object.assign(card.style, { background: '#fff', borderRadius: '16px', padding: '20px', width: '320px', display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'center', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' });
 
   const title = document.createElement('div'); title.style.fontWeight = '600'; title.style.fontSize = '16px'; title.style.marginBottom = '4px';
-  title.textContent = mode === 'incoming' ? 'Incoming Call' : `Calling ${chatUser.name}`;
   const sub = document.createElement('div'); sub.style.color = '#6b7280'; sub.style.fontSize = '13px';
-  sub.textContent = mode === 'incoming' ? 'Tap Accept to join' : 'Ringing...';
-  card.append(title, sub);
-
   const btnContainer = document.createElement('div'); Object.assign(btnContainer.style, { display: 'flex', justifyContent: 'center', gap: '12px' });
 
   if (mode === 'incoming') {
+    title.textContent = 'Incoming Call'; sub.textContent = 'Tap Accept to join';
     const accept = document.createElement('button'); accept.textContent = 'Accept';
     Object.assign(accept.style, { background: '#16a34a', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '12px', cursor: 'pointer' });
     accept.onclick = async () => {
-      // Get local stream
-      localStream = await navigator.mediaDevices.getUserMedia(callType === 'video' ? { video: true, audio: true } : { audio: true });
+      localStream = await navigator.mediaDevices.getUserMedia(streamOrType === 'video' ? { video: true, audio: true } : { audio: true });
       localStream.getTracks().forEach(track => ensurePeer().addTrack(track, localStream));
-
-      // Set remote description from offer
       await ensurePeer().setRemoteDescription(new RTCSessionDescription(sdp));
-
-      // Create and send answer
       const answer = await ensurePeer().createAnswer();
       await ensurePeer().setLocalDescription(answer);
       sendSignal({ type: 'call-answer', sdp: answer });
-
-      showLocalStream(localStream, callType === 'video');
+      showLocalStream(localStream);
+      if (streamOrType === 'audio') visualizeAudio(localStream);
       modal.remove();
     };
-
     const decline = document.createElement('button'); decline.textContent = 'Decline';
     Object.assign(decline.style, { background: '#ef4444', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '12px', cursor: 'pointer' });
     decline.onclick = () => { modal.remove(); };
     btnContainer.append(accept, decline);
   } else if (mode === 'outgoing') {
+    title.textContent = `Calling ${chatUser.name}`; sub.textContent = 'Ringing...';
     const cancel = document.createElement('button'); cancel.textContent = 'Cancel';
     Object.assign(cancel.style, { background: '#6b7280', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '12px', cursor: 'pointer' });
-    cancel.onclick = () => { if (pc) { pc.close(); pc = null; } modal.remove(); };
+    cancel.onclick = () => { modal.remove(); };
     btnContainer.append(cancel);
-  } else if (mode === 'remote' && stream) {
-    const video = document.createElement('video'); video.autoplay = true; video.playsInline = true; video.srcObject = stream;
+    if (streamOrType === 'object') { // remote stream
+      const video = document.createElement('video'); video.autoplay = true; video.playsInline = true; video.srcObject = streamOrType;
+      Object.assign(video.style, { width: '260px', height: '200px', borderRadius: '12px', objectFit: 'cover' });
+      card.append(video);
+    }
+  } else if (mode === 'remote') {
+    title.textContent = 'Call Connected'; sub.textContent = '';
+    const video = document.createElement('video'); video.autoplay = true; video.playsInline = true; video.srcObject = streamOrType;
     Object.assign(video.style, { width: '260px', height: '200px', borderRadius: '12px', objectFit: 'cover' });
     card.append(video);
-
     const endBtn = document.createElement('button'); endBtn.textContent = 'End Call';
     Object.assign(endBtn.style, { background: '#ef4444', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '12px', cursor: 'pointer' });
-    endBtn.onclick = () => { if (pc) { pc.close(); pc = null; } if (localStream) { localStream.getTracks().forEach(t => t.stop()); } modal.remove(); };
+    endBtn.onclick = () => { if (pc) { pc.close(); pc = null; } modal.remove(); removeLocalStream(); };
     btnContainer.append(endBtn);
   }
 
@@ -353,33 +353,59 @@ function showCallModal(mode, callType = 'video', sdp = null, stream = null) {
   document.body.append(modal);
 }
 
-// Show local video preview
-function showLocalStream(stream, showVideo = true) {
-  const existing = document.querySelector('.local-stream'); if (existing) existing.remove();
+function showLocalStream(stream) {
+  removeLocalStream();
   const video = document.createElement('video'); video.autoplay = true; video.playsInline = true; video.muted = true; video.srcObject = stream;
-  Object.assign(video.style, { width: showVideo ? '120px' : '60px', height: showVideo ? '100px' : '60px', position: 'fixed', bottom: '20px', right: '20px', borderRadius: '12px', objectFit: 'cover', zIndex: 1000 });
+  Object.assign(video.style, { width: '120px', height: '100px', position: 'fixed', bottom: '20px', right: '20px', borderRadius: '12px', objectFit: 'cover', zIndex: 1000 });
   video.className = 'local-stream';
   document.body.append(video);
 }
 
-// -------------------- START CALL --------------------
-async function startCall(type = 'video') {
-  if (chatStatusEl.textContent !== 'Online') return;
+function removeLocalStream() { const existing = document.querySelector('.local-stream'); if (existing) existing.remove(); }
 
-  showCallModal('outgoing', type);
-
-  localStream = await navigator.mediaDevices.getUserMedia(type === 'video' ? { video: true, audio: true } : { audio: true });
-  localStream.getTracks().forEach(track => ensurePeer().addTrack(track, localStream));
-
-  const offer = await ensurePeer().createOffer();
-  await ensurePeer().setLocalDescription(offer);
-  sendSignal({ type: 'call-offer', callType: type, sdp: offer });
-
-  showLocalStream(localStream, type === 'video');
+// -------------------- REMOTE AUDIO --------------------
+function playRemoteAudio(stream) {
+  let audio = document.querySelector('.remote-audio');
+  if (!audio) {
+    audio = document.createElement('audio'); audio.autoplay = true; audio.className = 'remote-audio'; document.body.append(audio);
+  }
+  audio.srcObject = stream;
 }
 
-videoBtn.onclick = () => startCall('video');
-voiceBtn.onclick = () => startCall('audio');
+// -------------------- AUDIO VISUALIZATION --------------------
+function visualizeAudio(stream) {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  source = audioCtx.createMediaStreamSource(stream);
+  analyser = audioCtx.createAnalyser();
+  source.connect(analyser);
+  analyser.fftSize = 256;
+  const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+  function update() {
+    analyser.getByteFrequencyData(dataArray);
+    const volume = dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
+    // Simple speaking visualization: change input border color
+    inputEl.style.borderColor = volume>20?'#16a34a':'#ccc';
+    requestAnimationFrame(update);
+  }
+  update();
+}
+
+// -------------------- START CALL --------------------
+async function startCall(type='video'){
+  if(chatStatusEl.textContent!=='Online') return;
+  showCallModal('outgoing',type);
+  localStream = await navigator.mediaDevices.getUserMedia(type==='video'?{video:true,audio:true}:{audio:true});
+  localStream.getTracks().forEach(track => ensurePeer().addTrack(track, localStream));
+  const offer = await ensurePeer().createOffer();
+  await ensurePeer().setLocalDescription(offer);
+  sendSignal({ type:'call-offer', callType:type, sdp:offer });
+  showLocalStream(localStream);
+  if(type==='audio') visualizeAudio(localStream);
+}
+
+videoBtn.onclick = ()=>startCall('video');
+voiceBtn.onclick = ()=>startCall('audio');
 
 // -------------------- INIT --------------------
 (async function init(){
