@@ -18,8 +18,6 @@
   --muted:#6b7280;
   --radius:22px;
   --shadow: 0 6px 18px rgba(16,24,40,0.08);
-  --small-shadow: 0 6px 14px rgba(79,70,229,0.12);
-  --glass: rgba(255,255,255,0.6);
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;}
 html,body{height:100%}
@@ -27,7 +25,7 @@ body{
   display:flex;
   align-items:center;
   justify-content:center;
-  background: linear-gradient(180deg,#eaf6ff 0%, #f6fbff 60%);
+  background: var(--bg);
   padding:28px;
 }
 
@@ -35,14 +33,12 @@ body{
 .container{
   width:420px;
   height:calc(100vh - 64px);
-  max-height:960px;
   background:var(--card);
   border-radius:18px;
   box-shadow: var(--shadow);
   display:flex;
   flex-direction:column;
   overflow:hidden;
-  border:1px solid rgba(15,23,42,0.04);
 }
 
 /* header */
@@ -52,15 +48,13 @@ header{
   justify-content:space-between;
   gap:12px;
   padding:12px 16px;
-  backdrop-filter: blur(6px);
-  background:linear-gradient(90deg, rgba(37,99,235,0.04), rgba(37,99,235,0.01));
-  border-bottom: 1px solid rgba(15,23,42,0.03);
+  border-bottom:1px solid rgba(15,23,42,0.05);
 }
-.left { display:flex; align-items:center; gap:12px; min-width:0; }
+.left { display:flex; align-items:center; gap:12px; }
 .back-btn{background:transparent;border:none;font-size:18px;padding:8px;border-radius:10px;cursor:pointer;color:var(--muted)}
 .back-btn:hover{background:rgba(15,23,42,0.04)}
-.avatar{width:48px;height:48px;border-radius:50%;object-fit:cover;box-shadow:var(--small-shadow)}
-.meta {display:flex;flex-direction:column; min-width:0}
+.avatar{width:48px;height:48px;border-radius:50%;object-fit:cover}
+.meta {display:flex;flex-direction:column;}
 .meta .name{font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .meta .status{font-size:12px;color:var(--muted);margin-top:2px}
 .header-actions {display:flex;align-items:center;gap:8px}
@@ -71,78 +65,55 @@ header{
 /* messages area */
 .messages {
   flex:1;
-  padding:18px 16px;
+  padding:16px;
   overflow-y:auto;
   display:flex;
   flex-direction:column;
-  gap:12px;
-  background:
-    radial-gradient(800px 200px at 10% 10%, rgba(37,99,235,0.02), transparent 10%),
-    linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
-  -webkit-overflow-scrolling: touch;
+  gap:10px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent);
 }
 
-/* message row wrapper (keeps alignment clean) */
-.message-row{
+/* message row wrapper controls alignment */
+.message-row {
   display:flex;
   width:100%;
-  align-items:flex-end;
-  gap:10px;
-  /* allow variable sizing for bubble */
 }
-.message-row.me{ justify-content:flex-end; }
-.message-row.other{ justify-content:flex-start; }
+.message-row.me { justify-content:flex-end; }
+.message-row.other { justify-content:flex-start; }
 
 /* bubble */
 .bubble{
-  max-width:78%;
-  padding:10px 14px;
-  border-radius:18px;
+  max-width:75%;
+  padding:12px 16px;
+  border-radius:20px;
   word-break:break-word;
-  position:relative;
   font-size:15px;
-  line-height:1.35;
-  transition: all 0.18s cubic-bezier(.2,.9,.2,1);
-  box-shadow: 0 6px 18px rgba(16,24,40,0.04);
+  line-height:1.4;
+  position:relative;
+  box-shadow:0 4px 12px rgba(0,0,0,0.05);
+  animation: bubble-pop 0.2s ease forwards;
   opacity:0;
-  transform: translateY(8px) scale(0.995);
-  animation: bubble-pop 240ms ease forwards;
+  transform:translateY(8px);
 }
-
-/* sent (me) */
 .bubble.me{
-  background: linear-gradient(135deg,var(--sent-start), var(--sent-end));
-  color: #fff;
-  border-radius: 18px 18px 6px 18px;
-  box-shadow: 0 8px 20px rgba(79,70,229,0.12);
+  background:linear-gradient(135deg,var(--sent-start),var(--sent-end));
+  color:#fff;
+  border-bottom-right-radius:6px;
 }
-
-/* received */
 .bubble.other{
-  background: var(--received);
-  color:#0b1220;
+  background:var(--received);
+  color:#111;
   border:1px solid var(--received-border);
-  border-radius: 18px 18px 18px 6px;
+  border-bottom-left-radius:6px;
 }
 
-/* timestamp small pill */
+/* timestamp */
 .ts{
   font-size:11px;
-  color:rgba(11,17,34,0.55);
+  color:var(--muted);
   position:absolute;
   bottom:-16px;
   right:10px;
-  opacity:0.9;
-  background:transparent;
-}
-
-/* small meta for received side (optionally show avatar) */
-.msg-meta{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:6px;
-  min-width:36px;
 }
 
 /* composer */
@@ -151,27 +122,30 @@ header{
   display:flex;
   gap:10px;
   align-items:center;
-  border-top:1px solid rgba(15,23,42,0.03);
-  background: linear-gradient(180deg,#ffffff,#fbfdff);
+  border-top:1px solid rgba(15,23,42,0.05);
+  background:#fff;
 }
-.composer .left-actions { display:flex; gap:8px; align-items:center; }
 .composer input{
-  flex:1;padding:12px 14px;border-radius:20px;border:1px solid rgba(15,23,42,0.06);outline:none;font-size:15px;background:linear-gradient(180deg,#fff,#fbfdff);
-  box-shadow: inset 0 -1px 0 rgba(15,23,42,0.01);
+  flex:1;
+  padding:12px 14px;
+  border-radius:20px;
+  border:1px solid rgba(15,23,42,0.06);
+  outline:none;
+  font-size:15px;
+  background:#fff;
 }
-.send-btn{width:46px;height:46px;border-radius:12px;border:none;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 22px rgba(37,99,235,0.12)}
-.send-btn:active{transform:scale(0.98)}
+.send-btn{width:44px;height:44px;border-radius:12px;border:none;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.send-btn:active{transform:scale(0.97)}
 .send-btn.hidden{display:none}
 
-/* call dialog (unchanged visually but slightly polished) */
-#call-dialog{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:none;align-items:center;justify-content:center;z-index:1200}
+/* call dialog */
+#call-dialog{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:1200}
 .call-card{
   width:360px;
   background:var(--card);
   border-radius:18px;
   padding:20px;
   text-align:center;
-  box-shadow:0 20px 60px rgba(2,6,23,0.35);
   display:flex;flex-direction:column;gap:12px
 }
 .call-peers{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
@@ -184,18 +158,11 @@ header{
 .btn-decline{background:#ef4444;color:white;padding:10px 16px;border-radius:12px;border:none}
 .btn-cancel{background:#94a3b8;color:white;padding:10px 16px;border-radius:12px;border:none}
 
-/* animations */
+/* animation */
 @keyframes bubble-pop{
-  from{opacity:0; transform:translateY(8px) scale(0.995)}
-  to{opacity:1; transform:translateY(0) scale(1)}
+  to{opacity:1; transform:translateY(0);}
 }
 
-/* small screens */
-@media (max-width:480px){
-  .container{ width:100%; height:100vh; border-radius:0; }
-  .avatar{width:40px;height:40px}
-  .composer input{font-size:14px}
-}
 </style>
 </head>
 <body>
@@ -219,10 +186,7 @@ header{
   <div id="messages" class="messages" aria-live="polite" role="log"></div>
 
   <div class="composer" role="region" aria-label="Message composer">
-    <div class="left-actions">
-      <button class="icon-btn" title="Attach"><i class="fa-solid fa-plus"></i></button>
-    </div>
-    <input id="message-input" placeholder="Message..." aria-label="Message input">
+    <input id="message-input" placeholder="Type a message" aria-label="Message input">
     <button id="send-btn" class="send-btn hidden" title="Send"><i class="fa-solid fa-paper-plane"></i></button>
   </div>
 </div>
@@ -241,10 +205,10 @@ header{
 </div>
 
 <script type="module">
+// --- KEEP ALL YOUR ORIGINAL JS LOGIC ---
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-
 const SUPABASE_URL = "https://ilgkibqwngznqwnhgavh.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsZ2tpYnF3bmd6bnF3bmhnYXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NzU3NDcsImV4cCI6MjA3NzA1MTc0N30.jFHL4VDU81BRqxpoWc4u_4VYG4sI-SB0-EkxSfPGZ5k"; // your anon key
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsZ2tpYnF3bmd6bnF3bmhnYXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NzU3NDcsImV4cCI6MjA3NzA1MTc0N30.jFHL4VDU81BRqxpoWc4u_4VYG4sI-SB0-EkxSfPGZ5k";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const hc_profile = JSON.parse(localStorage.getItem('hc_profile')||'{}');
@@ -277,7 +241,7 @@ backBtn.addEventListener('click', ()=>location.href='home.html');
 chatNameEl.textContent = chatUser.name;
 chatProfileEl.src = chatUser.profile_url;
 
-// messages
+// --- Message handling ---
 let lastMessageTime=null;
 async function loadMessages(){
   const { data } = await supabase.from('messages').select('*')
@@ -290,7 +254,6 @@ async function loadMessages(){
   }
 }
 function appendMessage(m){
-  // create a wrapper row so alignment is handled by CSS (align-self removed)
   const row = document.createElement('div');
   row.className = 'message-row ' + (m.sender===hc_profile.email ? 'me' : 'other');
 
@@ -304,15 +267,11 @@ function appendMessage(m){
   bubble.appendChild(ts);
   row.appendChild(bubble);
   messagesEl.appendChild(row);
-
-  // scroll to bottom smoothly
   messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' });
 }
 
-// polling
 setInterval(loadMessages, 1500);
 
-// send message
 sendBtn.addEventListener('click', sendMessage);
 inputEl.addEventListener('input', () => sendBtn.classList.toggle('hidden', inputEl.value.trim().length === 0));
 inputEl.addEventListener('keydown', e => { if(e.key==='Enter') sendBtn.click(); });
@@ -323,6 +282,7 @@ async function sendMessage(){
   inputEl.value=''; sendBtn.classList.add('hidden');
   await supabase.from('messages').insert([{ sender: hc_profile.email, receiver: chatUser.email, message: text, created_at: new Date().toISOString() }]);
 }
+
 
 // typing indicator
 const typingChannel = 'typing-'+[hc_profile.email,chatUser.email].sort().join('-');
