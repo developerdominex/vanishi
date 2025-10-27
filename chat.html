@@ -7,112 +7,79 @@
 <link rel="icon" href="hybrid.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
 <style>
-  :root{
-    --bg: #eef2ff;
-    --card: #ffffff;
-    --accent: #2563eb;
-    --accent-600: #1e40af;
-    --muted: #6b7280;
-    --green: #16a34a;
-    --danger: #ef4444;
-    --radius: 14px;
-  }
-  *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,Arial,Helvetica,sans-serif}
-  html,body{height:100%}
-  body{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    background:linear-gradient(180deg,#f8fafc,#eef2ff);
-  }
-
-  /* container */
-  .container{
-    width:420px;
-    height:calc(100vh - 64px); /* fixed height up to bottom */
-    background:var(--card);
-    border-radius:18px;
-    box-shadow:0 20px 50px rgba(16,24,40,0.12);
-    display:flex;
-    flex-direction:column;
-    overflow:hidden;
-  }
-
-  /* header */
-  header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    padding:12px 14px;
-    border-bottom:1px solid rgba(15,23,42,0.04);
-    background:linear-gradient(90deg, rgba(37,99,235,0.04), rgba(37,99,235,0.01));
-  }
-  .left {
-    display:flex;
-    align-items:center;
-    gap:10px;
-  }
-  .back-btn{background:transparent;border:none;font-size:18px;padding:6px;border-radius:10px;cursor:pointer;color:var(--muted)}
-  .back-btn:hover{background:#f1f5f9}
-  .avatar{width:46px;height:46px;border-radius:50%;object-fit:cover;box-shadow:0 6px 18px rgba(16,24,40,0.06)}
-  .meta {display:flex;flex-direction:column}
-  .meta .name{font-weight:700;color:#0f172a}
-  .meta .status{font-size:12px;color:var(--muted);margin-top:2px}
-
-  .header-actions {display:flex;align-items:center;gap:6px}
-  .icon-btn{background:transparent;border:none;padding:8px;border-radius:10px;cursor:pointer;color:var(--muted);font-size:16px}
-  .icon-btn:hover{background:#f1f5f9}
-
-  /* messages area */
-  .messages {
-    flex:1;
-    padding:16px;
-    overflow-y:auto;
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    background:
-      linear-gradient(180deg, rgba(37,99,235,0.01), transparent);
-  }
-
-  .bubble{max-width:75%;padding:10px 14px;border-radius:14px;word-break:break-word;box-shadow:0 6px 18px rgba(2,6,23,0.06)}
-  .bubble.me{margin-left:auto;background:linear-gradient(180deg,var(--accent),var(--accent-600));color:#fff;border-bottom-right-radius:6px}
-  .bubble.other{margin-right:auto;background:#f8fafc;color:#071133;border-bottom-left-radius:6px}
-  .ts{font-size:11px;color:var(--muted);margin-top:6px;opacity:0.9}
-
-  /* input area */
-  .composer {
-    padding:12px;
-    display:flex;
-    gap:8px;
-    align-items:center;
-    border-top:1px solid rgba(15,23,42,0.04);
-    background:linear-gradient(180deg,#ffffff,#f8fafc);
-  }
-  .composer input{
-    flex:1;padding:12px;border-radius:12px;border:1px solid rgba(15,23,42,0.06);outline:none;font-size:15px;background:white;
-  }
-  .send-btn{width:44px;height:44px;border-radius:10px;border:none;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 20px rgba(37,99,235,0.16)}
-  .send-btn:active{transform:scale(0.98)}
-  .send-btn.hidden{display:none}
-
-  /* call dialog */
-  #call-dialog{position:fixed;inset:0;background:rgba(2,6,23,0.6);display:none;align-items:center;justify-content:center;z-index:1200}
-  .call-card{width:340px;background:var(--card);border-radius:14px;padding:18px;text-align:center;box-shadow:0 30px 80px rgba(2,6,23,0.4)}
-  .call-peer{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:12px}
-  .call-peer img{width:64px;height:64px;border-radius:50%;object-fit:cover}
-  .call-text{font-weight:700;margin-bottom:6px}
-  .call-sub{color:var(--muted);font-size:13px;margin-bottom:12px}
-  .call-actions{display:flex;gap:12px;justify-content:center}
-  .btn-accept{background:var(--green);color:white;padding:10px 16px;border-radius:10px;border:none;cursor:pointer}
-  .btn-decline{background:var(--danger);color:white;padding:10px 16px;border-radius:10px;border:none;cursor:pointer}
-  .btn-cancel{background:#94a3b8;color:white;padding:10px 16px;border-radius:10px;border:none;cursor:pointer}
-
-  /* small responsive */
-  @media (max-width:480px){
-    .container{width:98%;height:calc(100vh - 32px)}
-  }
+:root{
+  --bg: #eef2ff;
+  --card: #ffffff;
+  --accent: #2563eb;
+  --accent-600: #1e40af;
+  --muted: #6b7280;
+  --green: #16a34a;
+  --danger: #ef4444;
+  --radius: 14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:Inter,Arial,Helvetica,sans-serif}
+html,body{height:100%}
+body{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(180deg,#f8fafc,#eef2ff);
+}
+.container{
+  width:420px;
+  height:calc(100vh - 64px);
+  background:var(--card);
+  border-radius:18px;
+  box-shadow:0 20px 50px rgba(16,24,40,0.12);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 14px;
+  border-bottom:1px solid rgba(15,23,42,0.04);
+  background:linear-gradient(90deg, rgba(37,99,235,0.04), rgba(37,99,235,0.01));
+}
+.left{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.back-btn{background:transparent;border:none;font-size:18px;padding:6px;border-radius:10px;cursor:pointer;color:var(--muted)}
+.back-btn:hover{background:#f1f5f9}
+.avatar{width:46px;height:46px;border-radius:50%;object-fit:cover;box-shadow:0 6px 18px rgba(16,24,40,0.06)}
+.meta{display:flex;flex-direction:column}
+.meta .name{font-weight:700;color:#0f172a}
+.meta .status{font-size:12px;margin-top:2px;display:flex;align-items:center;gap:6px}
+.status-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.header-actions{display:flex;align-items:center;gap:6px}
+.icon-btn{background:transparent;border:none;padding:8px;border-radius:10px;cursor:pointer;color:var(--muted);font-size:16px}
+.icon-btn:disabled{opacity:0.5;cursor:not-allowed}
+.icon-btn:hover:enabled{background:#f1f5f9}
+.messages{flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;background:linear-gradient(180deg, rgba(37,99,235,0.01), transparent);}
+.bubble{max-width:75%;padding:10px 14px;border-radius:14px;word-break:break-word;box-shadow:0 6px 18px rgba(2,6,23,0.06)}
+.bubble.me{margin-left:auto;background:linear-gradient(180deg,var(--accent),var(--accent-600));color:#fff;border-bottom-right-radius:6px}
+.bubble.other{margin-right:auto;background:#f8fafc;color:#071133;border-bottom-left-radius:6px}
+.ts{font-size:11px;color:var(--muted);margin-top:6px;opacity:0.9}
+.composer{padding:12px;display:flex;gap:8px;align-items:center;border-top:1px solid rgba(15,23,42,0.04);background:linear-gradient(180deg,#ffffff,#f8fafc);}
+.composer input{flex:1;padding:12px;border-radius:12px;border:1px solid rgba(15,23,42,0.06);outline:none;font-size:15px;background:white;}
+.send-btn{width:44px;height:44px;border-radius:10px;border:none;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 20px rgba(37,99,235,0.16)}
+.send-btn:active{transform:scale(0.98)}
+.send-btn.hidden{display:none}
+#call-dialog{position:fixed;inset:0;background:rgba(2,6,23,0.7);display:none;align-items:center;justify-content:center;z-index:1200}
+.call-card{width:360px;background:var(--card);border-radius:14px;padding:18px;text-align:center;box-shadow:0 30px 80px rgba(2,6,23,0.4)}
+.call-videos{display:flex;justify-content:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.call-videos video{width:160px;height:120px;border-radius:12px;object-fit:cover;background:black}
+.call-text{font-weight:700;margin-bottom:6px}
+.call-sub{color:var(--muted);font-size:13px;margin-bottom:12px}
+.call-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn-accept{background:var(--green);color:white;padding:10px 16px;border-radius:10px;border:none;cursor:pointer}
+.btn-decline{background:var(--danger);color:white;padding:10px 16px;border-radius:10px;border:none;cursor:pointer}
+.btn-cancel{background:#94a3b8;color:white;padding:10px 16px;border-radius:10px;border:none}
 </style>
 </head>
 <body>
@@ -120,16 +87,16 @@
 <div class="container" role="main" aria-label="Chat panel">
   <header>
     <div class="left">
-      <button id="back-btn" class="back-btn" title="Back"><i class="fa-solid fa-arrow-left"></i></button>
+      <button id="back-btn" class="back-btn"><i class="fa-solid fa-arrow-left"></i></button>
       <img id="chat-profile" class="avatar" src="">
       <div class="meta">
         <div id="chat-name" class="name">Name</div>
-        <div id="chat-status" class="status">Offline</div>
+        <div class="status"><span id="status-dot" class="status-dot"></span><span id="chat-status">Offline</span></div>
       </div>
     </div>
     <div class="header-actions">
-      <button id="video-call-btn" class="icon-btn" title="Start video call"><i class="fa-solid fa-video"></i></button>
-      <button id="voice-call-btn" class="icon-btn" title="Start voice call"><i class="fa-solid fa-phone"></i></button>
+      <button id="video-call-btn" class="icon-btn" title="Video Call"><i class="fa-solid fa-video"></i></button>
+      <button id="voice-call-btn" class="icon-btn" title="Voice Call"><i class="fa-solid fa-phone"></i></button>
     </div>
   </header>
 
@@ -137,20 +104,19 @@
 
   <div class="composer" role="region" aria-label="Message composer">
     <input id="message-input" placeholder="Type a message" aria-label="Message input">
-    <button id="send-btn" class="send-btn hidden" title="Send"><i class="fa-solid fa-paper-plane"></i></button>
+    <button id="send-btn" class="send-btn hidden"><i class="fa-solid fa-paper-plane"></i></button>
   </div>
 </div>
 
-<!-- Call dialog (used for both outgoing and incoming) -->
+<!-- Call dialog -->
 <div id="call-dialog" role="dialog" aria-modal="true">
   <div class="call-card">
-    <div class="call-peer">
-      <img id="call-peer-avatar" src="">
-      <div>
-        <div id="call-peer-name" class="call-text">Calling...</div>
-        <div id="call-peer-sub" class="call-sub">Connecting</div>
-      </div>
+    <div class="call-videos">
+      <video id="local-video" autoplay muted playsinline></video>
+      <video id="remote-video" autoplay playsinline></video>
     </div>
+    <div class="call-text" id="call-peer-name">Calling...</div>
+    <div class="call-sub" id="call-peer-sub">Connecting</div>
     <div class="call-actions">
       <button id="accept-call" class="btn-accept">Accept</button>
       <button id="decline-call" class="btn-decline">Decline</button>
@@ -162,367 +128,205 @@
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-/*
-  Chat page with:
-   - Fixed layout (420px width)
-   - Messages saved to Supabase messages table
-   - Realtime listening for INSERTs
-   - Typing indicator via broadcast channel
-   - WebRTC signalling via broadcast channel
-   - STUN: Google free (stun:stun.l.google.com:19302)
-*/
+// Supabase setup
+const MSG_URL = "https://ilgkibqwngznqwnhgavh.supabase.co";
+const MSG_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsZ2tpYnF3bmd6bnF3bmhnYXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NzU3NDcsImV4cCI6MjA3NzA1MTc0N30.jFHL4VDU81BRqxpoWc4u_4VYG4sI-SB0-EkxSfPGZ5k";
+const messagesSupabase = createClient(MSG_URL, MSG_KEY);
 
-/* ---------- CONFIG (messages DB) ---------- */
-const MESSAGES_URL = "https://ilgkibqwngznqwnhgavh.supabase.co";
-const MESSAGES_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsZ2tpYnF3bmd6bnF3bmhnYXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NzU3NDcsImV4cCI6MjA3NzA1MTc0N30.jFHL4VDU81BRqxpoWc4u_4VYG4sI-SB0-EkxSfPGZ5k";
-const messagesSupabase = createClient(MESSAGES_URL, MESSAGES_KEY);
+const USERS_URL = 'https://dfzshvldanqfvfivjrqi.supabase.co/rest/v1';
+const USERS_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmenNodmxkYW5xZnZmaXZqcnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4MDIxNTEsImV4cCI6MjA3MDM3ODE1MX0.wdms-6G9eDzRuk1YiCpdyvVS-5CRKCsrq9WWWIFl9HA';
 
-/* ---------- USER & CHAT CONTEXT ---------- */
 const hc_profile = JSON.parse(localStorage.getItem('hc_profile') || '{}');
-const params = new URLSearchParams(location.search);
-const chatUser = {
-  name: params.get('name') || 'Unknown',
-  email: params.get('email') || '',
-  profile_url: params.get('profile_url') || ''
-};
+if(!hc_profile.email) location.href='register.html';
 
-/* ---------- DOM ---------- */
+const params = new URLSearchParams(location.search);
+const chatUserEmail = params.get('email');
+let chatUser = {name:'Loading...', email: chatUserEmail, profile_url:''};
+
+// DOM
 const backBtn = document.getElementById('back-btn');
 const chatProfileEl = document.getElementById('chat-profile');
 const chatNameEl = document.getElementById('chat-name');
 const chatStatusEl = document.getElementById('chat-status');
+const statusDot = document.getElementById('status-dot');
 const messagesEl = document.getElementById('messages');
 const inputEl = document.getElementById('message-input');
 const sendBtn = document.getElementById('send-btn');
+const videoCallBtn = document.getElementById('video-call-btn');
+const voiceCallBtn = document.getElementById('voice-call-btn');
 
 const callDialog = document.getElementById('call-dialog');
-const callPeerAvatar = document.getElementById('call-peer-avatar');
+const localVideo = document.getElementById('local-video');
+const remoteVideo = document.getElementById('remote-video');
 const callPeerName = document.getElementById('call-peer-name');
 const callPeerSub = document.getElementById('call-peer-sub');
 const acceptBtn = document.getElementById('accept-call');
 const declineBtn = document.getElementById('decline-call');
 const cancelBtn = document.getElementById('cancel-call');
 
-chatProfileEl.src = chatUser.profile_url;
-chatNameEl.textContent = chatUser.name;
+// Helpers
+const q = v=>`"${String(v).replace(/"/g,'""')}"`;
 
-/* go back */
-backBtn.addEventListener('click', () => location.href = 'home.html');
-
-/* show/hide send button by typing */
-inputEl.addEventListener('input', () => {
-  const has = inputEl.value.trim().length > 0;
-  sendBtn.classList.toggle('hidden', !has);
-  sendTyping(true);
-  // schedule stop-typing after a while
-  clearTimeout(window.__stopTypingTimer);
-  window.__stopTypingTimer = setTimeout(() => sendTyping(false), 2000);
-});
-
-/* send message */
-sendBtn.addEventListener('click', sendMessage);
-inputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendBtn.click(); });
-
-/* ---------- Realtime & persistence ---------- */
-
-async function sendMessage(){
-  const text = inputEl.value.trim();
-  if (!text) return;
-  inputEl.value = '';
-  sendBtn.classList.add('hidden');
-
-  try {
-    await messagesSupabase.from('messages').insert([{
-      sender: hc_profile.email,
-      receiver: chatUser.email,
-      message: text,
-      created_at: new Date().toISOString()
-    }]);
-    // inserted row will arrive via real-time subscription and render
-    sendTyping(false);
-  } catch (err) {
-    console.error('Insert failed', err);
-    alert('Failed to send message');
-  }
+async function fetchUserProfile(email){
+  const qs = `select=name,profile_url&email=eq.${encodeURIComponent(email)}&limit=1`;
+  const res = await fetch(`${USERS_URL}/users?${qs}`, {
+    headers:{apikey:USERS_KEY,'Authorization':'Bearer '+USERS_KEY,'Accept':'application/json'}
+  });
+  if(!res.ok) return {name:email, profile_url:''};
+  const data = await res.json();
+  return data[0] || {name:email, profile_url:''};
 }
 
-/* fetch messages between current and chat user */
-async function loadConversation(){
-  try {
-    const { data, error } = await messagesSupabase
-      .from('messages')
-      .select('*')
-      .or(`and(sender.eq.${hc_profile.email},receiver.eq.${chatUser.email}),and(sender.eq.${chatUser.email},receiver.eq.${hc_profile.email})`)
-      .order('created_at', { ascending: true });
-
-    if (error) { console.error(error); return; }
-    renderMessages(data || []);
-  } catch (e) { console.error(e); }
+// Load user profile
+async function loadChatUser(){
+  chatUser = await fetchUserProfile(chatUserEmail);
+  chatProfileEl.src = chatUser.profile_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(chatUser.name)}`;
+  chatNameEl.textContent = chatUser.name;
 }
 
-/* render list */
+// Messages
+async function loadMessages(){
+  const orCond = `(and(sender.eq.${q(hc_profile.email)},receiver.eq.${q(chatUser.email)}),and(sender.eq.${q(chatUser.email)},receiver.eq.${q(hc_profile.email)}))`;
+  const { data } = await messagesSupabase
+    .from('messages')
+    .select('*')
+    .or(orCond)
+    .order('created_at',{ascending:true});
+  renderMessages(data || []);
+}
+
 function renderMessages(msgs){
   messagesEl.innerHTML = '';
-  for (const m of msgs){
-    appendMessage(m);
-  }
+  for(const m of msgs) appendMessage(m);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-/* append single message */
 function appendMessage(m){
   const d = document.createElement('div');
-  d.className = 'bubble fade-enter ' + (m.sender === hc_profile.email ? 'me' : 'other');
+  d.className = 'bubble ' + (m.sender===hc_profile.email?'me':'other');
   d.textContent = m.message;
   const ts = document.createElement('div');
-  ts.className = 'ts';
+  ts.className='ts';
   ts.textContent = new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
   d.appendChild(ts);
   messagesEl.appendChild(d);
-  requestAnimationFrame(()=> d.classList.add('fade-enter-active'));
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-/* subscribe to messages INSERTs for this conversation */
+// Send message
+sendBtn.addEventListener('click', async ()=>{
+  const text=inputEl.value.trim();
+  if(!text) return;
+  inputEl.value='';
+  sendBtn.classList.add('hidden');
+  await messagesSupabase.from('messages').insert([{sender:hc_profile.email,receiver:chatUser.email,message:text,created_at:new Date().toISOString()}]);
+});
+inputEl.addEventListener('input', ()=>{sendBtn.classList.toggle('hidden',inputEl.value.trim().length===0);});
+
+// Realtime messages
 function subscribeMessages(){
-  const channelName = 'messages-' + [hc_profile.email, chatUser.email].sort().join('-');
-
+  const channelName='messages-'+[hc_profile.email,chatUser.email].sort().join('-');
   messagesSupabase.channel(channelName)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-      const newRow = payload.new;
-      // only append messages that belong to this conversation
-      const involved = (newRow.sender === hc_profile.email && newRow.receiver === chatUser.email)
-                    || (newRow.sender === chatUser.email && newRow.receiver === hc_profile.email);
-      if (involved) appendMessage(newRow);
-    })
-    .subscribe()
-    .catch(e=>console.warn('subscribeMessages error', e));
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'}, payload=>{
+      const m=payload.new;
+      if((m.sender===hc_profile.email && m.receiver===chatUser.email)||(m.sender===chatUser.email && m.receiver===hc_profile.email))
+        appendMessage(m);
+    }).subscribe();
 }
 
-/* ---------- Typing indicator via broadcast channel ---------- */
-const typingChannelName = 'typing-' + [hc_profile.email, chatUser.email].sort().join('-');
-let typingState = false;
-
-function sendTyping(isTyping){
-  // broadcast typing payload
-  try {
-    messagesSupabase.channel(typingChannelName)
-      .send({
-        type: 'broadcast',
-        event: 'typing',
-        payload: { from: hc_profile.email, to: chatUser.email, typing: !!isTyping }
-      });
-  } catch (e) {
-    // ignore
-  }
-}
-
-/* subscribe to typing */
-function subscribeTyping(){
-  messagesSupabase.channel(typingChannelName)
-    .on('broadcast', { event: 'typing' }, ({ payload }) => {
-      if (!payload) return;
-      if (payload.from === chatUser.email && payload.to === hc_profile.email){
-        if (payload.typing) {
-          chatStatusEl.textContent = 'Typing...';
-        } else {
-          chatStatusEl.textContent = 'Online';
-          // fallback clear
-          setTimeout(()=> chatStatusEl.textContent = 'Online', 2000);
-        }
-      }
-    })
-    .subscribe()
-    .catch(e=>console.warn('subscribeTyping error', e));
-}
-
-/* ---------- WebRTC signalling via Supabase broadcast channel ---------- */
-const rtcChannelName = 'webrtc-' + [hc_profile.email, chatUser.email].sort().join('-');
-const STUN = [{ urls: 'stun:stun.l.google.com:19302' }];
-
-let pc = null;
-let localStream = null;
-
-function ensurePeer() {
-  if (pc) return pc;
-  pc = new RTCPeerConnection({ iceServers: STUN });
-
-  pc.onicecandidate = (e) => {
-    if (e.candidate) {
-      sendSignal({ type: 'candidate', candidate: e.candidate });
+// Online/offline presence
+function setupPresence(){
+  const presenceChannel = messagesSupabase.channel('user-presence');
+  presenceChannel.subscribe();
+  presenceChannel.on('postgres_changes',{event:'*',schema:'public',table:'users'},payload=>{
+    if(payload.new?.email===chatUser.email){
+      const online=payload.event==='UPDATE';
+      statusDot.style.backgroundColor=online?'var(--green)':'var(--muted)';
+      chatStatusEl.textContent=online?'Online':'Offline';
+      videoCallBtn.disabled=!online;
+      voiceCallBtn.disabled=!online;
     }
-  };
+  });
+  // fallback offline initially
+  statusDot.style.backgroundColor='var(--muted)';
+  chatStatusEl.textContent='Offline';
+  videoCallBtn.disabled=true;
+  voiceCallBtn.disabled=true;
+}
 
-  pc.ontrack = (e) => {
-    // show remote stream
-    const v = document.createElement('video');
-    v.autoplay = true; v.playsInline = true;
-    v.srcObject = e.streams[0];
-    Object.assign(v.style, { position:'fixed', right:'12px', bottom:'12px', width:'220px', borderRadius:'12px', zIndex:9999, boxShadow:'0 12px 30px rgba(2,6,23,0.45)'});
-    document.body.appendChild(v);
-  };
-
+// WebRTC
+let pc=null, localStream=null;
+const STUN=[{urls:'stun:stun.l.google.com:19302'}];
+function ensurePeer(){
+  if(pc) return pc;
+  pc=new RTCPeerConnection({iceServers:STUN});
+  pc.onicecandidate=e=>{if(e.candidate) sendSignal({type:'candidate',candidate:e.candidate});};
+  pc.ontrack=e=>{remoteVideo.srcObject=e.streams[0];};
   return pc;
 }
 
+const rtcChannelName='webrtc-'+[hc_profile.email,chatUser.email].sort().join('-');
 function sendSignal(payload){
-  try {
-    messagesSupabase.channel(rtcChannelName)
-      .send({
-        type: 'broadcast',
-        event: 'signal',
-        payload: { from: hc_profile.email, to: chatUser.email, ...payload }
-      });
-  } catch (e) { console.warn('sendSignal err', e); }
+  try{messagesSupabase.channel(rtcChannelName).send({type:'broadcast',event:'signal',payload:{from:hc_profile.email,to:chatUser.email,...payload}});}catch(e){}
 }
-
-/* handle incoming signals */
 function subscribeSignaling(){
   messagesSupabase.channel(rtcChannelName)
-    .on('broadcast', { event: 'signal' }, async ({ payload }) => {
-      if (!payload || payload.to !== hc_profile.email) return;
-
-      const type = payload.type;
-      if (type === 'call-offer') {
-        // incoming call
-        showCallDialog('incoming', payload.callType, payload.sdp);
-      } else if (type === 'call-answer') {
-        // remote answered our call
-        try {
-          await ensurePeer().setRemoteDescription(new RTCSessionDescription(payload.sdp));
-          // done
-        } catch(e) { console.warn(e); }
-      } else if (type === 'candidate') {
-        try {
-          await ensurePeer().addIceCandidate(new RTCIceCandidate(payload.candidate));
-        } catch (e) { console.warn('addIce failed', e); }
-      }
-    })
-    .subscribe()
-    .catch(e=>console.warn('subscribeSignaling error', e));
+    .on('broadcast',{event:'signal'}, async ({payload})=>{
+      if(!payload || payload.to!==hc_profile.email) return;
+      if(payload.type==='call-offer') showCallDialog('incoming',payload.callType,payload.sdp);
+      else if(payload.type==='call-answer') await ensurePeer().setRemoteDescription(new RTCSessionDescription(payload.sdp));
+      else if(payload.type==='candidate') await ensurePeer().addIceCandidate(new RTCIceCandidate(payload.candidate));
+      else if(payload.type==='call-cancel'||payload.type==='call-decline') hideCallDialog();
+    }).subscribe();
 }
 
-/* ---------- Calls: start / accept / decline ---------- */
-
-async function startCall(callType = 'video'){
-  showCallDialog('outgoing', callType);
-  try {
-    localStream = await navigator.mediaDevices.getUserMedia(callType === 'video' ? { video:true, audio:true } : { audio:true });
-    localStream.getTracks().forEach(track => ensurePeer().addTrack(track, localStream));
-    const offer = await ensurePeer().createOffer();
-    await ensurePeer().setLocalDescription(offer);
-    // broadcast offer
-    sendSignal({ type:'call-offer', callType, sdp: offer });
-    callPeerSub.textContent = 'Ringing...';
-  } catch (err) {
-    console.error('startCall failed', err);
-    hideCallDialog();
-    alert('Call failed: ' + (err.message || err));
-  }
+async function startCall(callType='video'){
+  showCallDialog('outgoing',callType);
+  localStream = await navigator.mediaDevices.getUserMedia(callType==='video'?{video:true,audio:true}:{audio:true});
+  localStream.getTracks().forEach(t=>ensurePeer().addTrack(t,localStream));
+  localVideo.srcObject = localStream;
+  const offer = await ensurePeer().createOffer();
+  await ensurePeer().setLocalDescription(offer);
+  sendSignal({type:'call-offer',callType,sdp:offer});
+  callPeerSub.textContent='Ringing...';
 }
 
-/* show call dialog for incoming/outgoing */
-function showCallDialog(mode='outgoing', callType='video', sdp=null){
-  callDialog.style.display = 'flex';
-  callPeerAvatar.src = chatUser.profile_url || '';
-  callPeerName.textContent = (mode === 'incoming') ? chatUser.name : `Calling ${chatUser.name}`;
-  callPeerSub.textContent = (mode === 'incoming') ? `${chatUser.name} is calling` : 'Calling...';
-  callDialog.setAttribute('data-mode', mode);
-
-  if (mode === 'outgoing') {
-    acceptBtn.style.display = 'none';
-    declineBtn.style.display = 'none';
-    cancelBtn.style.display = 'inline-block';
-  } else {
-    acceptBtn.style.display = 'inline-block';
-    declineBtn.style.display = 'inline-block';
-    cancelBtn.style.display = 'none';
-    // wire accept to answer with the provided sdp
-    acceptBtn.onclick = async () => {
-      try {
-        // get local media and add tracks
-        localStream = await navigator.mediaDevices.getUserMedia(callType === 'video' ? { video:true, audio:true } : { audio:true });
-        localStream.getTracks().forEach(track => ensurePeer().addTrack(track, localStream));
-        // set remote (offer)
-        await ensurePeer().setRemoteDescription(new RTCSessionDescription(sdp));
-        const answer = await ensurePeer().createAnswer();
-        await ensurePeer().setLocalDescription(answer);
-        sendSignal({ type:'call-answer', sdp: answer });
-        hideCallDialog();
-      } catch (err) {
-        console.error('accept failed', err);
-        alert('Failed to accept call: ' + (err.message||err));
-      }
-    };
-    declineBtn.onclick = () => {
+function showCallDialog(mode='outgoing',callType='video',sdp=null){
+  callDialog.style.display='flex';
+  callPeerName.textContent=(mode==='incoming')?chatUser.name:`Calling ${chatUser.name}`;
+  callPeerSub.textContent=(mode==='incoming')?`${chatUser.name} is calling`:'Connecting';
+  if(mode==='outgoing'){acceptBtn.style.display='none';declineBtn.style.display='none';cancelBtn.style.display='inline-block';}
+  else{acceptBtn.style.display='inline-block';declineBtn.style.display='inline-block';cancelBtn.style.display='none';
+    acceptBtn.onclick=async ()=>{
+      localStream=await navigator.mediaDevices.getUserMedia(callType==='video'?{video:true,audio:true}:{audio:true});
+      localStream.getTracks().forEach(t=>ensurePeer().addTrack(t,localStream));
+      localVideo.srcObject=localStream;
+      await ensurePeer().setRemoteDescription(new RTCSessionDescription(sdp));
+      const answer=await ensurePeer().createAnswer();
+      await ensurePeer().setLocalDescription(answer);
+      sendSignal({type:'call-answer',sdp:answer});
       hideCallDialog();
-      // send decline if you want (optional)
-      sendSignal({ type: 'call-decline' });
     };
+    declineBtn.onclick=()=>{hideCallDialog(); sendSignal({type:'call-decline'});}
   }
-
-  cancelBtn.onclick = () => {
-    hideCallDialog();
-    // send cancel optionally
-    sendSignal({ type: 'call-cancel' });
-  };
+  cancelBtn.onclick=()=>{hideCallDialog(); sendSignal({type:'call-cancel'});}
 }
 
-function hideCallDialog(){
-  callDialog.style.display = 'none';
-}
+function hideCallDialog(){callDialog.style.display='none'; if(localStream){localStream.getTracks().forEach(t=>t.stop()); localStream=null;}}
 
-/* wire UI call buttons */
-document.getElementById('video-call-btn').addEventListener('click', ()=> startCall('video'));
-document.getElementById('voice-call-btn').addEventListener('click', ()=> startCall('audio'));
+// UI events
+backBtn.addEventListener('click',()=>location.href='home.html');
+videoCallBtn.addEventListener('click',()=>startCall('video'));
+voiceCallBtn.addEventListener('click',()=>startCall('audio'));
 
-/* ---------- subscriptions bootstrap ---------- */
+// Init
 (async function init(){
-  if(!hc_profile || !hc_profile.email){
-    alert('No current profile found — please register first.');
-    location.href = 'register.html';
-    return;
-  }
-  // Set status to Online (UI only). Real presence requires a presence system.
-  chatStatusEl.textContent = 'Online';
-
-  // load existing conversation
-  await loadConversation();
-
-  // subscribe for message inserts
+  await loadChatUser();
+  await loadMessages();
   subscribeMessages();
-
-  // subscribe to typing broadcasts
-  subscribeTyping();
-
-  // subscribe to signaling channel
+  setupPresence();
   subscribeSignaling();
 })();
-
-/* ---------- Extra: listen for incoming call-offer to show dialog and pass sdp ---------- */
-/* We already handle signal broadcasts; add a convenience handler to show incoming calls nicely */
-messagesSupabase.channel(rtcChannelName)
-  .on('broadcast', { event: 'signal' }, ({ payload }) => {
-    if (!payload || payload.to !== hc_profile.email) return;
-    if (payload.type === 'call-offer') {
-      // Show incoming call dialog with the sdp
-      showCallDialog('incoming', payload.callType, payload.sdp);
-    } else if (payload.type === 'call-decline') {
-      // remote declined
-      hideCallDialog();
-      alert('Call declined by the remote user.');
-    } else if (payload.type === 'call-cancel') {
-      hideCallDialog();
-    }
-  })
-  .subscribe()
-  .catch(e => console.warn('rtc extra subscribe error', e));
-
-/* cleanup on unload */
-window.addEventListener('beforeunload', () => {
-  try { messagesSupabase.removeAllChannels(); } catch(e){}
-  if (pc) try { pc.close(); } catch(e){}
-});
 </script>
 </body>
 </html>
