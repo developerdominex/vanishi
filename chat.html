@@ -26,7 +26,6 @@ body{
   background: var(--bg);
   padding:20px;
 }
-
 /* container */
 .container{
   width:420px;
@@ -38,7 +37,6 @@ body{
   flex-direction:column;
   overflow:hidden;
 }
-
 /* header */
 header{
   display:flex;
@@ -59,8 +57,6 @@ header{
 .icon-btn{background:transparent;border:none;padding:8px;border-radius:10px;cursor:pointer;color:var(--muted);font-size:16px;}
 .icon-btn:hover{background:rgba(0,0,0,0.03);}
 .icon-btn.disabled{opacity:0.4;pointer-events:none;}
-
-/* messages */
 .messages{
   flex:1;
   padding:16px;
@@ -70,50 +66,6 @@ header{
   overflow-y:auto;
   background: #f0f2f5;
 }
-
-/* message row */
-.message-row{
-  display:flex;
-  width:100%;
-}
-.message-row.me{justify-content:flex-end;}
-.message-row.other{justify-content:flex-start;}
-
-/* bubble */
-.bubble{
-  max-width:70%;
-  padding:10px 14px;
-  border-radius:var(--radius);
-  word-wrap:break-word;
-  font-size:15px;
-  line-height:1.4;
-  position:relative;
-  box-shadow:var(--shadow);
-  opacity:0;
-  transform:translateY(10px);
-  animation:bubble-pop 0.25s forwards;
-}
-.bubble.me{
-  background:var(--sent);
-  color:#fff;
-  border-bottom-right-radius:6px;
-}
-.bubble.other{
-  background:var(--received);
-  color:#111;
-  border-bottom-left-radius:6px;
-}
-
-/* timestamp */
-.ts{
-  font-size:11px;
-  color:var(--muted);
-  position:absolute;
-  bottom:-14px;
-  right:8px;
-}
-
-/* composer */
 .composer{
   padding:12px 16px;
   display:flex;
@@ -139,11 +91,6 @@ header{
 }
 .send-btn:active{transform:scale(0.97);}
 .send-btn.hidden{display:none;}
-
-/* animation */
-@keyframes bubble-pop{
-  to{opacity:1; transform:translateY(0);}
-}
 </style>
 </head>
 <body>
@@ -201,7 +148,52 @@ backBtn.addEventListener('click', ()=>location.href='home.html');
 chatNameEl.textContent = chatUser.name;
 chatProfileEl.src = chatUser.profile_url;
 
-// --- Messages ---
+// --- Messages Dynamic Rendering ---
+function createMessageElement(message, sender){
+  const row = document.createElement('div');
+  row.style.display='flex';
+  row.style.width='100%';
+  row.style.justifyContent = sender===hc_profile.email?'flex-end':'flex-start';
+
+  const bubble = document.createElement('div');
+  bubble.textContent = message;
+  Object.assign(bubble.style,{
+    maxWidth:'70%',
+    padding:'10px 14px',
+    borderRadius:'18px',
+    fontSize:'15px',
+    lineHeight:1.4,
+    position:'relative',
+    boxShadow:'0 4px 12px rgba(0,0,0,0.08)',
+    wordBreak:'break-word',
+    opacity:0,
+    transform:'translateY(10px)',
+    color: sender===hc_profile.email?'#fff':'#111',
+    backgroundColor: sender===hc_profile.email?'#007aff':'#e4e6eb',
+    borderBottomRightRadius: sender===hc_profile.email?'6px':'18px',
+    borderBottomLeftRadius: sender!==hc_profile.email?'6px':'18px'
+  });
+  // timestamp
+  const ts = document.createElement('div');
+  ts.textContent = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  Object.assign(ts.style,{
+    fontSize:'11px',
+    color:'#8a8d91',
+    position:'absolute',
+    bottom:'-14px',
+    right:'8px'
+  });
+  bubble.appendChild(ts);
+  row.appendChild(bubble);
+  messagesEl.appendChild(row);
+
+  // animation
+  requestAnimationFrame(()=>{ bubble.style.transition='0.2s'; bubble.style.opacity=1; bubble.style.transform='translateY(0)'; });
+
+  messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' });
+}
+
+// --- Load messages ---
 let lastMessageTime=null;
 async function loadMessages(){
   const { data } = await supabase.from('messages').select('*')
@@ -209,25 +201,9 @@ async function loadMessages(){
     .order('created_at',{ascending:true})
     .gt('created_at', lastMessageTime || '1970-01-01T00:00:00Z');
   if(data.length>0){
-    data.forEach(appendMessage);
+    data.forEach(m=>createMessageElement(m.message,m.sender));
     lastMessageTime = data[data.length-1].created_at;
   }
-}
-function appendMessage(m){
-  const row = document.createElement('div');
-  row.className = 'message-row ' + (m.sender===hc_profile.email ? 'me' : 'other');
-
-  const bubble = document.createElement('div');
-  bubble.className = 'bubble ' + (m.sender===hc_profile.email ? 'me' : 'other');
-  bubble.textContent = m.message;
-
-  const ts = document.createElement('div'); ts.className='ts';
-  ts.textContent=new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-
-  bubble.appendChild(ts);
-  row.appendChild(bubble);
-  messagesEl.appendChild(row);
-  messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' });
 }
 setInterval(loadMessages,1500);
 
@@ -240,13 +216,13 @@ async function sendMessage(){
   if(!text) return;
   inputEl.value=''; sendBtn.classList.add('hidden');
   await supabase.from('messages').insert([{ sender: hc_profile.email, receiver: chatUser.email, message: text, created_at: new Date().toISOString() }]);
+  createMessageElement(text,hc_profile.email);
 }
 
 // --- Typing ---
 const typingChannel = 'typing-'+[hc_profile.email,chatUser.email].sort().join('-');
 function sendTyping(flag){ supabase.channel(typingChannel).send({type:'broadcast',event:'typing',payload:{from:hc_profile.email,to:chatUser.email,typing:flag}});}
 inputEl.addEventListener('input',()=>sendTyping(inputEl.value.trim().length>0));
-
 supabase.channel(typingChannel).on('broadcast',{event:'typing'},({payload})=>{
   if(payload.from===chatUser.email && payload.to===hc_profile.email){
     chatStatusEl.textContent = payload.typing?'Typing...':'Online';
@@ -263,7 +239,7 @@ supabase.channel(presenceChannel).on('broadcast',{event:'presence'},({payload})=
   }
 }).subscribe();
 
-// --- WebRTC & Dynamic Call Modal ---
+// --- WebRTC Dynamic Call Modal ---
 let pc=null, localStream=null;
 function ensurePeer(){
   if(pc) return pc;
@@ -282,50 +258,23 @@ supabase.channel('webrtc-'+[hc_profile.email,chatUser.email].sort().join('-')).o
   else if(payload.type==='candidate') await ensurePeer().addIceCandidate(new RTCIceCandidate(payload.candidate));
 }).subscribe();
 
-// --- Call Modal Creation Dynamically ---
+// --- Call Modal --- same as before ---
 function showCallModal(mode, callType='video', sdp=null, stream=null){
-  // Remove existing modal if any
-  const existing = document.querySelector('.call-modal');
-  if(existing) existing.remove();
-
-  const modal = document.createElement('div');
-  modal.className='call-modal';
-  Object.assign(modal.style,{
-    position:'fixed', inset:0, display:'flex', alignItems:'center', justifyContent:'center',
-    background:'rgba(0,0,0,0.5)', zIndex:1000
-  });
-
-  const card = document.createElement('div');
-  card.className='call-card';
-  Object.assign(card.style,{
-    background:'#fff', borderRadius:'16px', padding:'20px', width:'300px',
-    display:'flex', flexDirection:'column', gap:'12px', textAlign:'center', boxShadow:'0 8px 24px rgba(0,0,0,0.2)',
-    animation:'pop 0.2s ease-out'
-  });
-
-  const title = document.createElement('div');
-  title.style.fontWeight='600';
-  title.style.fontSize='16px';
-  title.style.marginBottom='4px';
+  const existing = document.querySelector('.call-modal'); if(existing) existing.remove();
+  const modal = document.createElement('div'); modal.className='call-modal';
+  Object.assign(modal.style,{position:'fixed',inset:0,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,0.5)',zIndex:1000});
+  const card = document.createElement('div'); card.className='call-card';
+  Object.assign(card.style,{background:'#fff',borderRadius:'16px',padding:'20px',width:'300px',display:'flex',flexDirection:'column',gap:'12px',textAlign:'center',boxShadow:'0 8px 24px rgba(0,0,0,0.2)'});
+  const title = document.createElement('div'); title.style.fontWeight='600'; title.style.fontSize='16px'; title.style.marginBottom='4px';
   title.textContent=mode==='incoming'?'Incoming Call':`Calling ${chatUser.name}`;
-
-  const sub = document.createElement('div');
-  sub.style.color='#6b7280';
-  sub.style.fontSize='13px';
+  const sub = document.createElement('div'); sub.style.color='#6b7280'; sub.style.fontSize='13px';
   sub.textContent=mode==='incoming'?'Tap Accept to join':'Ringing...';
+  card.appendChild(title); card.appendChild(sub);
 
-  card.appendChild(title);
-  card.appendChild(sub);
-
-  // Buttons
-  const btnContainer = document.createElement('div');
-  btnContainer.style.display='flex';
-  btnContainer.style.gap='10px';
-  btnContainer.style.justifyContent='center';
+  const btnContainer = document.createElement('div'); btnContainer.style.display='flex'; btnContainer.style.gap='10px'; btnContainer.style.justifyContent='center';
 
   if(mode==='incoming'){
-    const accept = document.createElement('button');
-    accept.textContent='Accept';
+    const accept=document.createElement('button'); accept.textContent='Accept';
     Object.assign(accept.style,{background:'#16a34a',color:'#fff',border:'none',padding:'10px 16px',borderRadius:'12px',cursor:'pointer'});
     accept.onclick=async ()=>{
       localStream=await navigator.mediaDevices.getUserMedia(callType==='video'?{video:true,audio:true}:{audio:true});
@@ -333,33 +282,22 @@ function showCallModal(mode, callType='video', sdp=null, stream=null){
       await ensurePeer().setRemoteDescription(new RTCSessionDescription(sdp));
       const answer = await ensurePeer().createAnswer();
       await ensurePeer().setLocalDescription(answer);
-      sendSignal({type:'call-answer',sdp:answer});
-      modal.remove();
+      sendSignal({type:'call-answer',sdp:answer}); modal.remove();
     };
-    const decline = document.createElement('button');
-    decline.textContent='Decline';
+    const decline=document.createElement('button'); decline.textContent='Decline';
     Object.assign(decline.style,{background:'#ef4444',color:'#fff',border:'none',padding:'10px 16px',borderRadius:'12px',cursor:'pointer'});
     decline.onclick=()=>{ sendSignal({type:'call-decline'}); modal.remove(); };
-    btnContainer.appendChild(accept);
-    btnContainer.appendChild(decline);
+    btnContainer.appendChild(accept); btnContainer.appendChild(decline);
   } else if(mode==='outgoing'){
-    const cancel = document.createElement('button');
-    cancel.textContent='Cancel';
+    const cancel=document.createElement('button'); cancel.textContent='Cancel';
     Object.assign(cancel.style,{background:'#6b7280',color:'#fff',border:'none',padding:'10px 16px',borderRadius:'12px',cursor:'pointer'});
     cancel.onclick=()=>{ sendSignal({type:'call-cancel'}); modal.remove(); };
     btnContainer.appendChild(cancel);
   } else if(mode==='remote' && stream){
-    const video = document.createElement('video');
-    video.autoplay=true;
-    video.playsInline=true;
-    video.srcObject=stream;
-    video.style.width='240px';
-    video.style.height='180px';
-    video.style.borderRadius='12px';
-    video.style.objectFit='cover';
+    const video=document.createElement('video'); video.autoplay=true; video.playsInline=true; video.srcObject=stream;
+    Object.assign(video.style,{width:'240px',height:'180px',borderRadius:'12px',objectFit:'cover'});
     card.appendChild(video);
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent='End Call';
+    const closeBtn=document.createElement('button'); closeBtn.textContent='End Call';
     Object.assign(closeBtn.style,{background:'#ef4444',color:'#fff',border:'none',padding:'10px 16px',borderRadius:'12px',cursor:'pointer'});
     closeBtn.onclick=()=>{ if(pc){ pc.close(); pc=null;} modal.remove();};
     btnContainer.appendChild(closeBtn);
@@ -370,7 +308,6 @@ function showCallModal(mode, callType='video', sdp=null, stream=null){
   document.body.appendChild(modal);
 }
 
-// --- Start Call ---
 async function startCall(type='video'){
   if(chatStatusEl.textContent!=='Online') return;
   showCallModal('outgoing', type);
