@@ -248,10 +248,10 @@ supabase.channel(typingChannel).on('broadcast',{event:'typing'},({payload})=>{
 }).subscribe();
 // -------------------- WEBRTC --------------------
 let pc = null, localStream = null, remoteStream = null;
-let audioCtx = null, analyser = null, source = null;
+let audioCtx = null, analyser = null;
 let inCall = false;
 
-// Create PeerConnection
+// Create/return PeerConnection
 function ensurePeer() {
   if (pc) return pc;
   pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
@@ -260,8 +260,16 @@ function ensurePeer() {
     if (!remoteStream) remoteStream = new MediaStream();
     remoteStream.addTrack(event.track);
 
-    if (event.track.kind === 'video') showCallModal('connected-video', remoteStream);
-    if (event.track.kind === 'audio') showCallModal('connected-audio', null, remoteStream);
+    // When remote audio arrives → show connected modal
+    if (event.track.kind === 'audio' && inCall) {
+      showCallModal('connected-audio', null, null, remoteStream);
+      playRemoteAudio(remoteStream);
+    }
+
+    // When remote video arrives
+    if (event.track.kind === 'video' && inCall) {
+      showCallModal('connected-video', remoteStream);
+    }
   };
 
   pc.onicecandidate = (e) => {
@@ -271,143 +279,129 @@ function ensurePeer() {
   return pc;
 }
 
-// Send signal to Supabase
+// Send signal via Supabase
 function sendSignal(payload) {
   supabase.channel('webrtc-' + [hc_profile.email, chatUser.email].sort().join('-'))
     .send({ type: 'broadcast', event: 'signal', payload: { from: hc_profile.email, to: chatUser.email, ...payload } });
 }
 
-// Receive signal
+// Receive signals
 supabase.channel('webrtc-' + [hc_profile.email, chatUser.email].sort().join('-'))
   .on('broadcast', { event: 'signal' }, async ({ payload }) => {
     if (!payload || payload.to !== hc_profile.email) return;
 
     if (payload.type === 'call-offer') showCallModal('incoming', payload.callType, payload.sdp);
-    if (payload.type === 'call-answer') await ensurePeer().setRemoteDescription(new RTCSessionDescription(payload.sdp));
-    if (payload.type === 'candidate') await ensurePeer().addIceCandidate(new RTCIceCandidate(payload.candidate));
+
+    if (payload.type === 'call-answer') {
+      await ensurePeer().setRemoteDescription(new RTCSessionDescription(payload.sdp));
+      inCall = true;
+    }
+
+    if (payload.type === 'candidate') {
+      try { await ensurePeer().addIceCandidate(new RTCIceCandidate(payload.candidate)); } catch(e){}
+    }
+
     if (payload.type === 'call-end') endCallLocal();
   }).subscribe();
 
-// -------------------- CALL UI & LOGIC --------------------
-function showCallModal(mode, callType = 'video', sdp = null, remoteAudioStream = null) {
-  // Clean old modal
+// -------------------- CALL UI --------------------
+function showCallModal(mode, callType = 'video', sdp = null, audioStream = null) {
   document.querySelectorAll('.call-modal').forEach(m => m.remove());
 
   const modal = document.createElement('div');
+  Object.assign(modal.style, { position: 'fixed', inset: 0, display: 'flex', alignItems: 'center',
+    justifyContent: 'center', background: 'rgba(0,0,0,0.5)', zIndex: 2000 });
   modal.className = 'call-modal';
-  Object.assign(modal.style, {
-    position: 'fixed', inset: 0, display: 'flex', alignItems: 'center',
-    justifyContent: 'center', background: 'rgba(0,0,0,0.5)', zIndex: 2000
-  });
 
   const card = document.createElement('div');
-  Object.assign(card.style, {
-    background: '#fff', padding: '20px', width: '300px', borderRadius: '16px',
-    display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'center'
-  });
+  Object.assign(card.style, { background: '#fff', padding: '20px', borderRadius: '14px',
+    width: '300px', textAlign: 'center', display: 'flex', flexDirection:'column', gap:'12px' });
 
-  const title = document.createElement('div');
-  title.style.fontSize = '16px';
-  title.style.fontWeight = '600';
+  const title = document.createElement('div'); title.style.fontWeight = '600';
+  const subtitle = document.createElement('div'); subtitle.style.color = '#666';
+  const buttons = document.createElement('div'); Object.assign(buttons.style, { display:'flex', justifyContent:'center', gap:'12px' });
 
-  const subtitle = document.createElement('div');
-  subtitle.style.fontSize = '13px';
-  subtitle.style.color = '#666';
-
-  const buttons = document.createElement('div');
-  Object.assign(buttons.style, { display: 'flex', justifyContent: 'center', gap: '12px' });
-
-  // ---------- Incoming ----------
+  // INCOMING
   if (mode === 'incoming') {
     title.textContent = `Incoming ${callType} call`;
     subtitle.textContent = 'Accept or decline';
 
-    const accept = document.createElement('button');
-    accept.textContent = 'Accept';
+    const accept = document.createElement('button'); accept.textContent = 'Accept';
     Object.assign(accept.style, btnGreen);
     accept.onclick = async () => {
       inCall = true;
-      localStream = await navigator.mediaDevices.getUserMedia(callType === 'video' ? { video: true, audio: true } : { audio: true });
+      localStream = await navigator.mediaDevices.getUserMedia(
+        callType === 'video' ? { video: true, audio: true } : { audio: true }
+      );
       localStream.getTracks().forEach(t => ensurePeer().addTrack(t, localStream));
 
       await ensurePeer().setRemoteDescription(new RTCSessionDescription(sdp));
-      const answer = await ensurePeer().createAnswer();
-      await ensurePeer().setLocalDescription(answer);
-      sendSignal({ type: 'call-answer', sdp: answer });
+      const ans = await ensurePeer().createAnswer();
+      await ensurePeer().setLocalDescription(ans);
+      sendSignal({ type:'call-answer', sdp: ans });
+
       showLocalPreview(localStream, callType);
-      if (callType === 'audio') startVoiceWave(localStream);
+      if (callType === 'audio') showCallModal('connected-audio');
       modal.remove();
     };
 
-    const decline = document.createElement('button');
-    decline.textContent = 'Decline';
+    const decline = document.createElement('button'); decline.textContent = 'Decline';
     Object.assign(decline.style, btnRed);
-    decline.onclick = () => { sendSignal({ type: 'call-end' }); modal.remove(); };
+    decline.onclick = () => { sendSignal({ type:'call-end' }); modal.remove(); };
 
     buttons.append(accept, decline);
   }
 
-  // ---------- Outgoing ----------
+  // OUTGOING
   if (mode === 'outgoing') {
     title.textContent = `Calling ${chatUser.name}...`;
     subtitle.textContent = 'Ringing';
 
-    const cancel = document.createElement('button');
-    cancel.textContent = 'Cancel';
+    const cancel = document.createElement('button'); cancel.textContent = 'Cancel';
     Object.assign(cancel.style, btnGray);
-    cancel.onclick = () => { sendSignal({ type: 'call-end' }); endCallLocal(); };
+    cancel.onclick = () => { sendSignal({ type:'call-end' }); endCallLocal(); };
 
     buttons.append(cancel);
   }
 
-  // ---------- Connected (Video) ----------
-  if (mode === 'connected-video') {
-    title.textContent = 'Video Call';
-    subtitle.textContent = '';
-
-    const video = document.createElement('video');
-    video.srcObject = callType;
-    video.autoplay = true;
-    video.playsInline = true;
-    Object.assign(video.style, { width: '260px', height: '200px', borderRadius: '12px', objectFit: 'cover' });
-
-    card.append(video);
-
-    const end = document.createElement('button');
-    end.textContent = 'End Call';
-    Object.assign(end.style, btnRed);
-    end.onclick = () => endCall();
-
-    buttons.append(end);
-  }
-
-  // ---------- Connected (Voice) ----------
+  // CONNECTED AUDIO
   if (mode === 'connected-audio') {
     title.textContent = 'Voice Call';
-    subtitle.textContent = `With ${chatUser.name}`;
+    subtitle.textContent = chatUser.name;
 
-    // Microphone icon + wave
     const mic = document.createElement('div');
-    mic.innerHTML = '🎤';
-    Object.assign(mic.style, { fontSize: '40px', margin: '10px auto' });
+    mic.textContent = '🎤';
+    mic.style.fontSize = '35px';
 
     const wave = document.createElement('div');
     wave.className = 'voice-wave';
     Object.assign(wave.style, {
-      width: '100px', height: '6px', margin: 'auto', borderRadius: '3px',
-      background: 'linear-gradient(90deg,#4ade80,#22c55e)'
+      width:'110px', height:'6px', margin:'auto',
+      background:'#4ade80', borderRadius:'3px', transition:'transform 0.1s'
     });
 
     card.append(mic, wave);
+    startVoiceWave(localStream);
 
-    // Play remote voice
-    playRemoteAudio(remoteAudioStream);
-
-    const end = document.createElement('button');
-    end.textContent = 'End Call';
+    const end = document.createElement('button'); end.textContent='End Call';
     Object.assign(end.style, btnRed);
-    end.onclick = () => endCall();
+    end.onclick = endCall;
+    buttons.append(end);
+  }
 
+  // CONNECTED VIDEO (unchanged)
+  if (mode === 'connected-video') {
+    title.textContent = 'Video Call';
+    const vid = document.createElement('video');
+    vid.srcObject = callType;
+    vid.autoplay = true;
+    vid.playsInline = true;
+    Object.assign(vid.style, { width:'260px', height:'200px', borderRadius:'12px', objectFit:'cover' });
+    card.append(vid);
+
+    const end = document.createElement('button'); end.textContent='End Call';
+    Object.assign(end.style, btnRed);
+    end.onclick = endCall;
     buttons.append(end);
   }
 
@@ -416,86 +410,73 @@ function showCallModal(mode, callType = 'video', sdp = null, remoteAudioStream =
   document.body.append(modal);
 }
 
-// -------------------- END CALL BOTH SIDES --------------------
-function endCall() {
-  sendSignal({ type: 'call-end' });
-  endCallLocal();
-}
-
-function endCallLocal() {
-  document.querySelectorAll('.call-modal').forEach(m => m.remove());
+// -------------------- END CALL --------------------
+function endCall(){ sendSignal({type:'call-end'}); endCallLocal(); }
+function endCallLocal(){
+  document.querySelectorAll('.call-modal').forEach(m=>m.remove());
   removeLocalPreview();
-  const audio = document.querySelector('.remote-audio'); if (audio) audio.remove();
   if (pc) pc.close();
-  pc = null;
-  inCall = false;
-  if (localStream) localStream.getTracks().forEach(t => t.stop());
-  localStream = null;
-  remoteStream = null;
+  pc = null; inCall = false;
+  if (localStream) localStream.getTracks().forEach(t=>t.stop());
+  localStream = null; remoteStream = null;
+  const a = document.querySelector('.remote-audio'); if (a) a.remove();
 }
 
-// -------------------- UI HELPERS --------------------
-const btnGreen = { background: '#16a34a', color: '#fff', padding: '10px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer' };
-const btnRed = { background: '#ef4444', color: '#fff', padding: '10px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer' };
-const btnGray = { background: '#6b7280', color: '#fff', padding: '10px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer' };
-
-// Show small preview bottom corner
-function showLocalPreview(stream, type) {
-  removeLocalPreview();
-  if (type === 'video') {
-    const video = document.createElement('video');
-    video.srcObject = stream;
-    video.autoplay = true;
-    video.muted = true;
-    Object.assign(video.style, {
-      position: 'fixed', bottom: '20px', right: '20px', width: '120px',
-      height: '100px', borderRadius: '12px', objectFit: 'cover', zIndex: 2000
-    });
-    video.className = 'local-preview';
-    document.body.append(video);
-  }
-}
-
-function removeLocalPreview() {
-  const el = document.querySelector('.local-preview');
-  if (el) el.remove();
-}
-
-// -------------------- AUDIO WAVE ANIMATION --------------------
-function startVoiceWave(stream) {
+// -------------------- AUDIO WAVE (mic animation) --------------------
+function startVoiceWave(stream){
   const wave = document.querySelector('.voice-wave');
   if (!wave) return;
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  source = audioCtx.createMediaStreamSource(stream);
+  const src = audioCtx.createMediaStreamSource(stream);
   analyser = audioCtx.createAnalyser();
   analyser.fftSize = 256;
-  source.connect(analyser);
-
+  src.connect(analyser);
   const data = new Uint8Array(analyser.frequencyBinCount);
-  (function loop() {
+
+  (function loop(){
     if (!inCall) return;
     analyser.getByteFrequencyData(data);
-    let avg = data.reduce((a, b) => a + b, 0) / data.length;
-    wave.style.transform = `scaleY(${Math.max(1, avg / 30)})`;
+    const avg = data.reduce((a,b)=>a+b,0) / data.length;
+    wave.style.transform = `scaleY(${1 + avg/50})`;
     requestAnimationFrame(loop);
   })();
 }
 
-// -------------------- START CALL --------------------
-async function startCall(type = 'video') {
+// -------------------- START CALL (unchanged) --------------------
+async function startCall(type='video'){
   showCallModal('outgoing', type);
-  localStream = await navigator.mediaDevices.getUserMedia(type === 'video' ? { video: true, audio: true } : { audio: true });
-  localStream.getTracks().forEach(t => ensurePeer().addTrack(t, localStream));
+  localStream = await navigator.mediaDevices.getUserMedia(type==='video'?{video:true,audio:true}:{audio:true});
+  localStream.getTracks().forEach(t=>ensurePeer().addTrack(t, localStream));
   const offer = await ensurePeer().createOffer();
   await ensurePeer().setLocalDescription(offer);
-  sendSignal({ type: 'call-offer', callType: type, sdp: offer });
+  sendSignal({type:'call-offer',callType:type,sdp:offer});
   showLocalPreview(localStream, type);
-  if (type === 'audio') startVoiceWave(localStream);
+  if (type === 'audio') showCallModal('connected-audio');
 }
 
-// Attach to buttons
-videoBtn.onclick = () => startCall('video');
-voiceBtn.onclick = () => startCall('audio');
+// BUTTON ACTIONS
+videoBtn.onclick = ()=> startCall('video');
+voiceBtn.onclick = ()=> startCall('audio');
+
+// STYLE BUTTON PRESETS
+const btnGreen = { background:'#16a34a',color:'#fff',padding:'10px 16px',border:'none',borderRadius:'8px',cursor:'pointer' };
+const btnRed   = { background:'#ef4444',color:'#fff',padding:'10px 16px',border:'none',borderRadius:'8px',cursor:'pointer' };
+const btnGray  = { background:'#6b7280',color:'#fff',padding:'10px 16px',border:'none',borderRadius:'8px',cursor:'pointer' };
+
+// Remove local preview
+function removeLocalPreview(){ const el=document.querySelector('.local-preview'); if(el)el.remove(); }
+
+// Play remote audio
+function playRemoteAudio(stream){
+  let audio = document.querySelector('.remote-audio');
+  if(!audio){
+    audio = document.createElement('audio');
+    audio.autoplay = true;
+    audio.className = 'remote-audio';
+    document.body.append(audio);
+  }
+  audio.srcObject = stream;
+}
 
 // -------------------- INIT --------------------
 (async function init(){
