@@ -148,11 +148,11 @@ backBtn.addEventListener('click', ()=>location.href='home.html');
 chatNameEl.textContent = chatUser.name;
 chatProfileEl.src = chatUser.profile_url;
 
-// --- Messages Dynamic Rendering ---
 function createMessageElement(message, sender){
   const row = document.createElement('div');
   row.style.display='flex';
   row.style.width='100%';
+  row.style.margin='6px 0';
   row.style.justifyContent = sender===hc_profile.email?'flex-end':'flex-start';
 
   const bubble = document.createElement('div');
@@ -164,34 +164,43 @@ function createMessageElement(message, sender){
     fontSize:'15px',
     lineHeight:1.4,
     position:'relative',
-    boxShadow:'0 4px 12px rgba(0,0,0,0.08)',
+    boxShadow:'0 2px 8px rgba(0,0,0,0.1)',
     wordBreak:'break-word',
     opacity:0,
     transform:'translateY(10px)',
     color: sender===hc_profile.email?'#fff':'#111',
     backgroundColor: sender===hc_profile.email?'#007aff':'#e4e6eb',
-    borderBottomRightRadius: sender===hc_profile.email?'6px':'18px',
-    borderBottomLeftRadius: sender!==hc_profile.email?'6px':'18px'
+    borderTopLeftRadius: sender===hc_profile.email?'18px':'6px',
+    borderTopRightRadius: sender!==hc_profile.email?'18px':'6px',
+    transition:'all 0.3s ease'
   });
+
   // timestamp
   const ts = document.createElement('div');
   ts.textContent = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
   Object.assign(ts.style,{
     fontSize:'11px',
     color:'#8a8d91',
-    position:'absolute',
-    bottom:'-14px',
-    right:'8px'
+    marginTop:'4px',
+    textAlign:'right'
   });
-  bubble.appendChild(ts);
-  row.appendChild(bubble);
+
+  // container for bubble + timestamp
+  const bubbleContainer = document.createElement('div');
+  bubbleContainer.style.display='flex';
+  bubbleContainer.style.flexDirection='column';
+  bubbleContainer.appendChild(bubble);
+  bubbleContainer.appendChild(ts);
+
+  row.appendChild(bubbleContainer);
   messagesEl.appendChild(row);
 
-  // animation
-  requestAnimationFrame(()=>{ bubble.style.transition='0.2s'; bubble.style.opacity=1; bubble.style.transform='translateY(0)'; });
+  // smooth pop animation
+  requestAnimationFrame(()=>{ bubble.style.opacity=1; bubble.style.transform='translateY(0)'; });
 
   messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' });
 }
+
 
 // --- Load messages ---
 let lastMessageTime=null;
