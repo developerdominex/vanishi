@@ -8,20 +8,18 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
 <style>
 :root{
-  --bg:#e0f7fa;
+  --bg:#f5f7fb;
   --card:#ffffff;
-  --sent:#8b5cf6; /* bright purple */
+  --sent:#8b5cf6;
   --sent-dark:#7c3aed;
-  --received:#f3f4f6; /* light gray */
-  --received-border:#d1d5db;
-  --typing:#a5d6a7;
+  --received:#f3f4f6;
+  --received-border:#e5e7eb;
   --accent:#2563eb;
   --green:#16a34a;
   --danger:#ef4444;
   --muted:#6b7280;
   --radius:24px;
 }
-
 *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,Arial,Helvetica,sans-serif}
 html,body{height:100%}
 body{
@@ -37,7 +35,7 @@ body{
   height:calc(100vh - 64px);
   background:var(--card);
   border-radius:18px;
-  box-shadow:0 20px 50px rgba(0,0,0,0.1);
+  box-shadow:0 20px 50px rgba(0,0,0,0.08);
   display:flex;
   flex-direction:column;
   overflow:hidden;
@@ -49,9 +47,9 @@ header{
   align-items:center;
   justify-content:space-between;
   gap:12px;
-  padding:12px 14px;
+  padding:14px;
   border-bottom:1px solid rgba(0,0,0,0.05);
-  background:linear-gradient(90deg, rgba(37,99,235,0.1), rgba(37,99,235,0.02));
+  background:#fff;
 }
 .left { display:flex; align-items:center; gap:10px; }
 .back-btn{background:transparent;border:none;font-size:18px;padding:6px;border-radius:10px;cursor:pointer;color:var(--muted)}
@@ -65,115 +63,102 @@ header{
 .icon-btn:hover{background:#f1f5f9}
 .icon-btn.disabled{opacity:0.4;pointer-events:none}
 
-/* messages area */
+/* messages */
 .messages {
   flex:1;
   padding:16px;
   overflow-y:auto;
   display:flex;
   flex-direction:column;
-  gap:12px;
-  background:linear-gradient(180deg, rgba(255,255,255,0.05), transparent);
-  scroll-behavior: smooth;
+  gap:10px;
+  background:linear-gradient(180deg,#fafafa,#fff);
+  scroll-behavior:smooth;
 }
 
-/* chat bubble */
+/* bubble */
 .bubble {
   max-width:75%;
   padding:12px 16px;
   border-radius:var(--radius);
-  word-break:break-word;
-  position:relative;
   font-size:15px;
   line-height:1.4;
+  position:relative;
   transition: all 0.2s ease;
-  display:flex;  /* changed from inline-block */
-  flex-direction: column;
+  display:flex;
+  flex-direction:column;
+  animation: popIn 0.22s ease-out;
 }
 
-/* sent message (right) */
-.bubble.me{
-  align-self:flex-end; /* aligns to right */
-  background:linear-gradient(135deg, var(--sent), var(--sent-dark));
+/* sent bubble (right) */
+.bubble.me {
+  align-self:flex-end;
+  background:linear-gradient(135deg,var(--sent),var(--sent-dark));
   color:#fff;
-  border-top-left-radius:24px;
-  border-top-right-radius:24px;
-  border-bottom-left-radius:24px;
-  border-bottom-right-radius:8px;
-  box-shadow:0 4px 10px rgba(124,58,237,0.3);
-  animation: popIn 0.2s ease;
+  border-top-left-radius:20px;
+  border-top-right-radius:20px;
+  border-bottom-left-radius:20px;
+  border-bottom-right-radius:6px;
+  box-shadow:0 4px 12px rgba(124,58,237,0.25);
 }
 
-/* received message (left) */
-.bubble.other{
-  align-self:flex-start; /* aligns to left */
+/* received bubble (left) */
+.bubble.other {
+  align-self:flex-start;
   background:var(--received);
   color:#111;
-  border-top-left-radius:24px;
-  border-top-right-radius:24px;
-  border-bottom-left-radius:8px;
-  border-bottom-right-radius:24px;
+  border-top-left-radius:20px;
+  border-top-right-radius:20px;
+  border-bottom-left-radius:6px;
+  border-bottom-right-radius:20px;
   border:1px solid var(--received-border);
   box-shadow:0 2px 6px rgba(0,0,0,0.05);
-  animation: popIn 0.2s ease;
 }
 
-/* timestamp inside bubble */
+/* timestamp */
 .ts {
   font-size:10px;
   color:#6b7280;
   position:absolute;
-  bottom:4px;
-  right:8px;
-  opacity:0.7;
+  bottom:-16px;
+  right:4px;
+  opacity:0.6;
 }
 
-/* typing bubble */
-.bubble.typing {
-  background:#d1fae5;
-  color:#16a34a;
-  display:flex;
-  align-items:center;
-  gap:4px;
-  border-radius:var(--radius);
-  width:40px;
-  padding:8px;
-}
-
-.bubble.typing span {
-  width:6px;
-  height:6px;
-  background:#16a34a;
-  border-radius:50%;
-  animation: blink 1.2s infinite;
-}
-
-.bubble.typing span:nth-child(2){ animation-delay: 0.2s; }
-.bubble.typing span:nth-child(3){ animation-delay: 0.4s; }
-
-/* animations */
-@keyframes blink {
-  0%, 80%, 100% { opacity:0; }
-  40% { opacity:1; }
-}
-@keyframes popIn {
-  0% { transform: scale(0.9); opacity:0; }
-  100% { transform: scale(1); opacity:1; }
-}
-
-/* input area */
+/* input */
 .composer {
   padding:12px;
   display:flex;
   gap:8px;
   align-items:center;
   border-top:1px solid rgba(0,0,0,0.05);
-  background:linear-gradient(180deg,#ffffff,#f0f0f0);
+  background:#fff;
 }
 .composer input{
-  flex:1;padding:12px;border-radius:24px;border:1px solid rgba(0,0,0,0.1);outline:none;font-size:15px;background:white;
+  flex:1;
+  padding:12px;
+  border-radius:24px;
+  border:1px solid rgba(0,0,0,0.1);
+  outline:none;
+  font-size:15px;
+  background:white;
+  transition:0.2s;
 }
-.send-btn{width:44px;height:44px;border-radius:12px;border:none;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.2)}
+.composer input:focus {
+  border-color:var(--accent);
+  box-shadow:0 0 4px rgba(37,99,235,0.25);
+}
+.send-btn{
+  width:44px;height:44px;
+  border-radius:12px;
+  border:none;
+  background:var(--accent);
+  color:white;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  box-shadow:0 4px 12px rgba(0,0,0,0.2);
+}
 .send-btn:active{transform:scale(0.97)}
 .send-btn.hidden{display:none}
 
@@ -189,14 +174,17 @@ header{
   display:flex;flex-direction:column;gap:12px
 }
 .call-peers{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-.call-peer{display:flex;flex-direction:column;align-items:center;gap:6px}
 .call-peer video, .call-peer img{width:120px;height:120px;border-radius:12px;object-fit:cover;background:#000}
-.call-text{font-weight:700;margin-bottom:4px}
-.call-sub{color:var(--muted);font-size:13px;margin-bottom:6px}
 .call-actions{display:flex;gap:12px;justify-content:center}
 .btn-accept{background:var(--green);color:white;padding:10px 16px;border-radius:12px;border:none;cursor:pointer}
 .btn-decline{background:var(--danger);color:white;padding:10px 16px;border-radius:12px;border:none}
 .btn-cancel{background:#94a3b8;color:white;padding:10px 16px;border-radius:12px;border:none}
+
+/* animations */
+@keyframes popIn {
+  0% { transform: translateY(5px) scale(0.97); opacity:0; }
+  100% { transform: translateY(0) scale(1); opacity:1; }
+}
 
 </style>
 </head>
