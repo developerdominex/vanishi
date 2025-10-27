@@ -64,47 +64,92 @@ header{
 
 /* messages area */
 .messages {
-  flex:1;
-  padding:16px;
-  overflow-y:auto;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-  background:linear-gradient(180deg, rgba(255,255,255,0.05), transparent);
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), transparent);
+  scroll-behavior: smooth;
 }
-.bubble{
-  max-width:70%;
-  padding:12px 16px;
-  border-radius:20px;
-  word-break:break-word;
-  position:relative;
-  font-size:15px;
-  line-height:1.4;
+
+/* chat bubble */
+.bubble {
+  max-width: 75%;
+  padding: 12px 16px;
+  border-radius: 24px;
+  word-break: break-word;
+  position: relative;
+  font-size: 15px;
+  line-height: 1.4;
   transition: all 0.2s ease;
+  display: inline-block;
 }
-.bubble.me{
-  margin-left:auto;
-  background:linear-gradient(135deg,var(--sent),var(--sent-dark));
-  color:#fff;
-  border-bottom-right-radius:6px;
-  box-shadow:0 4px 12px rgba(79,70,229,0.3);
+
+/* sent messages (right) */
+.bubble.me {
+  margin-left: auto;
+  background: linear-gradient(135deg, #a78bfa, #7c3aed); /* purple gradient */
+  color: #fff;
+  border-radius: 24px 24px 6px 24px; /* bottom-right smaller */
+  box-shadow: 0 4px 10px rgba(124, 58, 237, 0.3);
+  animation: popIn 0.2s ease;
 }
-.bubble.other{
-  margin-right:auto;
-  background:var(--received);
-  color:#111;
-  border-bottom-left-radius:6px;
-  border:1px solid var(--received-border);
-  box-shadow:0 2px 6px rgba(0,0,0,0.05);
+
+/* received messages (left) */
+.bubble.other {
+  margin-right: auto;
+  background: #f3f4f6; /* light gray */
+  color: #111;
+  border-radius: 24px 24px 24px 6px; /* bottom-left smaller */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  animation: popIn 0.2s ease;
 }
-.ts{
-  font-size:11px;
-  color:var(--muted);
-  position:absolute;
-  bottom:4px;
-  right:10px;
-  opacity:0.6;
+
+/* timestamp inside bubble */
+.ts {
+  font-size: 10px;
+  color: #6b7280;
+  position: absolute;
+  bottom: 4px;
+  right: 8px;
+  opacity: 0.7;
 }
+
+/* typing bubble */
+.bubble.typing {
+  background: #d1fae5;
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 24px;
+  width: 40px;
+  padding: 8px;
+}
+
+.bubble.typing span {
+  width: 6px;
+  height: 6px;
+  background: #16a34a;
+  border-radius: 50%;
+  animation: blink 1.2s infinite;
+}
+
+.bubble.typing span:nth-child(2){ animation-delay: 0.2s; }
+.bubble.typing span:nth-child(3){ animation-delay: 0.4s; }
+
+/* animations */
+@keyframes blink {
+  0%, 80%, 100% { opacity: 0; }
+  40% { opacity: 1; }
+}
+@keyframes popIn {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 
 /* input area */
 .composer {
