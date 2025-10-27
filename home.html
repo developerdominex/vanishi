@@ -8,64 +8,122 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
 <style>
   :root {
-    --bg: #f3f4f6;
-    --card: #fff;
-    --muted: #6b7280;
-    --hover: #e5e7eb;
-  }
+  --bg: #f3f4f6;
+  --card: #fff;
+  --muted: #6b7280;
+  --hover: #e5e7eb;
+}
 
-  *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;}
-  body{background:var(--bg);display:flex;justify-content:center;align-items:flex-start;height:100vh;padding-top:50px;}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
 
-  .card {
-    width: 50%;
-    background: var(--card);
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-    display: flex;
-    flex-direction: column;
-    max-height: 600px; /* Fixed height */
-    overflow: hidden;
-  }
+body {
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  height: 100vh;
+  padding-top: 50px;
+}
 
-  header{
-    background: var(--card);
-    padding:16px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    box-shadow:0 2px 6px rgba(0,0,0,0.05);
-    position: sticky;
-    top:0;
-    z-index:10;
-  }
-  header h1{font-size:1.5rem;color:#111827;}
-  header button{
-    background:none;
-    border:none;
-    font-size:1.2rem;
-    cursor:pointer;
-    color:var(--muted);
-  }
+/* ✅ Fix the card height so it fits till bottom but doesn’t stretch */
+.card {
+  width: 50%;
+  background: var(--card);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 80px); /* Adjusts to screen and leaves padding */
+  overflow: hidden;
+}
 
-  #chat-list{
-    flex:1;
-    overflow-y:auto;
-    padding:8px;
-  }
+/* Header remains sticky inside fixed height */
+header {
+  background: var(--card);
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
 
-  .chat-item{
-    display:flex;align-items:center;padding:10px;background:var(--card);
-    border-radius:12px;margin-bottom:8px;cursor:pointer;transition:0.2s;
-  }
-  .chat-item:hover{background:var(--hover);}
-  .chat-item img{width:50px;height:50px;border-radius:50%;object-fit:cover;}
-  .chat-info{margin-left:12px;flex:1;}
-  .chat-info .name{font-weight:600;color:#111827;}
-  .chat-info .last-msg{font-size:0.875rem;color:var(--muted);}
-  .chat-time{font-size:0.75rem;color:var(--muted);white-space:nowrap;}
+header h1 {
+  font-size: 1.5rem;
+  color: #111827;
+}
 
-  .no-chat{text-align:center;padding:32px;color:var(--muted);font-weight:500;}
+header button {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+#chat-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.chat-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  background: var(--card);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.chat-item:hover {
+  background: var(--hover);
+}
+
+.chat-item img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.chat-info {
+  margin-left: 12px;
+  flex: 1;
+}
+
+.chat-info .name {
+  font-weight: 600;
+  color: #111827;
+}
+
+.chat-info .last-msg {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.chat-time {
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.no-chat {
+  text-align: center;
+  padding: 32px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
 </style>
 </head>
 <body>
@@ -151,3 +209,4 @@ fetchChatList();
 </script>
 </body>
 </html>
+
