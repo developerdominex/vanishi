@@ -13,6 +13,8 @@
   --muted:#6b7280;
   --accent:#2563eb;
   --hover:#eef2ff;
+  --online:#22c55e;
+  --offline:#6b7280;
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,Helvetica,sans-serif}
 body{min-height:100vh;background:var(--bg);display:flex;align-items:flex-start;justify-content:center;padding:48px 16px}
@@ -30,6 +32,7 @@ header .controls{display:flex; gap:10px;align-items:center}
 .meta .name{font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .meta .msg{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .time{font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap}
+.status-dot{width:10px;height:10px;border-radius:50%;margin-left:4px;flex-shrink:0}
 .no-chat{display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-weight:600}
 .error{padding:12px;color:#b91c1c}
 </style>
@@ -51,98 +54,108 @@ header .controls{display:flex; gap:10px;align-items:center}
 </div>
 
 <script type="module">
-(async function(){
-  // Supabase REST URL and anon key (messages table)
-  const MSG_REST_URL = 'https://ilgkibqwngznqwnhgavh.supabase.co/rest/v1';
-  const MSG_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsZ2tpYnF3bmd6bnF3bmhnYXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NzU3NDcsImV4cCI6MjA3NzA1MTc0N30.jFHL4VDU81BRqxpoWc4u_4VYG4sI-SB0-EkxSfPGZ5k';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-  const chatListEl = document.getElementById('chat-list');
-  const searchBtn = document.getElementById('searchBtn');
-  const refreshBtn = document.getElementById('refreshBtn');
+// Supabase endpoints
+const MSG_REST_URL = 'https://ilgkibqwngznqwnhgavh.supabase.co/rest/v1';
+const MSG_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsZ2tpYnF3bmd6bnF3bmhnYXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NzU3NDcsImV4cCI6MjA3NzA1MTc0N30.jFHL4VDU81BRqxpoWc4u_4VYG4sI-SB0-EkxSfPGZ5k';
 
-  // Get current user from hc_profile
-  const stored = localStorage.getItem('hc_profile');
-  if(!stored) { window.location.href = 'register.html'; return; }
-  const me = JSON.parse(stored);
+const USERS_REST_URL = 'https://dfzshvldanqfvfivjrqi.supabase.co/rest/v1';
+const USERS_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmenNodmxkYW5xZnZmaXZqcnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4MDIxNTEsImV4cCI6MjA3MDM3ODE1MX0.wdms-6G9eDzRuk1YiCpdyvVS-5CRKCsrq9WWWIFl9HA';
 
-  // Helper to safely quote values for REST
-  const quoted = v => `"${String(v).replace(/"/g,'""')}"`;
+const SUPABASE_URL = 'https://ilgkibqwngznqwnhgavh.supabase.co';
+const SUPABASE_KEY = MSG_ANON; 
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // Build messages REST query based on current user
-  function buildMessagesQuery(email){
-    const orRaw = `(sender.eq.${quoted(email)},receiver.eq.${quoted(email)})`;
-    const qs = [
-      'select=sender,receiver,message,created_at',
-      'order=created_at.desc',
-      'limit=1000',
-      'or=' + encodeURIComponent(orRaw)
-    ].join('&');
-    return qs;
-  }
+const chatListEl = document.getElementById('chat-list');
+const searchBtn = document.getElementById('searchBtn');
+const refreshBtn = document.getElementById('refreshBtn');
 
-  async function restGet(qs){
-    const url = MSG_REST_URL + '/messages?' + qs;
-    const headers = {
-      'apikey': MSG_ANON,
-      'Authorization': 'Bearer ' + MSG_ANON,
-      'Accept': 'application/json'
-    };
-    const res = await fetch(url,{headers});
-    if(!res.ok) throw new Error('Failed to fetch messages: '+res.status);
-    return res.json();
-  }
+const me = JSON.parse(localStorage.getItem('hc_profile') || '{}');
+if(!me.email){ window.location.href='register.html'; }
 
-  function showNoChat(){ chatListEl.innerHTML = `<div class="no-chat">No chat</div>`; }
-  function showError(msg){ chatListEl.innerHTML = `<div class="error">${msg}</div>`; }
+// Helper to quote
+const q = v=>`"${String(v).replace(/"/g,'""')}"`;
 
-  async function loadChatList(){
-    chatListEl.innerHTML = `<div class="no-chat">Loading chats…</div>`;
-    try{
-      const qs = buildMessagesQuery(me.email);
-      const msgs = await restGet(qs);
-      if(!msgs || !msgs.length){ showNoChat(); return; }
+// Fetch messages for current user
+async function fetchMessages(){
+  const orRaw = `(sender.eq.${q(me.email)},receiver.eq.${q(me.email)})`;
+  const qs = `select=sender,receiver,message,created_at&order=created_at.desc&limit=1000&or=${encodeURIComponent(orRaw)}`;
+  const res = await fetch(`${MSG_REST_URL}/messages?${qs}`,{
+    headers:{apikey:MSG_ANON,'Authorization':'Bearer '+MSG_ANON,'Accept':'application/json'}
+  });
+  if(!res.ok) throw new Error('Failed to fetch messages');
+  return res.json();
+}
 
-      const chatMap = new Map();
-      for(const m of msgs){
-        const other = (m.sender===me.email)?m.receiver:m.sender;
-        if(!chatMap.has(other)) chatMap.set(other, m);
-      }
+// Fetch user profile from users table
+async function fetchUserProfile(email){
+  const qs = `select=name,profile_url&email=eq.${encodeURIComponent(email)}&limit=1`;
+  const res = await fetch(`${USERS_REST_URL}/users?${qs}`,{
+    headers:{apikey:USERS_ANON,'Authorization':'Bearer '+USERS_ANON,'Accept':'application/json'}
+  });
+  if(!res.ok) return {name:email, profile_url:''};
+  const data = await res.json();
+  return data[0] || {name:email,profile_url:''};
+}
 
-      chatListEl.innerHTML='';
-      for(const [otherEmail, recentMsg] of chatMap.entries()){
-        const name = otherEmail.split('@')[0]; // fallback: use email as name
-        const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
+async function loadChatList(){
+  chatListEl.innerHTML=`<div class="no-chat">Loading chats…</div>`;
+  try{
+    const msgs = await fetchMessages();
+    if(!msgs.length){ chatListEl.innerHTML=`<div class="no-chat">No chat</div>`; return; }
 
-        const item = document.createElement('div');
-        item.className='item';
-        item.innerHTML=`
-          <img class="avatar" src="${avatar}" alt="avatar">
-          <div class="meta">
-            <div class="name">${name}</div>
-            <div class="msg">${recentMsg.message}</div>
-          </div>
-          <div class="time">${new Date(recentMsg.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
-        `;
-        item.addEventListener('click', ()=> {
-          const params = new URLSearchParams({name:name,email:otherEmail,profile_url:''});
-          location.href=`chat.html?${params.toString()}`;
-        });
-        chatListEl.appendChild(item);
-      }
-    }catch(e){
-      console.error(e);
-      showError('Unable to load chats. Check database or network.');
+    // Map latest message per other user
+    const chatMap = new Map();
+    for(const m of msgs){
+      const other = (m.sender===me.email)?m.receiver:m.sender;
+      if(!chatMap.has(other)) chatMap.set(other, m);
     }
-  }
 
-  refreshBtn.addEventListener('click', loadChatList);
-  searchBtn.addEventListener('click', ()=> location.href='search.html');
+    chatListEl.innerHTML='';
+    for(const [otherEmail, recentMsg] of chatMap.entries()){
+      const profile = await fetchUserProfile(otherEmail);
 
-  await loadChatList();
-  // Optional auto-refresh every 30s
-  setInterval(loadChatList, 30000);
+      const item = document.createElement('div');
+      item.className='item';
+      item.innerHTML=`
+        <img class="avatar" src="${profile.profile_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}`}" alt="avatar">
+        <div class="meta">
+          <div class="name">${profile.name} <span class="status-dot" id="status-${otherEmail.replace(/[@.]/g,'-')}"></span></div>
+          <div class="msg">${recentMsg.message}</div>
+        </div>
+        <div class="time">${new Date(recentMsg.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+      `;
+      item.addEventListener('click',()=> {
+        const params = new URLSearchParams({name:profile.name,email:otherEmail,profile_url:profile.profile_url});
+        location.href=`chat.html?${params.toString()}`;
+      });
+      chatListEl.appendChild(item);
+    }
+    setupRealtimeStatus([...chatMap.keys()]);
+  }catch(e){console.error(e); chatListEl.innerHTML=`<div class="error">Unable to load chats</div>`;}
+}
 
-})();
+searchBtn.addEventListener('click',()=>location.href='search.html');
+refreshBtn.addEventListener('click',loadChatList);
+
+// Realtime online/offline status
+function setupRealtimeStatus(emails){
+  const channel = supabase.channel('user-presence');
+  channel.subscribe();
+  emails.forEach(email=>{
+    const dot = document.getElementById(`status-${email.replace(/[@.]/g,'-')}`);
+    dot.style.backgroundColor = '--offline';
+  });
+
+  channel.on('postgres_changes', { event:'*', schema:'public', table:'users' }, payload=>{
+    if(!payload.new?.email) return;
+    const dot = document.getElementById(`status-${payload.new.email.replace(/[@.]/g,'-')}`);
+    if(dot) dot.style.backgroundColor = '--online';
+  });
+}
+
+await loadChatList();
 </script>
 </body>
 </html>
