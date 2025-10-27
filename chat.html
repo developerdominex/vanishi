@@ -149,54 +149,65 @@ chatNameEl.textContent = chatUser.name;
 chatProfileEl.src = chatUser.profile_url;
 
 function createMessageElement(message, sender){
+  // row container
   const row = document.createElement('div');
-  row.style.display='flex';
-  row.style.width='100%';
-  row.style.margin='6px 0';
-  row.style.justifyContent = sender===hc_profile.email?'flex-end':'flex-start';
+  Object.assign(row.style,{
+    display: 'flex',
+    width: '100%',
+    margin: '6px 0',
+    justifyContent: sender===hc_profile.email ? 'flex-end' : 'flex-start'
+  });
 
+  // bubble container
+  const bubbleContainer = document.createElement('div');
+  Object.assign(bubbleContainer.style,{
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: sender===hc_profile.email ? 'flex-end' : 'flex-start',
+    maxWidth: '70%'
+  });
+
+  // bubble
   const bubble = document.createElement('div');
   bubble.textContent = message;
   Object.assign(bubble.style,{
-    maxWidth:'70%',
-    padding:'10px 14px',
-    borderRadius:'18px',
-    fontSize:'15px',
-    lineHeight:1.4,
-    position:'relative',
-    boxShadow:'0 2px 8px rgba(0,0,0,0.1)',
-    wordBreak:'break-word',
-    opacity:0,
-    transform:'translateY(10px)',
-    color: sender===hc_profile.email?'#fff':'#111',
-    backgroundColor: sender===hc_profile.email?'#007aff':'#e4e6eb',
-    borderTopLeftRadius: sender===hc_profile.email?'18px':'6px',
-    borderTopRightRadius: sender!==hc_profile.email?'18px':'6px',
-    transition:'all 0.3s ease'
+    padding: '10px 14px',
+    borderRadius: '18px',
+    fontSize: '15px',
+    lineHeight: 1.4,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    wordBreak: 'break-word',
+    opacity: 0,
+    transform: 'translateY(10px)',
+    color: sender===hc_profile.email ? '#fff' : '#111',
+    backgroundColor: sender===hc_profile.email ? '#007aff' : '#e4e6eb',
+    borderTopLeftRadius: sender===hc_profile.email ? '18px' : '6px',
+    borderTopRightRadius: sender!==hc_profile.email ? '18px' : '6px',
+    borderBottomLeftRadius: '18px',
+    borderBottomRightRadius: '18px',
+    transition: 'all 0.3s ease'
   });
 
   // timestamp
   const ts = document.createElement('div');
-  ts.textContent = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  ts.textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
   Object.assign(ts.style,{
-    fontSize:'11px',
-    color:'#8a8d91',
-    marginTop:'4px',
-    textAlign:'right'
+    fontSize: '11px',
+    color: '#8a8d91',
+    marginTop: '4px'
   });
 
-  // container for bubble + timestamp
-  const bubbleContainer = document.createElement('div');
-  bubbleContainer.style.display='flex';
-  bubbleContainer.style.flexDirection='column';
+  // assemble
   bubbleContainer.appendChild(bubble);
   bubbleContainer.appendChild(ts);
-
   row.appendChild(bubbleContainer);
   messagesEl.appendChild(row);
 
-  // smooth pop animation
-  requestAnimationFrame(()=>{ bubble.style.opacity=1; bubble.style.transform='translateY(0)'; });
+  // smooth animation
+  requestAnimationFrame(() => {
+    bubble.style.opacity = 1;
+    bubble.style.transform = 'translateY(0)';
+  });
 
   messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' });
 }
