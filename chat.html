@@ -230,26 +230,51 @@ async function sendMessage(){
 }
 
 // ---------------------- TYPING ----------------------
-const typingChannel = 'typing-'+[hc_profile.email,chatUser.email].sort().join('-');
-function sendTyping(flag){ supabase.channel(typingChannel).send({type:'broadcast',event:'typing',payload:{from:hc_profile.email,to:chatUser.email,typing:flag}});}
-inputEl.addEventListener('input',()=>sendTyping(inputEl.value.trim().length>0));
+const typingChannelName = 'typing-'+[hc_profile.email,chatUser.email].sort().join('-');
+const typingChannel = supabase.channel(typingChannelName);
 
-supabase.channel(typingChannel).on('broadcast',{event:'typing'},({payload})=>{
-  if(payload.from===chatUser.email && payload.to===hc_profile.email){
-    chatStatusEl.textContent = payload.typing?'Typing...':'Online';
+function sendTyping(flag){
+  typingChannel.send({
+    type: 'broadcast',
+    event: 'typing',
+    payload: {from: hc_profile.email, to: chatUser.email, typing: flag}
+  });
+}
+
+inputEl.addEventListener('input', () => sendTyping(inputEl.value.trim().length>0));
+
+typingChannel.on('broadcast', { event: 'typing' }, ({payload})=>{
+  if(payload.from === chatUser.email && payload.to === hc_profile.email){
+    chatStatusEl.textContent = payload.typing ? 'Typing...' : 'Online';
   }
 }).subscribe();
 
-// ---------------------- PRESENCE ----------------------
-const presenceChannel = 'presence-global';
-supabase.channel(presenceChannel).on('broadcast',{event:'presence'},({payload})=>{
-  if(payload.user===chatUser.email){
-    chatStatusEl.textContent = payload.online?'Online':'Offline';
-    videoBtn.classList.toggle('disabled',!payload.online);
-    voiceBtn.classList.toggle('disabled',!payload.online);
-  }
-}).subscribe();
+const presenceChannel = supabase.channel('presence-global', {preserveSession: true, config: {broadcast: {self: true}}})
+  .on('presence', { event: 'sync' }, (state) => {
+    // state holds all current online users
+    const online = state.presence_list?.some(p => p.user === chatUser.email);
+    chatStatusEl.textContent = online ? 'Online' : 'Offline';
+    videoBtn.classList.toggle('disabled', !online);
+    voiceBtn.classList.toggle('disabled', !online);
+  })
+  .on('presence', { event: 'join' }, ({key, newPresences})=>{
+    if(newPresences.some(p=>p.user===chatUser.email)){
+      chatStatusEl.textContent = 'Online';
+      videoBtn.classList.remove('disabled');
+      voiceBtn.classList.remove('disabled');
+    }
+  })
+  .on('presence', { event: 'leave' }, ({key, leftPresences})=>{
+    if(leftPresences.some(p=>p.user===chatUser.email)){
+      chatStatusEl.textContent = 'Offline';
+      videoBtn.classList.add('disabled');
+      voiceBtn.classList.add('disabled');
+    }
+  })
+  .subscribe();
 
+// Track self as online
+presenceChannel.track({user: hc_profile.email, online: true});
 // ---------------------- WebRTC CALL ----------------------
 let pc=null, localStream=null;
 function ensurePeer(){
