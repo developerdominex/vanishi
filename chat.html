@@ -8,17 +8,17 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
 <style>
 :root{
-  --bg:#e0f7fa;
+  --bg:#f0f4f8;
   --card:#ffffff;
   --sent:#4f46e5;
   --sent-dark:#4338ca;
-  --received:#ffecb3;
+  --received:#f3e8ff;
   --typing:#a5d6a7;
   --accent:#2563eb;
   --green:#16a34a;
   --danger:#ef4444;
   --muted:#6b7280;
-  --radius:20px;
+  --radius:24px;
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,Arial,Helvetica,sans-serif}
 html,body{height:100%}
@@ -34,7 +34,7 @@ body{
   height:calc(100vh - 64px);
   background:var(--card);
   border-radius:18px;
-  box-shadow:0 20px 50px rgba(0,0,0,0.1);
+  box-shadow:0 20px 50px rgba(0,0,0,0.08);
   display:flex;
   flex-direction:column;
   overflow:hidden;
@@ -74,32 +74,36 @@ header{
 .bubble{
   max-width:70%;
   padding:12px 16px;
-  border-radius:20px;
+  border-radius:24px;
   word-break:break-word;
   position:relative;
-  box-shadow:0 4px 12px rgba(0,0,0,0.06);
   font-size:15px;
-  line-height:1.4;
+  line-height:1.5;
+  box-shadow:0 4px 12px rgba(0,0,0,0.06);
   transition: all 0.2s ease;
 }
 .bubble.me{
-  margin-left:auto;
-  background:linear-gradient(180deg,var(--sent),var(--sent-dark));
+  align-self:flex-end;
+  background:linear-gradient(135deg,#4f46e5,#4338ca);
   color:#fff;
   border-bottom-right-radius:6px;
+  border-top-right-radius:24px;
+  border-top-left-radius:24px;
 }
 .bubble.other{
-  margin-right:auto;
-  background:var(--received);
+  align-self:flex-start;
+  background:linear-gradient(135deg,#f3e8ff,#e9d5ff);
   color:#000;
   border-bottom-left-radius:6px;
+  border-top-left-radius:24px;
+  border-top-right-radius:24px;
 }
 .ts{
   font-size:11px;
   color:var(--muted);
   position:absolute;
   bottom:4px;
-  right:8px;
+  right:10px;
   opacity:0.7;
 }
 
@@ -113,9 +117,21 @@ header{
   background:linear-gradient(180deg,#ffffff,#f0f0f0);
 }
 .composer input{
-  flex:1;padding:12px;border-radius:20px;border:1px solid rgba(0,0,0,0.1);outline:none;font-size:15px;background:white;
+  flex:1;
+  padding:12px;
+  border-radius:24px;
+  border:1px solid rgba(0,0,0,0.1);
+  outline:none;
+  font-size:15px;
+  background:white;
 }
-.send-btn{width:44px;height:44px;border-radius:12px;border:none;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.2)}
+.send-btn{
+  width:44px;height:44px;border-radius:12px;border:none;
+  background:var(--accent);color:white;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  box-shadow:0 4px 12px rgba(0,0,0,0.2);
+}
 .send-btn:active{transform:scale(0.97)}
 .send-btn.hidden{display:none}
 
@@ -137,7 +153,7 @@ header{
 .call-sub{color:var(--muted);font-size:13px;margin-bottom:6px}
 .call-actions{display:flex;gap:12px;justify-content:center}
 .btn-accept{background:var(--green);color:white;padding:10px 16px;border-radius:12px;border:none;cursor:pointer}
-.btn-decline{background:var(--danger);color:white;padding:10px 16px;border-radius:12px;border:none;cursor:pointer}
+.btn-decline{background:var(--danger);color:white;padding:10px 16px;border-radius:12px;border:none}
 .btn-cancel{background:#94a3b8;color:white;padding:10px 16px;border-radius:12px;border:none}
 </style>
 </head>
@@ -184,7 +200,7 @@ header{
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
 const SUPABASE_URL = "https://ilgkibqwngznqwnhgavh.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsZ2tpYnF3bmd6bnF3bmhnYXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NzU3NDcsImV4cCI6MjA3NzA1MTc0N30.jFHL4VDU81BRqxpoWc4u_4VYG4sI-SB0-EkxSfPGZ5k"; // your anon key
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsZ2tpYnF3bmd6bnNnaGtoYXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NzU3NDcsImV4cCI6MjA3NzA1MTc0N30.jFHL4VDU81BRqxpoWc4u_4VYG4sI-SB0-EkxSfPGZ5k"; 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const hc_profile = JSON.parse(localStorage.getItem('hc_profile')||'{}');
@@ -217,121 +233,146 @@ backBtn.addEventListener('click', ()=>location.href='home.html');
 chatNameEl.textContent = chatUser.name;
 chatProfileEl.src = chatUser.profile_url;
 
-// messages
-let lastMessageTime=null;
-async function loadMessages(){
+// ---------------- Messages ----------------
+let lastMessageTime = null;
+
+async function loadMessages() {
   const { data } = await supabase.from('messages').select('*')
     .or(`and(sender.eq.${hc_profile.email},receiver.eq.${chatUser.email}),and(sender.eq.${chatUser.email},receiver.eq.${hc_profile.email})`)
-    .order('created_at',{ascending:true})
+    .order('created_at', { ascending: true })
     .gt('created_at', lastMessageTime || '1970-01-01T00:00:00Z');
-  if(data.length>0){
+  if (data.length > 0) {
     data.forEach(appendMessage);
     lastMessageTime = data[data.length-1].created_at;
   }
 }
-function appendMessage(m){
+
+function appendMessage(m) {
   const d = document.createElement('div');
-  d.className='bubble '+(m.sender===hc_profile.email?'me':'other');
-  d.textContent=m.message;
-  const ts = document.createElement('div'); ts.className='ts';
-  ts.textContent=new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  d.className = 'bubble ' + (m.sender === hc_profile.email ? 'me' : 'other');
+  d.textContent = m.message;
+  const ts = document.createElement('div'); ts.className = 'ts';
+  ts.textContent = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   d.appendChild(ts);
   messagesEl.appendChild(d);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-// polling
+// Polling messages every 1.5s
 setInterval(loadMessages, 1500);
 
-// send message
+// ---------------- Send Message ----------------
 sendBtn.addEventListener('click', sendMessage);
 inputEl.addEventListener('input', () => sendBtn.classList.toggle('hidden', inputEl.value.trim().length === 0));
 inputEl.addEventListener('keydown', e => { if(e.key==='Enter') sendBtn.click(); });
 
-async function sendMessage(){
+async function sendMessage() {
   const text = inputEl.value.trim();
-  if(!text) return;
-  inputEl.value=''; sendBtn.classList.add('hidden');
+  if (!text) return;
+  inputEl.value = ''; sendBtn.classList.add('hidden');
   await supabase.from('messages').insert([{ sender: hc_profile.email, receiver: chatUser.email, message: text, created_at: new Date().toISOString() }]);
 }
 
-// typing indicator
-const typingChannel = 'typing-'+[hc_profile.email,chatUser.email].sort().join('-');
-function sendTyping(flag){ supabase.channel(typingChannel).send({type:'broadcast',event:'typing',payload:{from:hc_profile.email,to:chatUser.email,typing:flag}});}
-inputEl.addEventListener('input',()=>sendTyping(inputEl.value.trim().length>0));
+// ---------------- Typing Indicator ----------------
+const typingChannel = 'typing-' + [hc_profile.email, chatUser.email].sort().join('-');
+let typingTimeout;
 
-supabase.channel(typingChannel).on('broadcast',{event:'typing'},({payload})=>{
-  if(payload.from===chatUser.email && payload.to===hc_profile.email){
-    chatStatusEl.textContent = payload.typing?'Typing...':'Online';
+function sendTyping(flag) {
+  supabase.channel(typingChannel).send({ type: 'broadcast', event: 'typing', payload: { from: hc_profile.email, to: chatUser.email, typing: flag } });
+}
+
+inputEl.addEventListener('input', () => {
+  const isTyping = inputEl.value.trim().length > 0;
+  sendTyping(isTyping);
+  clearTimeout(typingTimeout);
+  if (isTyping) {
+    typingTimeout = setTimeout(() => { sendTyping(false); }, 2000);
+  }
+});
+
+supabase.channel(typingChannel).on('broadcast', { event: 'typing' }, ({ payload }) => {
+  if (payload.from === chatUser.email && payload.to === hc_profile.email) {
+    chatStatusEl.textContent = payload.typing ? 'Typing...' : 'Online';
   }
 }).subscribe();
 
-// online/offline
+// ---------------- Online/Offline Presence ----------------
 const presenceChannel = 'presence-global';
-supabase.channel(presenceChannel).on('broadcast',{event:'presence'},({payload})=>{
-  if(payload.user===chatUser.email){
-    chatStatusEl.textContent = payload.online?'Online':'Offline';
-    videoBtn.classList.toggle('disabled',!payload.online);
-    voiceBtn.classList.toggle('disabled',!payload.online);
+supabase.channel(presenceChannel).on('broadcast', { event: 'presence' }, ({ payload }) => {
+  if (payload.user === chatUser.email) {
+    chatStatusEl.textContent = payload.online ? 'Online' : 'Offline';
+    videoBtn.classList.toggle('disabled', !payload.online);
+    voiceBtn.classList.toggle('disabled', !payload.online);
   }
 }).subscribe();
 
-// WebRTC
-let pc=null,localStream=null;
-function ensurePeer(){
-  if(pc) return pc;
-  pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
-  pc.onicecandidate=e=>{ if(e.candidate) sendSignal({type:'candidate',candidate:e.candidate});};
-  pc.ontrack=e=>{
-    const v = document.createElement('video'); v.autoplay=true; v.playsInline=true;
-    v.srcObject=e.streams[0]; callPeers.appendChild(v);
+// ---------------- WebRTC Calls ----------------
+let pc = null, localStream = null;
+
+function ensurePeer() {
+  if (pc) return pc;
+  pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+  pc.onicecandidate = e => { if(e.candidate) sendSignal({ type:'candidate', candidate:e.candidate }); };
+  pc.ontrack = e => {
+    const v = document.createElement('video'); v.autoplay = true; v.playsInline = true;
+    v.srcObject = e.streams[0]; callPeers.appendChild(v);
   };
   return pc;
 }
-function sendSignal(payload){ supabase.channel('webrtc-'+[hc_profile.email,chatUser.email].sort().join('-')).send({type:'broadcast',event:'signal',payload:{from:hc_profile.email,to:chatUser.email,...payload}}); }
-supabase.channel('webrtc-'+[hc_profile.email,chatUser.email].sort().join('-')).on('broadcast',{event:'signal'}, async ({payload})=>{
-  if(!payload || payload.to!==hc_profile.email) return;
-  if(payload.type==='call-offer') showCallDialog('incoming',payload.callType,payload.sdp);
-  else if(payload.type==='call-answer') await ensurePeer().setRemoteDescription(new RTCSessionDescription(payload.sdp));
-  else if(payload.type==='candidate') await ensurePeer().addIceCandidate(new RTCIceCandidate(payload.candidate));
+
+function sendSignal(payload) {
+  supabase.channel('webrtc-' + [hc_profile.email, chatUser.email].sort().join('-')).send({ type:'broadcast', event:'signal', payload: { from: hc_profile.email, to: chatUser.email, ...payload } });
+}
+
+supabase.channel('webrtc-' + [hc_profile.email, chatUser.email].sort().join('-')).on('broadcast', { event:'signal' }, async ({ payload }) => {
+  if (!payload || payload.to !== hc_profile.email) return;
+  if (payload.type === 'call-offer') showCallDialog('incoming', payload.callType, payload.sdp);
+  else if (payload.type === 'call-answer') await ensurePeer().setRemoteDescription(new RTCSessionDescription(payload.sdp));
+  else if (payload.type === 'candidate') await ensurePeer().addIceCandidate(new RTCIceCandidate(payload.candidate));
 }).subscribe();
 
-function showCallDialog(mode='outgoing',callType='video',sdp=null){
-  callDialog.style.display='flex'; callPeers.innerHTML='';
-  if(mode==='outgoing'){
-    callPeerName.textContent=`Calling ${chatUser.name}`; callPeerSub.textContent='Ringing...';
-    acceptBtn.style.display='none'; declineBtn.style.display='none'; cancelBtn.style.display='inline-block';
+function showCallDialog(mode='outgoing', callType='video', sdp=null) {
+  callDialog.style.display = 'flex'; callPeers.innerHTML = '';
+  if (mode === 'outgoing') {
+    callPeerName.textContent = `Calling ${chatUser.name}`; callPeerSub.textContent = 'Ringing...';
+    acceptBtn.style.display = 'none'; declineBtn.style.display = 'none'; cancelBtn.style.display = 'inline-block';
   } else {
-    callPeerName.textContent=chatUser.name; callPeerSub.textContent='Incoming call';
-    acceptBtn.style.display='inline-block'; declineBtn.style.display='inline-block'; cancelBtn.style.display='none';
-    acceptBtn.onclick=async ()=>{
-      localStream=await navigator.mediaDevices.getUserMedia(callType==='video'?{video:true,audio:true}:{audio:true});
-      localStream.getTracks().forEach(track=>ensurePeer().addTrack(track,localStream));
+    callPeerName.textContent = chatUser.name; callPeerSub.textContent = 'Incoming call';
+    acceptBtn.style.display = 'inline-block'; declineBtn.style.display = 'inline-block'; cancelBtn.style.display = 'none';
+    acceptBtn.onclick = async () => {
+      localStream = await navigator.mediaDevices.getUserMedia(callType==='video'?{video:true,audio:true}:{audio:true});
+      localStream.getTracks().forEach(track => ensurePeer().addTrack(track, localStream));
       await ensurePeer().setRemoteDescription(new RTCSessionDescription(sdp));
       const answer = await ensurePeer().createAnswer();
       await ensurePeer().setLocalDescription(answer);
-      sendSignal({type:'call-answer',sdp:answer}); hideCallDialog();
+      sendSignal({ type:'call-answer', sdp:answer });
+      hideCallDialog();
     };
-    declineBtn.onclick=()=>{ hideCallDialog(); sendSignal({type:'call-decline'}); };
+    declineBtn.onclick = () => { hideCallDialog(); sendSignal({ type:'call-decline' }); };
   }
-  cancelBtn.onclick=()=>{ hideCallDialog(); sendSignal({type:'call-cancel'});}
+  cancelBtn.onclick = () => { hideCallDialog(); sendSignal({ type:'call-cancel' }); };
 }
-function hideCallDialog(){ callDialog.style.display='none'; callPeers.innerHTML='';}
-async function startCall(callType='video'){
-  if(chatStatusEl.textContent!=='Online') return;
-  showCallDialog('outgoing',callType);
-  localStream=await navigator.mediaDevices.getUserMedia(callType==='video'?{video:true,audio:true}:{audio:true});
-  localStream.getTracks().forEach(track=>ensurePeer().addTrack(track,localStream));
-  const offer=await ensurePeer().createOffer(); await ensurePeer().setLocalDescription(offer);
-  sendSignal({type:'call-offer',callType,sdp:offer});
-}
-videoBtn.addEventListener('click',()=>startCall('video'));
-voiceBtn.addEventListener('click',()=>startCall('audio'));
 
-(async function init(){
-  if(!hc_profile || !hc_profile.email){ alert('No profile'); location.href='register.html'; return; }
+function hideCallDialog() { callDialog.style.display = 'none'; callPeers.innerHTML = ''; }
+
+async function startCall(callType='video') {
+  if (chatStatusEl.textContent !== 'Online') return;
+  showCallDialog('outgoing', callType);
+  localStream = await navigator.mediaDevices.getUserMedia(callType==='video'?{video:true,audio:true}:{audio:true});
+  localStream.getTracks().forEach(track => ensurePeer().addTrack(track, localStream));
+  const offer = await ensurePeer().createOffer(); await ensurePeer().setLocalDescription(offer);
+  sendSignal({ type:'call-offer', callType, sdp:offer });
+}
+
+videoBtn.addEventListener('click', ()=>startCall('video'));
+voiceBtn.addEventListener('click', ()=>startCall('audio'));
+
+// ---------------- Init ----------------
+(async function init() {
+  if (!hc_profile || !hc_profile.email) { alert('No profile'); location.href='register.html'; return; }
   await loadMessages();
 })();
 </script>
+
 </body>
 </html>
